@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "asetui"
+version = "0.1.0"
+description = "Terminal User Interface for ASE db."
+authors = ["Steen Lysgaard <stly@dtu.dk>"]
+license = "MPL"
+readme = "README.md"
+packages = [{include = "asetui", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+ase = ">=3.19.0"
+textual = "^0.10.1"
+pandas = "^1.5.2"
+
+[tool.poetry.scripts]
+asetui = 'asetui.asetui:main'
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+black = "^22.12.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+executionEnvironments = [ { root = "src" } ]
