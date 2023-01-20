@@ -1,2 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+
+# direnv setup
+.envrc
+
+# db files
+*.db
