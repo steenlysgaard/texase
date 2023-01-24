@@ -30,5 +30,3 @@ def test_df_creation(tmp_path):
     assert np.isclose(df.volume.iloc[0], np.product(cell))
     assert df.pbc.iloc[0] == ''.join(['FT'[i] for i in pbc])
     assert df.formula.tolist() == ['Au', 'Ag']
-    
-    

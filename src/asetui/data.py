@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 import pandas as pd
 from ase.db import connect
@@ -15,11 +15,11 @@ class Data:
     db_path: str
     user_keys: List[str]
 
-    def string_df(self):
+    def string_df(self) -> pd.DataFrame:
         return self.df[all_columns].applymap(format_value, na_action="ignore")
 
 
-def format_value(val):
+def format_value(val) -> Union[Text, str]:
     if isinstance(val, str):
         return val
     elif isinstance(val, float):
