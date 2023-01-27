@@ -17,6 +17,7 @@ pandas = "^1.5.2"
 asetui = 'asetui.asetui:main'
 
 [tool.poetry.group.dev.dependencies]
+textual = { version = "^0.10.1", extras = ["dev"] }
 pytest = "^7.2.1"
 black = "^22.12.0"
 
