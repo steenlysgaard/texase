@@ -4,16 +4,15 @@ from textual.widgets import DataTable, Footer, Header
 from asetui.data import instantiate_data
 from asetui.table import AsetuiTable
 
-
 class ASETUI(App):
     BINDINGS = [
         ("q", "quit", "Quit"),
+        ("s", "sort_column", "Sort"),
     ]
     # CSS_PATH = "slurm_table.css"
 
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
-
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -40,14 +39,19 @@ class ASETUI(App):
             table.add_row(*row)
 
         table.focus()
+        
+    def action_sort_column(self) -> None:
+        # Get the highlighted column
+        table = self.query_one(DataTable)
+        print(table.cursor_cell)
 
 
-def main():
-    import sys
-
-    app = ASETUI(sys.argv[1])
+def main(path: str = 'test.db'):
+    
+    app = ASETUI(path=path)
     app.run()
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv[1])
