@@ -63,7 +63,23 @@ class ASETUI(App):
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
         table = self.query_one(AsetuiTable)
+        if self.show_details:
+            # Get the highlighted row
+            row, _ = table.cursor_cell
+            self.query_one(Details).update_kvplist(self.data.row_details(row))
+            
+            # Set focus on the details sidebar
+            self.query_one(Details).set_focus()
+            
+        else:
+            # Set focus back on the table
+            table.focus()
 
+    def watch_show_details(self, show_details: bool) -> None:
+        """Called when show_details is modified."""
+        dv = self.query_one(Details)
+        dv.display = show_details
+        
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
         # itself after a search.

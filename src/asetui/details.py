@@ -1,36 +1,32 @@
+from textual.app import ComposeResult
 from textual.widgets import Static
-from textual.widgets import Placeholder
-from textual.widgets import DataTable
-from textual.containers import Horizontal, Vertical
+from textual.widgets import ListView, ListItem, Label
+from textual.containers import Container
 
-class DV(Placeholder):
-    BINDINGS = [("escape", "hide", "Hide")]
-    # display = True
+list = [ListItem(Label(i)) for i in ['a', 'b', 'c']]
 
-    # def __init__(self, *args, **kwargs):
-    #     # self.display = False
-    #     super().__init__(*args, **kwargs)
-
-    def make_visible(self, cell):
-        self.display = True
-        print(cell)
+class Details(Container):
+    def compose(self) -> ComposeResult:
+        yield Title("Key value pairs")
+        yield KVPList(*list)
+        yield Title("Data")
+        yield DataList()
         
-    def action_hide(self):
-        self.display = False
+    def set_focus(self) -> None:
+        # Remember where old focus was and start from this. If this
+        # row hasn't been focused before then focus on the KVPList.
+        self.query_one(KVPList).focus()
         
-# class Details(Static):
-#     # BINDINGS = [("escape", "app.pop_screen", "Pop screen")]
+    def update_kvplist(self, kvplist: list) -> None:
+        self.query_one(KVPList).update(*kvplist)
 
-#     def __init__(self, *args, **kwargs) -> None:
-#         self.visibility = False
-#         super().__init__(*args, **kwargs)
-        
-#     def make_visible(self, cell):
-#         print(cell)
-        
-#     def on_mount(self) -> None:
-#         # self.update(f'{self.cell}')
-#         self.update('heeheheh')
 
-# class DetailsTable(DataTable):
-    
+
+class Title(Static):
+    pass
+
+class KVPList(ListView):
+    pass
+
+class DataList(ListView):
+    pass

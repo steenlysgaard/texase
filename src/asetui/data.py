@@ -7,6 +7,7 @@ from ase.db import connect
 from ase.db.core import float_to_time_string, now
 from ase.db.table import all_columns
 from rich.text import Text
+from textual.widgets import ListItem, Label
 
 
 @dataclass
@@ -14,9 +15,20 @@ class Data:
     df: pd.DataFrame
     db_path: str
     user_keys: List[str]
-
+    row_cache: Union[dict, None] = None
+    
+    def __post_init__(self):    
+        if self.row_cache is None:
+            self.row_cache = {}
+    
     def string_df(self) -> pd.DataFrame:
         return self.df[all_columns].applymap(format_value, na_action="ignore")
+    
+    def row_details(self, row) -> list:
+        kvps = []
+        for key, value in self.df.iloc[row].items():
+            kvps.append(ListItem(Label(f'[bold]{key}: [/bold]{value}')))
+        return kvps
 
 
 def format_value(val) -> Union[Text, str]:
