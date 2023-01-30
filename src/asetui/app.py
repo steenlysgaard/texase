@@ -6,26 +6,21 @@ from textual.reactive import var
 
 from asetui.data import instantiate_data
 from asetui.table import AsetuiTable
-from asetui.details import DV
+from asetui.details import Details
+from asetui.search import SearchBar
 
 class ASETUI(App):
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("s", "sort_column", "Sort"),
-        ("f", "toggle_details", "Show details")
+        ("f", "toggle_details", "Show details"),
+        ("+", "add_column", 'Add column')
     ]
     CSS_PATH = "asetui.css"
     
     show_details = var(False)
+    show_search = var(False)
 
-    def watch_show_details(self, show_details: bool) -> None:
-        """Called when show_details is modified."""
-        dv = self.query_one(DV)
-        dv.display = show_details
-        print('watched', f'{show_details}')
-        # dv.styles.max_width = "25vh"
-        # self.set_class(show_tree, "-show-tree")
-        
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
         super().__init__()
@@ -34,9 +29,9 @@ class ASETUI(App):
         """Called to add widgets to the app."""
         yield Header()
         yield Footer()
-        # yield Details(id="details")
-        yield Horizontal(
-            DV(id="details"),
+        yield MiddleContainer(
+            SearchBar(id="searchbar"),
+            Details(id="details"),
             AsetuiTable(id="table")
         )
 
@@ -45,7 +40,7 @@ class ASETUI(App):
         data = instantiate_data(self.path)
 
         # Table
-        table = self.query_one(DataTable)
+        table = self.query_one(AsetuiTable)
 
         # Columns
         for col in data.df:
@@ -58,18 +53,28 @@ class ASETUI(App):
             table.add_row(*row)
 
         table.focus()
+        self.data = data
         
     def action_sort_column(self) -> None:
         # Get the highlighted column
-        table = self.query_one(DataTable)
+        table = self.query_one(AsetuiTable)
         print(table.cursor_cell)
         
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
-        table = self.query_one(DataTable)
-        # details = self.query_one(DV)
-        # details.make_visible(table.cursor_cell)
+        table = self.query_one(AsetuiTable)
 
+    def action_add_column(self) -> None:
+        # Change this to True when the search bar is able to close
+        # itself after a search.
+        self.show_search = not self.show_search
+        
+    def watch_show_search(self, show_search: bool) -> None:
+        searchbar = self.query_one(SearchBar)
+        searchbar.display = show_search
+        
+class MiddleContainer(Container):
+    pass
 
 def main(path: str = 'test.db'):
     
