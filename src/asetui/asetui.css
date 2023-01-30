@@ -1,0 +1,18 @@
+Screen {
+    align: center middle;
+    layers: table details searchbar;
+}
+
+#details {
+    max-width: 30%;
+    min-width: 20%;
+    layer: details;
+}
+
+#table {
+    layer: table
+}
+
+/* #details { */
+/*     layer: details */
+/* } */
