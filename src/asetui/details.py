@@ -6,6 +6,7 @@ from textual.containers import Container
 list = [ListItem(Label(i)) for i in ['a', 'b', 'c']]
 
 class Details(Container):
+    
     def compose(self) -> ComposeResult:
         yield Title("Key value pairs")
         yield KVPList(*list)
@@ -18,7 +19,11 @@ class Details(Container):
         self.query_one(KVPList).focus()
         
     def update_kvplist(self, kvplist: list) -> None:
-        self.query_one(KVPList).update(*kvplist)
+        kvp_widget = self.query_one(KVPList)
+        kvp_widget.clear()
+        for kvp in kvplist:
+            kvp_widget.append(kvp)
+        
 
 
 

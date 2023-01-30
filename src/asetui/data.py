@@ -26,7 +26,7 @@ class Data:
     
     def row_details(self, row) -> list:
         kvps = []
-        for key, value in self.df.iloc[row].items():
+        for key, value in self.df.iloc[row].dropna().items():
             kvps.append(ListItem(Label(f'[bold]{key}: [/bold]{value}')))
         return kvps
 
