@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import pandas as pd
 from ase.db import connect
@@ -16,19 +16,25 @@ class Data:
     db_path: str
     user_keys: List[str]
     row_cache: Union[dict, None] = None
-    
-    def __post_init__(self):    
+
+    def __post_init__(self):
         if self.row_cache is None:
             self.row_cache = {}
-    
+
     def string_df(self) -> pd.DataFrame:
         return self.df[all_columns].applymap(format_value, na_action="ignore")
-    
-    def row_details(self, row) -> list:
-        kvps = []
+
+    def row_details(self, row) -> Tuple[Text, list]:
+        """Returns key value pairs from the row in two items:"""
+        static_kvps = ""
+        dynamic_kvps = []
+        editable_keys = self.user_keys + ["pbc"]
         for key, value in self.df.iloc[row].dropna().items():
-            kvps.append(ListItem(Label(f'[bold]{key}: [/bold]{value}')))
-        return kvps
+            if key in editable_keys:
+                dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
+            else:
+                static_kvps += f"[bold]{key}: [/bold]{value}\n"
+        return Text.from_markup(static_kvps[:-1]), dynamic_kvps
 
 
 def format_value(val) -> Union[Text, str]:
