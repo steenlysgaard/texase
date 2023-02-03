@@ -3,6 +3,8 @@ from textual.widgets import Footer, Header
 from textual.containers import Container
 from textual.reactive import var
 
+from ase.visualize import view
+
 from asetui.data import instantiate_data
 from asetui.table import AsetuiTable
 from asetui.details import Details
@@ -14,6 +16,7 @@ class ASETUI(App):
         ("q", "quit", "Quit"),
         ("s", "sort_column", "Sort"),
         ("f", "toggle_details", "Show details"),
+        ("v", "view", 'View'),
         ("+", "add_column", "Add column"),
     ]
     CSS_PATH = "asetui.css"
@@ -64,7 +67,9 @@ class ASETUI(App):
         if self.show_details:
             # Get the highlighted row
             row, _ = table.cursor_cell
-            self.query_one(Details).update_kvplist(*self.data.row_details(row))
+            details = self.query_one(Details)
+            details.update_kvplist(*self.data.row_details(row))
+            details.update_data(self.data.row_data(row))
 
             # Set focus on the details sidebar
             self.query_one(Details).set_focus()
@@ -86,6 +91,12 @@ class ASETUI(App):
     def watch_show_search(self, show_search: bool) -> None:
         searchbar = self.query_one(SearchBar)
         searchbar.display = show_search
+        
+    def action_view(self) -> None:
+        table = self.query_one(AsetuiTable)
+        atoms = self.data.get_atoms(table.cursor_cell[0])
+        view(atoms)
+
 
 
 class MiddleContainer(Container):

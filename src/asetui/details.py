@@ -7,7 +7,9 @@ from rich.text import Text
 
 class Details(Container):
     def compose(self) -> ComposeResult:
-        yield Title("Key value pairs")
+        yield Title(
+            "Key value pairs ([@click=\"app.open_link('https://wiki.fysik.dtu.dk/ase/ase/units.html')\"]Units[/])"
+        )
         yield Container(KVPStatic(), KVPList())
         yield Title("Data")
         yield DataList()
@@ -27,6 +29,12 @@ class Details(Container):
         kvp_widget.clear()
         for kvp in dynamic_kvps:
             kvp_widget.append(kvp)
+            
+    def update_data(self, dynamic_data: list) -> None:
+        data_widget = self.query_one(DataList)
+        data_widget.clear()
+        for kvp in dynamic_data:
+            data_widget.append(kvp)
 
 
 class Title(Static):

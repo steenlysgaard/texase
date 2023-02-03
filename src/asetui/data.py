@@ -6,6 +6,7 @@ import pandas as pd
 from ase.db import connect
 from ase.db.core import float_to_time_string, now
 from ase.db.table import all_columns
+from ase import Atoms
 from rich.text import Text
 from textual.widgets import ListItem, Label
 
@@ -35,6 +36,16 @@ class Data:
             else:
                 static_kvps += f"[bold]{key}: [/bold]{value}\n"
         return Text.from_markup(static_kvps[:-1]), dynamic_kvps
+    
+    def row_data(self, row) -> list:
+        print(self.df.iloc[row].id)
+        print(get_data(self.db_path, 1))
+        return []
+    
+    def get_atoms(self, row) -> Atoms:
+        db = connect(self.db_path)
+        print(type(self.df.iloc[row].id))
+        return db.get_atoms(id=int(self.df.iloc[row].id))
 
 
 def format_value(val) -> Union[Text, str]:
@@ -91,3 +102,8 @@ def get_value(row, key) -> str:
     else:
         value = row.get(key, pd.NaT)
     return value
+
+def get_data(db_path, row_id):
+    db = connect(db_path)
+    return db.get(id=row_id).data
+    
