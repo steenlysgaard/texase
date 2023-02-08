@@ -12,6 +12,7 @@ python = "^3.8"
 ase = ">=3.19.0"
 textual = "^0.10.1"
 pandas = "^1.5.2"
+textual-autocomplete = "^1.0.1b0"
 
 [tool.poetry.scripts]
 asetui = 'asetui.asetui:main'
