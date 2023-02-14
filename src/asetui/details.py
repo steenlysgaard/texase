@@ -36,6 +36,8 @@ class Details(Container):
         for kvp in dynamic_data:
             data_widget.append(kvp)
 
+    def on_list_view_selected(self, sender):
+        print('Selected on Details', sender.item, sender.time)
 
 class Title(Static):
     pass

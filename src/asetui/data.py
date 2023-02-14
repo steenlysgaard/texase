@@ -37,14 +37,15 @@ class Data:
                 static_kvps += f"[bold]{key}: [/bold]{value}\n"
         return Text.from_markup(static_kvps[:-1]), dynamic_kvps
     
-    def row_data(self, row) -> list:
-        print(self.df.iloc[row].id)
-        print(get_data(self.db_path, 1))
-        return []
+    def row_data(self, row: int) -> list:
+        row_id = int(self.df.iloc[row].id)
+        dynamic_data = []
+        for key, value in get_data(self.db_path, row_id).items():
+            dynamic_data.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
+        return dynamic_data
     
     def get_atoms(self, row) -> Atoms:
         db = connect(self.db_path)
-        print(type(self.df.iloc[row].id))
         return db.get_atoms(id=int(self.df.iloc[row].id))
 
 
