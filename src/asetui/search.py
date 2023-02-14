@@ -1,4 +1,4 @@
-from textual.widgets import Placeholder
+from textual.containers import Container
 
-class SearchBar(Placeholder):
+class SearchBar(Container):
     pass

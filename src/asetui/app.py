@@ -1,7 +1,11 @@
+from typing import List
+
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header
+from textual.widgets import Footer, Header, Input, Label
 from textual.containers import Container
 from textual.reactive import var
+
+from textual_autocomplete._autocomplete import AutoComplete, DropdownItem, Dropdown
 
 from ase.visualize import view
 
@@ -16,7 +20,7 @@ class ASETUI(App):
         ("q", "quit", "Quit"),
         ("s", "sort_column", "Sort"),
         ("f", "toggle_details", "Show details"),
-        ("v", "view", 'View'),
+        ("v", "view", "View"),
         ("+", "add_column", "Add column"),
     ]
     CSS_PATH = "asetui.css"
@@ -33,7 +37,12 @@ class ASETUI(App):
         yield Header()
         yield Footer()
         yield MiddleContainer(
-            SearchBar(id="searchbar"), Details(id="details"), AsetuiTable(id="table")
+            SearchBar(Label("Search"),
+                      AutoComplete(Searchbox(id="search-box", placeholder="Column to add.."),
+                                   Dropdown(items=self.unused_columns)),
+                      id="searchbar"),
+            Details(id="details"),
+            AsetuiTable(id="table"),
         )
 
     def on_mount(self) -> None:
@@ -55,11 +64,36 @@ class ASETUI(App):
 
         table.focus()
         self.data = data
-
-    def action_sort_column(self) -> None:
+        
+    def unused_columns(self, value: str, cursor_position: int) -> List[DropdownItem]:
+        from ase.db.table import all_columns
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
-        print(table.cursor_cell)
+        used_columns = [tc.label.plain for tc in table.columns]
+        unused = []
+        for col in self.data.user_keys + all_columns:
+            if col not in used_columns:
+                unused.append(DropdownItem(col))
+        
+        # Only keep cities that contain the Input value as a substring
+        matches = [c for c in unused if value.lower() in c.main.plain.lower()]
+        # Favour items that start with the Input value, pull them to the top
+        ordered = sorted(matches, key=lambda v: v.main.plain.startswith(value.lower()))
+        
+        return ordered
+
+    def action_sort_column(self) -> None:
+        from ase.db.table import all_columns
+        # Get the highlighted column
+        table = self.query_one(AsetuiTable)
+        used_columns = [tc.label.plain for tc in table.columns]
+        unused = []
+        for col in self.data.user_keys + all_columns:
+            if col not in used_columns:
+                unused.append(DropdownItem(col))
+        print(unused)
+        
+        
 
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
@@ -87,19 +121,28 @@ class ASETUI(App):
         # Change this to True when the search bar is able to close
         # itself after a search.
         self.show_search = not self.show_search
+        self.query_one(Searchbox).focus()
 
     def watch_show_search(self, show_search: bool) -> None:
         searchbar = self.query_one(SearchBar)
         searchbar.display = show_search
-        
+
     def action_view(self) -> None:
         table = self.query_one(AsetuiTable)
         atoms = self.data.get_atoms(table.cursor_cell[0])
         view(atoms)
 
+    def on_list_view_selected(self):
+        print("Selected on App")
+        
+    def on_input_submitted(self, submitted):
+        print('here', submitted.value)
 
 
 class MiddleContainer(Container):
+    pass
+
+class Searchbox(Input):
     pass
 
 
