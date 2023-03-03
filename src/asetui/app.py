@@ -120,7 +120,7 @@ class ASETUI(App):
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
         # itself after a search.
-        self.show_search = not self.show_search
+        self.show_search = True
         self.query_one(Searchbox).focus()
 
     def watch_show_search(self, show_search: bool) -> None:
@@ -136,8 +136,17 @@ class ASETUI(App):
         print("Selected on App")
         
     def on_input_submitted(self, submitted):
-        print('here', submitted.value)
-
+        # Check if value is a possible column
+        if self.data.add_to_chosen_columns(submitted.value):
+            self.query_one(Searchbox).value = ""
+            self.show_search = False
+            table = self.query_one(AsetuiTable)
+            col_key = table.add_column(submitted.value)
+            # NOTE: data and table rows should be in the same order
+            values = self.data.string_column(submitted.value)
+            for row, val in zip(table.rows, values):
+                table.update_cell(row, col_key, val)
+            table.focus()
 
 class MiddleContainer(Container):
     pass

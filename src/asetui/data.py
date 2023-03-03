@@ -17,13 +17,18 @@ class Data:
     db_path: str
     user_keys: List[str]
     row_cache: Union[dict, None] = None
+    chosen_columns: Union[List[str], None] = None
 
     def __post_init__(self):
         if self.row_cache is None:
             self.row_cache = {}
+        self.update_chosen_columns()
 
     def string_df(self) -> pd.DataFrame:
-        return self.df[all_columns].applymap(format_value, na_action="ignore")
+        return self.df[self.chosen_columns].applymap(format_value, na_action="ignore").fillna("", axis=1)
+    
+    def string_column(self, column):
+        return self.df[column].map(format_value, na_action='ignore').fillna("")
 
     def row_details(self, row) -> Tuple[Text, list]:
         """Returns key value pairs from the row in two items:"""
@@ -47,6 +52,22 @@ class Data:
     def get_atoms(self, row) -> Atoms:
         db = connect(self.db_path)
         return db.get_atoms(id=int(self.df.iloc[row].id))
+    
+    def add_to_chosen_columns(self, column):
+        if column not in self.chosen_columns and column in all_columns + self.user_keys:
+            self.chosen_columns.append(column)
+            # chosen_columns now contain column, return True
+            return True
+        # Nothing has been added return False
+        return False
+    
+    def update_chosen_columns(self):
+        # Check if db columns file exists. If so set chosen columns based on that.
+
+        # If the db is not in the asetui columns file initialize with all_columns
+        self.chosen_columns = all_columns
+    
+    
 
 
 def format_value(val) -> Union[Text, str]:
