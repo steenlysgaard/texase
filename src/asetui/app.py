@@ -5,7 +5,7 @@ from textual.widgets import Footer, Header, Input, Label
 from textual.containers import Container
 from textual.reactive import var
 
-from textual_autocomplete._autocomplete import AutoComplete, DropdownItem, Dropdown
+from textual_autocomplete._autocomplete import AutoComplete, DropdownItem, Dropdown, InputState
 
 from ase.visualize import view
 
@@ -65,20 +65,20 @@ class ASETUI(App):
         table.focus()
         self.data = data
         
-    def unused_columns(self, value: str, cursor_position: int) -> List[DropdownItem]:
+    def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
         from ase.db.table import all_columns
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
-        used_columns = [tc.label.plain for tc in table.columns]
+        used_columns = [tc.label.plain for tc in table.columns.values()]
         unused = []
         for col in self.data.user_keys + all_columns:
             if col not in used_columns:
                 unused.append(DropdownItem(col))
         
-        # Only keep cities that contain the Input value as a substring
-        matches = [c for c in unused if value.lower() in c.main.plain.lower()]
+        # Only keep columns that contain the Input value as a substring
+        matches = [c for c in unused if input_state.value.lower() in c.main.plain.lower()]
         # Favour items that start with the Input value, pull them to the top
-        ordered = sorted(matches, key=lambda v: v.main.plain.startswith(value.lower()))
+        ordered = sorted(matches, key=lambda v: v.main.plain.startswith(input_state.value.lower()))
         
         return ordered
 
