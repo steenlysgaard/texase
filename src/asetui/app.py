@@ -5,7 +5,12 @@ from textual.widgets import Footer, Header, Input, Label
 from textual.containers import Container
 from textual.reactive import var
 
-from textual_autocomplete._autocomplete import AutoComplete, DropdownItem, Dropdown, InputState
+from textual_autocomplete._autocomplete import (
+    AutoComplete,
+    DropdownItem,
+    Dropdown,
+    InputState,
+)
 
 from ase.visualize import view
 
@@ -37,10 +42,14 @@ class ASETUI(App):
         yield Header()
         yield Footer()
         yield MiddleContainer(
-            SearchBar(Label("Search"),
-                      AutoComplete(Searchbox(id="search-box", placeholder="Column to add.."),
-                                   Dropdown(items=self.unused_columns)),
-                      id="searchbar"),
+            SearchBar(
+                Label("Search"),
+                AutoComplete(
+                    Searchbox(id="search-box", placeholder="Column to add.."),
+                    Dropdown(items=self.unused_columns),
+                ),
+                id="searchbar",
+            ),
             Details(id="details"),
             AsetuiTable(id="table"),
         )
@@ -64,9 +73,10 @@ class ASETUI(App):
 
         table.focus()
         self.data = data
-        
+
     def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
         from ase.db.table import all_columns
+
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
         used_columns = [tc.label.plain for tc in table.columns.values()]
@@ -74,16 +84,21 @@ class ASETUI(App):
         for col in self.data.user_keys + all_columns:
             if col not in used_columns:
                 unused.append(DropdownItem(col))
-        
+
         # Only keep columns that contain the Input value as a substring
-        matches = [c for c in unused if input_state.value.lower() in c.main.plain.lower()]
+        matches = [
+            c for c in unused if input_state.value.lower() in c.main.plain.lower()
+        ]
         # Favour items that start with the Input value, pull them to the top
-        ordered = sorted(matches, key=lambda v: v.main.plain.startswith(input_state.value.lower()))
-        
+        ordered = sorted(
+            matches, key=lambda v: v.main.plain.startswith(input_state.value.lower())
+        )
+
         return ordered
 
     def action_sort_column(self) -> None:
         from ase.db.table import all_columns
+
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
         used_columns = [tc.label.plain for tc in table.columns]
@@ -92,8 +107,6 @@ class ASETUI(App):
             if col not in used_columns:
                 unused.append(DropdownItem(col))
         print(unused)
-        
-        
 
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
@@ -134,7 +147,7 @@ class ASETUI(App):
 
     def on_list_view_selected(self):
         print("Selected on App")
-        
+
     def on_input_submitted(self, submitted):
         # Check if value is a possible column
         if self.data.add_to_chosen_columns(submitted.value):
@@ -144,12 +157,18 @@ class ASETUI(App):
             col_key = table.add_column(submitted.value)
             # NOTE: data and table rows should be in the same order
             values = self.data.string_column(submitted.value)
-            for row, val in zip(table.rows, values):
+            table_rows = list(table.rows)
+            for row, val in zip(table_rows[:-1], values[:-1]):
                 table.update_cell(row, col_key, val)
+            table.update_cell(
+                table_rows[-1], col_key, values.iloc[-1], update_width=True
+            )
             table.focus()
+
 
 class MiddleContainer(Container):
     pass
+
 
 class Searchbox(Input):
     pass
