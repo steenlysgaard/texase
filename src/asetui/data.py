@@ -65,11 +65,19 @@ class Data:
         # Nothing has been added return False
         return False
     
+    def remove_from_chosen_columns(self, column):
+        # Check that the column is in chosen_columns
+        if column in self.chosen_columns:
+            self.chosen_columns.remove(column)
+            return True
+        # Return False if nothing has changed
+        return False
+    
     def update_chosen_columns(self):
         # Check if db columns file exists. If so set chosen columns based on that.
 
         # If the db is not in the asetui columns file initialize with all_columns
-        self.chosen_columns = all_columns
+        self.chosen_columns = all_columns[:]
     
     
 

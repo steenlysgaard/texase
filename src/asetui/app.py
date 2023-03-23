@@ -2,8 +2,11 @@ from typing import List
 
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input, Label
+from textual.widgets._data_table import StringKey
 from textual.containers import Container
+from textual.coordinate import Coordinate
 from textual.reactive import var
+from textual._two_way_dict import TwoWayDict
 
 from textual_autocomplete._autocomplete import (
     AutoComplete,
@@ -13,8 +16,9 @@ from textual_autocomplete._autocomplete import (
 )
 
 from ase.visualize import view
+from ase.db.table import all_columns
 
-from asetui.data import instantiate_data
+from asetui.data import instantiate_data, Data
 from asetui.table import AsetuiTable
 from asetui.details import Details
 from asetui.search import SearchBar
@@ -27,6 +31,7 @@ class ASETUI(App):
         ("f", "toggle_details", "Show details"),
         ("v", "view", "View"),
         ("+", "add_column", "Add column"),
+        ("-", "remove_column", "Remove column"),
     ]
     CSS_PATH = "asetui.css"
 
@@ -63,29 +68,26 @@ class ASETUI(App):
         # Table
         table = self.query_one(AsetuiTable)
 
-        # Columns
-        for col in data.df:
-            if col in data.user_keys:
-                continue
-            table.add_column(col)
-
-        # Populate rows by fetching data
-        for row in data.string_df().itertuples(index=False):
-            table.add_row(*row)
+        # Populate table with data using an external function
+        populate_table(table, data)
 
         table.focus()
         self.data = data
 
     def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
-        from ase.db.table import all_columns
 
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
-        used_columns = [tc.label.plain for tc in table.columns.values()]
+        # used_columns = [tc.label.plain for tc in table.columns.values()]
+        used_columns = self.data.chosen_columns
+        print('used_columns', used_columns)
         unused = []
+        print('all_columns', all_columns)
+        print('user_keys', self.data.user_keys)
         for col in self.data.user_keys + all_columns:
             if col not in used_columns:
                 unused.append(DropdownItem(col))
+        print('unused', unused)
 
         # Only keep columns that contain the Input value as a substring
         matches = [
@@ -154,6 +156,25 @@ class ASETUI(App):
         self.show_search = True
         self.query_one(Searchbox).focus()
 
+    def action_remove_column(self) -> None:
+        """This is currently done by removing the column from the data
+        object, clearing the table completely and then rebuilding the
+        table"""
+        table = self.query_one(AsetuiTable)
+        # Save the name of the column to remove
+        cursor_row_index, cursor_column_index = table.cursor_row, table.cursor_column
+        column_to_remove = str(table.ordered_columns[cursor_column_index].label)
+        # Remove the column from the table in data
+        self.data.remove_from_chosen_columns(column_to_remove)
+        # Clear the table including columns
+        table.clear(columns=True)
+        # Rebuilt the table with the currently chosen columns
+        populate_table(table, self.data)
+        # Put the cursor back on the same column
+        table.cursor_coordinate = table.validate_cursor_coordinate(
+            Coordinate(cursor_row_index, cursor_column_index)
+        )
+
     def watch_show_search(self, show_search: bool) -> None:
         searchbar = self.query_one(SearchBar)
         searchbar.display = show_search
@@ -182,6 +203,16 @@ class ASETUI(App):
                 table_rows[-1], col_key, values.iloc[-1], update_width=True
             )
             table.focus()
+
+
+def populate_table(table: AsetuiTable, data: Data) -> None:
+    # Columns
+    for col in data.chosen_columns:
+        table.add_column(col)
+
+    # Populate rows by fetching data
+    for row in data.string_df().itertuples(index=True):
+        table.add_row(*row[1:], key=row[0])
 
 
 class MiddleContainer(Container):
