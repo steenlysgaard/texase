@@ -29,6 +29,10 @@ class Data:
     
     def string_column(self, column):
         return self.df[column].map(format_value, na_action='ignore').fillna("")
+    
+    def sort(self, columns, reverse):
+        self.df.sort_values(columns, ascending=not reverse, inplace=True)
+        return self.df.index
 
     def row_details(self, row) -> Tuple[Text, list]:
         """Returns key value pairs from the row in two items:"""

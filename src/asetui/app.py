@@ -35,6 +35,8 @@ class ASETUI(App):
 
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
+        self.sort_columns = ["id"]
+        self.sort_reverse = False
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -97,23 +99,39 @@ class ASETUI(App):
         return ordered
 
     def action_sort_column(self) -> None:
-        from ase.db.table import all_columns
-
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
-        used_columns = [tc.label.plain for tc in table.columns]
-        unused = []
-        for col in self.data.user_keys + all_columns:
-            if col not in used_columns:
-                unused.append(DropdownItem(col))
-        print(unused)
+        col_name = str(
+            table.columns[list(table.columns.keys())[table.cursor_column]].label
+        )
+        # col_key = table.columns[list(table.columns.keys())[table.cursor_column]].label.text
+        if len(self.sort_columns) > 0 and col_name == self.sort_columns[0]:
+            self.sort_reverse = not self.sort_reverse
+        else:
+            self.sort_columns.insert(0, col_name)
+            self.sort_reverse = False
+        ordered_index = self.data.sort(self.sort_columns, self.sort_reverse)
+
+        table._row_locations = TwoWayDict(
+            {StringKey(key): new_index for new_index, key in enumerate(ordered_index)}
+        )
+        table._update_count += 1
+        table.refresh()
+
+        # How sort does it:
+        # self._row_locations = TwoWayDict(
+        #     {key: new_index for new_index, (key, _) in enumerate(ordered_rows)}
+        # )
+        # self._update_count += 1
+        # self.refresh()
+        # table.sort(*self.sort_columns, reverse=self.sort_reverse)
 
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
         table = self.query_one(AsetuiTable)
         if self.show_details:
             # Get the highlighted row
-            row, _ = table.cursor_cell
+            row = table.cursor_row
             details = self.query_one(Details)
             details.update_kvplist(*self.data.row_details(row))
             details.update_data(self.data.row_data(row))
