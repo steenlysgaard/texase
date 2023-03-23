@@ -75,19 +75,12 @@ class ASETUI(App):
         self.data = data
 
     def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
-
         # Get the highlighted column
-        table = self.query_one(AsetuiTable)
-        # used_columns = [tc.label.plain for tc in table.columns.values()]
         used_columns = self.data.chosen_columns
-        print('used_columns', used_columns)
         unused = []
-        print('all_columns', all_columns)
-        print('user_keys', self.data.user_keys)
         for col in self.data.user_keys + all_columns:
             if col not in used_columns:
                 unused.append(DropdownItem(col))
-        print('unused', unused)
 
         # Only keep columns that contain the Input value as a substring
         matches = [
@@ -203,6 +196,10 @@ class ASETUI(App):
                 table_rows[-1], col_key, values.iloc[-1], update_width=True
             )
             table.focus()
+
+    def action_quit(self) -> None:
+        self.data.save_chosen_columns()
+        super().exit()
 
 
 def populate_table(table: AsetuiTable, data: Data) -> None:
