@@ -123,6 +123,9 @@ class ASETUI(App):
         self.sort_table(col_name, table)
 
     def sort_table(self, col_name: str, table: AsetuiTable) -> None:
+        # Save the row key of the current cursor position
+        row_key = table.coordinate_to_cell_key(Coordinate(table.cursor_row, 0)).row_key
+        
         # Sort the table
         if len(self.sort_columns) > 0 and col_name == self.sort_columns[0]:
             # If the column is already the first in the sort order, toggle the sort order
@@ -139,6 +142,9 @@ class ASETUI(App):
         )
         table._update_count += 1
         table.refresh()
+        
+        # After finished sort make the cursor go to the same cell as before sorting
+        table.cursor_coordinate = Coordinate(table._row_locations.get(row_key), table.cursor_column)
 
         # How sort does it:
         # self._row_locations = TwoWayDict(
