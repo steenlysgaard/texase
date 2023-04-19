@@ -1,8 +1,11 @@
 from typing import List
 
+from rich.text import Text
+
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input, Label
-from textual.widgets._data_table import StringKey
+from textual.widgets._data_table import StringKey, RowKey, DataTable
+from textual.binding import Binding
 from textual.containers import Container
 from textual.coordinate import Coordinate
 from textual.reactive import var
@@ -23,6 +26,10 @@ from asetui.table import AsetuiTable
 from asetui.details import Details
 from asetui.search import SearchBar
 
+# The labels showing marked and unmarked rows
+MARKED_LABEL = Text("\u25cf", style="bright_yellow")
+UNMARKED_LABEL = Text("\u2219", style="grey")
+
 
 class ASETUI(App):
     BINDINGS = [
@@ -32,6 +39,9 @@ class ASETUI(App):
         ("v", "view", "View"),
         ("+", "add_column", "Add column"),
         ("-", "remove_column", "Remove column"),
+        ("space", "mark_row", "Mark row"),
+        Binding("u", "unmark_row", "Unmark row", show=False),
+        Binding("U", "unmark_all", "Unmark all", show=False),
     ]
     CSS_PATH = "asetui.css"
 
@@ -42,6 +52,7 @@ class ASETUI(App):
         self.path = path
         self.sort_columns = ["id"]
         self.sort_reverse = False
+        self.marked_rows = []
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -93,16 +104,32 @@ class ASETUI(App):
 
         return ordered
 
+    # Sorting
     def action_sort_column(self) -> None:
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
         col_name = str(
-            table.columns[list(table.columns.keys())[table.cursor_column]].label
+            table.columns[
+                table.coordinate_to_cell_key(
+                    Coordinate(0, table.cursor_column)
+                ).column_key
+            ].label
         )
-        # col_key = table.columns[list(table.columns.keys())[table.cursor_column]].label.text
+        self.sort_table(col_name, table)
+
+    def on_data_table_header_selected(self, selected: DataTable.HeaderSelected) -> None:
+        table = selected.data_table
+        col_name = str(selected.label)
+        self.sort_table(col_name, table)
+
+    def sort_table(self, col_name: str, table: AsetuiTable) -> None:
+        # Sort the table
         if len(self.sort_columns) > 0 and col_name == self.sort_columns[0]:
+            # If the column is already the first in the sort order, toggle the sort order
             self.sort_reverse = not self.sort_reverse
         else:
+            # Otherwise, add the column to the sort order at first
+            # position and set the sort order to ascending
             self.sort_columns.insert(0, col_name)
             self.sort_reverse = False
         ordered_index = self.data.sort(self.sort_columns, self.sort_reverse)
@@ -121,6 +148,65 @@ class ASETUI(App):
         # self.refresh()
         # table.sort(*self.sort_columns, reverse=self.sort_reverse)
 
+    # Selecting/marking rows
+    def action_mark_row(self) -> None:
+        table = self.query_one(AsetuiTable)
+        row_index = table.cursor_row
+        row_key = table.coordinate_to_cell_key(Coordinate(row_index, 0)).row_key
+        # row_key = list(table.rows.keys())[row_index]
+        self.toggle_mark_row(row_key, table)
+
+        # Tell the table that something has changed so it will refresh properly
+        table._update_count += 1
+        table.refresh_row(row_index)
+
+        # # Best effort so far for highlighting the background of a row
+        # marked_text = Text(style=table.get_component_styles("datatable--cursor").rich_style)
+        # for column_index, cell in enumerate(table.get_row_at(row)):
+        #     if isinstance(cell, Text):
+        #         cell.style = table.get_component_styles("datatable--cursor").rich_style
+        #         table.update_cell_at(Coordinate(row, column_index), cell)
+        #     else:
+        #         table.update_cell_at(Coordinate(row, column_index), marked_text + cell)
+
+    def toggle_mark_row(self, row_key: RowKey, table: AsetuiTable) -> None:
+        if row_key in self.marked_rows:
+            self.marked_rows.remove(row_key)
+            table.rows[row_key].label = UNMARKED_LABEL
+        else:
+            table.rows[row_key].label = MARKED_LABEL
+            self.marked_rows.append(row_key)
+
+    def action_unmark_row(self) -> None:
+        table = self.query_one(AsetuiTable)
+        row_index = table.cursor_row
+        row_key = list(table.rows.keys())[row_index]
+        if row_key in self.marked_rows:
+            self.marked_rows.remove(row_key)
+            table.rows[row_key].label = UNMARKED_LABEL
+            table._update_count += 1
+            table.refresh_row(row_index)
+
+    def action_unmark_all(self) -> None:
+        table = self.query_one(AsetuiTable)
+        # Remove all marked rows in one go, this requires a full table
+        # refresh. I don't know if it would be faster to call
+        # action_unmark_row() for each row.
+        for row_key in self.marked_rows:
+            table.rows[row_key].label = UNMARKED_LABEL
+        self.marked_rows = []
+        table._update_count += 1
+        table.refresh()
+
+    def on_data_table_row_label_selected(
+        self, selected: DataTable.RowLabelSelected
+    ) -> None:
+        table = selected.data_table
+        self.toggle_mark_row(selected.row_key, table=table)
+        table._update_count += 1
+        table.refresh_row(selected.row_index)
+
+    # Details sidebar
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
         table = self.query_one(AsetuiTable)
@@ -143,6 +229,7 @@ class ASETUI(App):
         dv = self.query_one(Details)
         dv.display = show_details
 
+    # Column action
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
         # itself after a search.
@@ -174,8 +261,16 @@ class ASETUI(App):
 
     def action_view(self) -> None:
         table = self.query_one(AsetuiTable)
-        atoms = self.data.get_atoms(table.cursor_cell[0])
-        view(atoms)
+        if self.marked_rows:
+            images = [
+                self.data.get_atoms(get_id_from_row(table.get_row(row_key)))
+                for row_key in self.marked_rows
+            ]
+        else:
+            images = [
+                self.data.get_atoms(get_id_from_row(table.get_row_at(table.cursor_row)))
+            ]
+        view(images)
 
     def on_list_view_selected(self):
         print("Selected on App")
@@ -202,6 +297,10 @@ class ASETUI(App):
         super().exit()
 
 
+def get_id_from_row(row) -> int:
+    return int(str(row[0]))
+
+
 def populate_table(table: AsetuiTable, data: Data) -> None:
     # Columns
     for col in data.chosen_columns:
@@ -209,7 +308,7 @@ def populate_table(table: AsetuiTable, data: Data) -> None:
 
     # Populate rows by fetching data
     for row in data.string_df().itertuples(index=True):
-        table.add_row(*row[1:], key=row[0])
+        table.add_row(*row[1:], key=row[0], label=UNMARKED_LABEL)
 
 
 class MiddleContainer(Container):

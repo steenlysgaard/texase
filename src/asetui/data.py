@@ -65,7 +65,7 @@ class Data:
 
     def get_atoms(self, row) -> Atoms:
         db = connect(self.db_path)
-        return db.get_atoms(id=int(self.df.iloc[row].id))
+        return db.get_atoms(id=row)
 
     def add_to_chosen_columns(self, column) -> bool:
         if column not in self.chosen_columns and column in all_columns + self.user_keys:
