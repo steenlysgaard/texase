@@ -1,3 +1,5 @@
+from typing import List
+
 from textual.binding import Binding
 from textual.widgets import DataTable
 
@@ -9,3 +11,5 @@ class AsetuiTable(DataTable):
         Binding("l", "cursor_right", "Cursor Right", show=False),
         Binding("h", "cursor_left", "Cursor Left", show=False),
     ]
+
+    marked_rows: List = []

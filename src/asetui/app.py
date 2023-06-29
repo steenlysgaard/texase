@@ -52,7 +52,6 @@ class ASETUI(App):
         self.path = path
         self.sort_columns = ["id"]
         self.sort_reverse = False
-        self.marked_rows = []
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -160,7 +159,7 @@ class ASETUI(App):
         row_index = table.cursor_row
         row_key = table.coordinate_to_cell_key(Coordinate(row_index, 0)).row_key
         # row_key = list(table.rows.keys())[row_index]
-        self.toggle_mark_row(row_key, table)
+        toggle_mark_row(row_key, table)
 
         # Tell the table that something has changed so it will refresh properly
         table._update_count += 1
@@ -175,20 +174,12 @@ class ASETUI(App):
         #     else:
         #         table.update_cell_at(Coordinate(row, column_index), marked_text + cell)
 
-    def toggle_mark_row(self, row_key: RowKey, table: AsetuiTable) -> None:
-        if row_key in self.marked_rows:
-            self.marked_rows.remove(row_key)
-            table.rows[row_key].label = UNMARKED_LABEL
-        else:
-            table.rows[row_key].label = MARKED_LABEL
-            self.marked_rows.append(row_key)
-
     def action_unmark_row(self) -> None:
         table = self.query_one(AsetuiTable)
         row_index = table.cursor_row
         row_key = list(table.rows.keys())[row_index]
-        if row_key in self.marked_rows:
-            self.marked_rows.remove(row_key)
+        if row_key in table.marked_rows:
+            table.marked_rows.remove(row_key)
             table.rows[row_key].label = UNMARKED_LABEL
             table._update_count += 1
             table.refresh_row(row_index)
@@ -198,9 +189,9 @@ class ASETUI(App):
         # Remove all marked rows in one go, this requires a full table
         # refresh. I don't know if it would be faster to call
         # action_unmark_row() for each row.
-        for row_key in self.marked_rows:
+        for row_key in table.marked_rows:
             table.rows[row_key].label = UNMARKED_LABEL
-        self.marked_rows = []
+        table.marked_rows = []
         table._update_count += 1
         table.refresh()
 
@@ -208,7 +199,7 @@ class ASETUI(App):
         self, selected: DataTable.RowLabelSelected
     ) -> None:
         table = selected.data_table
-        self.toggle_mark_row(selected.row_key, table=table)
+        toggle_mark_row(selected.row_key, table=table)
         table._update_count += 1
         table.refresh_row(selected.row_index)
 
@@ -252,25 +243,37 @@ class ASETUI(App):
         column_to_remove = str(table.ordered_columns[cursor_column_index].label)
         # Remove the column from the table in data
         self.data.remove_from_chosen_columns(column_to_remove)
+        # Remember marked rows before clearing the table
+        marked_rows = self.get_marked_row_ids()
         # Clear the table including columns
         table.clear(columns=True)
         # Rebuilt the table with the currently chosen columns
-        populate_table(table, self.data)
+        populate_table(table, self.data, marked_rows=marked_rows)
         # Put the cursor back on the same column
         table.cursor_coordinate = table.validate_cursor_coordinate(
             Coordinate(cursor_row_index, cursor_column_index)
         )
+        
+    def get_marked_row_ids(self) -> List[int]:
+        """Return the ids of the rows that are currently marked"""
+        table = self.query_one(AsetuiTable)
+        return [
+            get_id_from_row(table.get_row(row_key))
+            for row_key in table.marked_rows
+        ]
 
     def watch_show_search(self, show_search: bool) -> None:
         searchbar = self.query_one(SearchBar)
         searchbar.display = show_search
 
     def action_view(self) -> None:
+        """View the currently selected images, if no images are
+        selected then view the row the cursor is on"""
         table = self.query_one(AsetuiTable)
-        if self.marked_rows:
+        if table.marked_rows:
             images = [
-                self.data.get_atoms(get_id_from_row(table.get_row(row_key)))
-                for row_key in self.marked_rows
+                self.data.get_atoms(id)
+                for id in self.get_marked_row_ids()
             ]
         else:
             images = [
@@ -304,17 +307,35 @@ class ASETUI(App):
 
 
 def get_id_from_row(row) -> int:
+    # This assumes that the first index of the row is the id
     return int(str(row[0]))
 
 
-def populate_table(table: AsetuiTable, data: Data) -> None:
+def toggle_mark_row(row_key: RowKey, table: AsetuiTable) -> None:
+    if row_key in table.marked_rows:
+        table.marked_rows.remove(row_key)
+        table.rows[row_key].label = UNMARKED_LABEL
+    else:
+        table.rows[row_key].label = MARKED_LABEL
+        table.marked_rows.append(row_key)
+
+
+def populate_table(table: AsetuiTable, data: Data, marked_rows: List[int] = None) -> None:
     # Columns
     for col in data.chosen_columns:
         table.add_column(col)
 
+    # Get ready for handling marked rows
+    marked_row_keys = []
+        
     # Populate rows by fetching data
     for row in data.string_df().itertuples(index=True):
-        table.add_row(*row[1:], key=row[0], label=UNMARKED_LABEL)
+        if marked_rows is not None and row[0] in marked_rows:
+            row_key = table.add_row(*row[1:], key=row[0], label=MARKED_LABEL)
+            marked_row_keys.append(row_key)
+        else:
+            table.add_row(*row[1:], key=row[0], label=UNMARKED_LABEL)
+    table.marked_rows = marked_row_keys
 
 
 class MiddleContainer(Container):
