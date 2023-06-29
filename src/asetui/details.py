@@ -1,5 +1,5 @@
 from textual.app import ComposeResult
-from textual.widgets import Static
+from textual.widgets import Label
 from textual.widgets import ListView
 from textual.containers import Container
 from rich.text import Text
@@ -23,6 +23,7 @@ class Details(Container):
         """Update the kvp widgets."""
         # Static (non-editable) key value pairs
         self.query_one(KVPStatic).update(static_kvps)
+        print(static_kvps)
 
         # Dynamic (editable) key value pairs
         kvp_widget = self.query_one(KVPList)
@@ -39,11 +40,11 @@ class Details(Container):
     def on_list_view_selected(self, sender):
         print('Selected on Details', sender.item, sender.time)
 
-class Title(Static):
+class Title(Label):
     pass
 
 
-class KVPStatic(Static):
+class KVPStatic(Label):
     pass
 
 
