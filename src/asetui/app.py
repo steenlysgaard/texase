@@ -85,6 +85,11 @@ class ASETUI(App):
         self.data = data
 
     def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
+        if not hasattr(self, 'data'):
+            # On first call data has not been set to the ASETUI object
+            # so we have to cheat it
+            return [DropdownItem('No match!')]
+        
         # Get the highlighted column
         used_columns = self.data.chosen_columns
         unused = []
