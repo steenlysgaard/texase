@@ -14,6 +14,14 @@ Details {
     dock: left;
 }
 
+#kvp {
+    height: 2fr;
+}
+
+#datalist {
+    min-height: 25%;
+}
+
 Title {
     background: $boost;
     color: $secondary;

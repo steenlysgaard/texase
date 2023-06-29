@@ -10,9 +10,9 @@ class Details(Container):
         yield Title(
             "Key value pairs ([@click=\"app.open_link('https://wiki.fysik.dtu.dk/ase/ase/units.html')\"]Units[/])"
         )
-        yield Container(KVPStatic(), KVPList())
+        yield Container(KVPStatic(), KVPList(), id="kvp")
         yield Title("Data")
-        yield DataList()
+        yield DataList(id="datalist")
 
     def set_focus(self) -> None:
         # Remember where old focus was and start from this. If this
@@ -23,7 +23,6 @@ class Details(Container):
         """Update the kvp widgets."""
         # Static (non-editable) key value pairs
         self.query_one(KVPStatic).update(static_kvps)
-        print(static_kvps)
 
         # Dynamic (editable) key value pairs
         kvp_widget = self.query_one(KVPList)
