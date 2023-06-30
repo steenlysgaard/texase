@@ -13,22 +13,34 @@ HELP_MARKDOWN = """\
 - `Alt-<`: Go to top
 - `Alt->`: Go to bottom
 
+<br>
+
 - `Space`: Mark/unmark row
 - `u`: Unmark row
 - `U`: Unmark all rows
 - `D`: Delete marked rows (prompts y/n)
 - `x`: Export marked rows to file (prompts for filename)
 
+<br>
+
 - `v`: View marked rows (if no rows are marked then view current row)
+
+<br>
 
 - `/`: Filter rows (prompts for filter string)
 - `Ctrl-s`: Search rows (prompts for search string)
 - `e`: Edit field (if editable)
 
+<br>
+
 - `f`: Open details
+
+<br>
 
 - `+`: Add column
 - `-`: Remove current selected column
+
+<br>
 
 - `?`: Toggle this help
 - `q`: Quit
