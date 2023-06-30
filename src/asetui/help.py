@@ -1,0 +1,39 @@
+from textual.containers import Container
+from textual.app import ComposeResult
+from textual.widgets import Markdown
+
+HELP_MARKDOWN = """\
+# Help
+
+[See also (clicking links doesn't work)](https://github.com/steenlysgaard/asetui)
+
+## Key bindings
+
+- `h,j,k,l` or arrow keys: Movement
+- `Alt-<`: Go to top
+- `Alt->`: Go to bottom
+
+- `Space`: Mark/unmark row
+- `u`: Unmark row
+- `U`: Unmark all rows
+- `D`: Delete marked rows (prompts y/n)
+- `x`: Export marked rows to file (prompts for filename)
+
+- `v`: View marked rows (if no rows are marked then view current row)
+
+- `/`: Filter rows (prompts for filter string)
+- `Ctrl-s`: Search rows (prompts for search string)
+- `e`: Edit field (if editable)
+
+- `f`: Open details
+
+- `+`: Add column
+- `-`: Remove current selected column
+
+- `?`: Toggle this help
+- `q`: Quit
+
+"""
+class Help(Container):
+    def compose(self) -> ComposeResult:
+        yield Markdown(HELP_MARKDOWN, id="help")

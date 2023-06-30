@@ -24,6 +24,7 @@ from ase.db.table import all_columns
 from asetui.data import instantiate_data, Data
 from asetui.table import AsetuiTable
 from asetui.details import Details
+from asetui.help import Help
 from asetui.search import SearchBar
 
 # The labels showing marked and unmarked rows
@@ -34,6 +35,7 @@ UNMARKED_LABEL = Text("\u2219", style="grey")
 class ASETUI(App):
     BINDINGS = [
         ("q", "quit", "Quit"),
+        ("?", "toggle_help", "Help"),
         ("s", "sort_column", "Sort"),
         ("f", "toggle_details", "Show details"),
         ("v", "view", "View"),
@@ -46,6 +48,7 @@ class ASETUI(App):
     CSS_PATH = "asetui.css"
 
     show_details = var(False)
+    show_help = var(False)
     show_search = var(False)
 
     def __init__(self, path: str = "test/test.db") -> None:
@@ -68,6 +71,7 @@ class ASETUI(App):
                 id="searchbar",
             ),
             Details(id="details"),
+            Help(id="help"),
             AsetuiTable(id="table"),
         )
 
@@ -231,6 +235,15 @@ class ASETUI(App):
         dv = self.query_one(Details)
         dv.display = show_details
 
+    # Help sidebar
+    def action_toggle_help(self) -> None:
+        self.show_help = not self.show_help
+
+    def watch_show_help(self, show_help: bool) -> None:
+        """Called when show_details is modified."""
+        help_view = self.query_one(Help)
+        help_view.display = show_help
+        
     # Column action
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
