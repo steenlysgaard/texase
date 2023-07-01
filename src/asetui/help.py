@@ -10,8 +10,7 @@ HELP_MARKDOWN = """\
 ## Key bindings
 
 - `h,j,k,l` or arrow keys: Movement
-- `Alt-<`: Go to top
-- `Alt->`: Go to bottom
+- `</>` or `home/end`: Go to top/bottom
 
 <br>
 

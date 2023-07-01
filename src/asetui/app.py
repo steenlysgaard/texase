@@ -44,6 +44,8 @@ class ASETUI(App):
         ("space", "mark_row", "Mark row"),
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
+        Binding("<", "move_to_top", "Move the cursor to the top", show=False),
+        Binding(">", "move_to_bottom", "Move the cursor to the bottom", show=False),
     ]
     CSS_PATH = "asetui.css"
 
@@ -162,6 +164,15 @@ class ASETUI(App):
         # self.refresh()
         # table.sort(*self.sort_columns, reverse=self.sort_reverse)
 
+    # Movement
+    def action_move_to_top(self) -> None:
+        table = self.query_one(AsetuiTable)
+        table.cursor_coordinate = Coordinate(0, table.cursor_column)
+
+    def action_move_to_bottom(self) -> None:
+        table = self.query_one(AsetuiTable)
+        table.cursor_coordinate = Coordinate(len(table.rows) - 1, table.cursor_column)
+        
     # Selecting/marking rows
     def action_mark_row(self) -> None:
         table = self.query_one(AsetuiTable)
