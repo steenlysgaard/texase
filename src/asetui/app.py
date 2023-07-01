@@ -25,7 +25,7 @@ from asetui.data import instantiate_data, Data
 from asetui.table import AsetuiTable
 from asetui.details import Details
 from asetui.help import Help
-from asetui.search import SearchBar
+from asetui.search import ColumnAdd, Search
 
 # The labels showing marked and unmarked rows
 MARKED_LABEL = Text("\u25cf", style="bright_yellow")
@@ -44,6 +44,7 @@ class ASETUI(App):
         ("space", "mark_row", "Mark row"),
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
+        Binding("ctrl+s", "search", "Search", show=False),
         Binding("<", "move_to_top", "Move the cursor to the top", show=False),
         Binding(">", "move_to_bottom", "Move the cursor to the bottom", show=False),
     ]
@@ -51,7 +52,8 @@ class ASETUI(App):
 
     show_details = var(False)
     show_help = var(False)
-    show_search = var(False)
+    show_column_add = var(False)
+    show_search_box = var(False)
 
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
@@ -64,13 +66,18 @@ class ASETUI(App):
         yield Header()
         yield Footer()
         yield MiddleContainer(
-            SearchBar(
+            ColumnAdd(
                 Label("Search"),
                 AutoComplete(
-                    Searchbox(id="search-box", placeholder="Column to add.."),
+                    Input(id="column-add-box", placeholder="Column to add.."),
                     Dropdown(items=self.unused_columns),
                 ),
-                id="searchbar",
+                classes="searchbar",
+            ),
+            Search(
+                Label("Search"),
+                Input(id="search-box", placeholder="Search.."),
+                classes="searchbar",
             ),
             Details(id="details"),
             Help(id="help"),
@@ -251,16 +258,27 @@ class ASETUI(App):
         self.show_help = not self.show_help
 
     def watch_show_help(self, show_help: bool) -> None:
-        """Called when show_details is modified."""
+        """Called when show_help is modified."""
         help_view = self.query_one(Help)
         help_view.display = show_help
+        
+    # Search
+    def action_search(self) -> None:
+        # Change this to True when the search bar is able to close
+        # itself after a search.
+        self.show_search_box = True
+        self.query_one('#search-box').focus()
+    
+    def watch_show_search_box(self, show_search_box: bool) -> None:
+        searchbar = self.query_one(Search)
+        searchbar.display = show_search_box
         
     # Column action
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
         # itself after a search.
-        self.show_search = True
-        self.query_one(Searchbox).focus()
+        self.show_column_add = True
+        self.query_one('#column-add-box').focus()
 
     def action_remove_column(self) -> None:
         """This is currently done by removing the column from the data
@@ -291,14 +309,14 @@ class ASETUI(App):
             for row_key in table.marked_rows
         ]
 
-    def watch_show_search(self, show_search: bool) -> None:
-        searchbar = self.query_one(SearchBar)
-        searchbar.display = show_search
+    def watch_show_column_add(self, show_column_add: bool) -> None:
+        searchbar = self.query_one(ColumnAdd)
+        searchbar.display = show_column_add
 
     def action_view(self) -> None:
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
-        table = self.query_one(AsetuiTable)
+        table = self.qucry_one(AsetuiTable)
         if table.marked_rows:
             images = [
                 self.data.get_atoms(id)
@@ -314,21 +332,22 @@ class ASETUI(App):
         print("Selected on App")
 
     def on_input_submitted(self, submitted):
-        # Check if value is a possible column
-        if self.data.add_to_chosen_columns(submitted.value):
-            self.query_one(Searchbox).value = ""
-            self.show_search = False
-            table = self.query_one(AsetuiTable)
-            col_key = table.add_column(submitted.value)
-            # NOTE: data and table rows should be in the same order
-            values = self.data.string_column(submitted.value)
-            table_rows = list(table.rows)
-            for row, val in zip(table_rows[:-1], values[:-1]):
-                table.update_cell(row, col_key, val)
-            table.update_cell(
-                table_rows[-1], col_key, values.iloc[-1], update_width=True
-            )
-            table.focus()
+        if submitted.control.id == "column-add-box":
+            # Check if value is a possible column
+            if self.data.add_to_chosen_columns(submitted.value):
+                self.query_one("#column-add-box").value = ""
+                self.show_column_add = False
+                table = self.query_one(AsetuiTable)
+                col_key = table.add_column(submitted.value)
+                # NOTE: data and table rows should be in the same order
+                values = self.data.string_column(submitted.value)
+                table_rows = list(table.rows)
+                for row, val in zip(table_rows[:-1], values[:-1]):
+                    table.update_cell(row, col_key, val)
+                table.update_cell(
+                    table_rows[-1], col_key, values.iloc[-1], update_width=True
+                )
+                table.focus()
 
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
@@ -368,10 +387,6 @@ def populate_table(table: AsetuiTable, data: Data, marked_rows: List[int] = None
 
 
 class MiddleContainer(Container):
-    pass
-
-
-class Searchbox(Input):
     pass
 
 

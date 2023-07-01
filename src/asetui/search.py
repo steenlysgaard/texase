@@ -1,4 +1,7 @@
 from textual.containers import Container
 
-class SearchBar(Container):
+class ColumnAdd(Container):
+    pass
+
+class Search(Container):
     pass
