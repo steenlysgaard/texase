@@ -41,6 +41,7 @@ HELP_MARKDOWN = """\
 
 <br>
 
+- `Ctrl-g`: Hide all boxes, show only table
 - `?`: Toggle this help
 - `q`: Quit
 
