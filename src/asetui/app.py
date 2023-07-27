@@ -45,6 +45,7 @@ class ASETUI(App):
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
         Binding("ctrl+s", "search", "Search", show=False),
+        Binding("ctrl+g", "hide_all", "Hide all boxes", show=False),
         Binding("<", "move_to_top", "Move the cursor to the top", show=False),
         Binding(">", "move_to_bottom", "Move the cursor to the bottom", show=False),
     ]
@@ -98,11 +99,11 @@ class ASETUI(App):
         self.data = data
 
     def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
-        if not hasattr(self, 'data'):
+        if not hasattr(self, "data"):
             # On first call data has not been set to the ASETUI object
             # so we have to cheat it
-            return [DropdownItem('No match!')]
-        
+            return [DropdownItem("No match!")]
+
         # Get the highlighted column
         used_columns = self.data.chosen_columns
         unused = []
@@ -142,7 +143,7 @@ class ASETUI(App):
     def sort_table(self, col_name: str, table: AsetuiTable) -> None:
         # Save the row key of the current cursor position
         row_key = table.coordinate_to_cell_key(Coordinate(table.cursor_row, 0)).row_key
-        
+
         # Sort the table
         if len(self.sort_columns) > 0 and col_name == self.sort_columns[0]:
             # If the column is already the first in the sort order, toggle the sort order
@@ -159,9 +160,11 @@ class ASETUI(App):
         )
         table._update_count += 1
         table.refresh()
-        
+
         # After finished sort make the cursor go to the same cell as before sorting
-        table.cursor_coordinate = Coordinate(table._row_locations.get(row_key), table.cursor_column)
+        table.cursor_coordinate = Coordinate(
+            table._row_locations.get(row_key), table.cursor_column
+        )
 
         # How sort does it:
         # self._row_locations = TwoWayDict(
@@ -179,7 +182,7 @@ class ASETUI(App):
     def action_move_to_bottom(self) -> None:
         table = self.query_one(AsetuiTable)
         table.cursor_coordinate = Coordinate(len(table.rows) - 1, table.cursor_column)
-        
+
     # Selecting/marking rows
     def action_mark_row(self) -> None:
         table = self.query_one(AsetuiTable)
@@ -253,6 +256,14 @@ class ASETUI(App):
         dv = self.query_one(Details)
         dv.display = show_details
 
+    def action_hide_all(self) -> None:
+        self.show_details = False
+        self.show_help = False
+        self.show_column_add = False
+        self.show_search_box = False
+        self.query_one(AsetuiTable).focus()
+        
+
     # Help sidebar
     def action_toggle_help(self) -> None:
         self.show_help = not self.show_help
@@ -261,24 +272,24 @@ class ASETUI(App):
         """Called when show_help is modified."""
         help_view = self.query_one(Help)
         help_view.display = show_help
-        
+
     # Search
     def action_search(self) -> None:
         # Change this to True when the search bar is able to close
         # itself after a search.
         self.show_search_box = True
-        self.query_one('#search-box').focus()
-    
+        self.query_one("#search-box").focus()
+
     def watch_show_search_box(self, show_search_box: bool) -> None:
         searchbar = self.query_one(Search)
         searchbar.display = show_search_box
-        
+
     # Column action
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
         # itself after a search.
         self.show_column_add = True
-        self.query_one('#column-add-box').focus()
+        self.query_one("#column-add-box").focus()
 
     def action_remove_column(self) -> None:
         """This is currently done by removing the column from the data
@@ -300,13 +311,12 @@ class ASETUI(App):
         table.cursor_coordinate = table.validate_cursor_coordinate(
             Coordinate(cursor_row_index, cursor_column_index)
         )
-        
+
     def get_marked_row_ids(self) -> List[int]:
         """Return the ids of the rows that are currently marked"""
         table = self.query_one(AsetuiTable)
         return [
-            get_id_from_row(table.get_row(row_key))
-            for row_key in table.marked_rows
+            get_id_from_row(table.get_row(row_key)) for row_key in table.marked_rows
         ]
 
     def watch_show_column_add(self, show_column_add: bool) -> None:
@@ -316,12 +326,9 @@ class ASETUI(App):
     def action_view(self) -> None:
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
-        table = self.qucry_one(AsetuiTable)
+        table = self.query_one(AsetuiTable)
         if table.marked_rows:
-            images = [
-                self.data.get_atoms(id)
-                for id in self.get_marked_row_ids()
-            ]
+            images = [self.data.get_atoms(id) for id in self.get_marked_row_ids()]
         else:
             images = [
                 self.data.get_atoms(get_id_from_row(table.get_row_at(table.cursor_row)))
@@ -368,14 +375,16 @@ def toggle_mark_row(row_key: RowKey, table: AsetuiTable) -> None:
         table.marked_rows.append(row_key)
 
 
-def populate_table(table: AsetuiTable, data: Data, marked_rows: List[int] = None) -> None:
+def populate_table(
+    table: AsetuiTable, data: Data, marked_rows: List[int] = None
+) -> None:
     # Columns
     for col in data.chosen_columns:
         table.add_column(col)
 
     # Get ready for handling marked rows
     marked_row_keys = []
-        
+
     # Populate rows by fetching data
     for row in data.string_df().itertuples(index=True):
         if marked_rows is not None and row[0] in marked_rows:
