@@ -275,10 +275,13 @@ class ASETUI(App):
 
     # Search
     def action_search(self) -> None:
-        # Change this to True when the search bar is able to close
-        # itself after a search.
+        # show_search_box is set to True since the search bar is able
+        # to close itself after a search.
         self.show_search_box = True
-        self.query_one("#search-box").focus()
+        self.query_one("#search-box").focus()  # This is the input box
+        
+        search = self.query_one(Search)
+        search._table = self.query_one(AsetuiTable)
 
     def watch_show_search_box(self, show_search_box: bool) -> None:
         searchbar = self.query_one(Search)
