@@ -1,4 +1,22 @@
+from textual.containers import Container
 from textual.suggester import Suggester
+from textual.widgets import Input
+
+from asetui.table import AsetuiTable
+
+class ColumnAdd(Container):
+    pass
+
+class Filter(Container):
+    def on_input_submitted(self, input: Input) -> None:
+        """Called when the user presses enter on the filtervalue input."""
+        print(input.value)
+        
+        key = self.query_one("#filterkey").value
+        op = self.query_one("#filteroperator").value
+        
+        self.query_one(AsetuiTable).add_filter(key, op, input.value)
+        
 
 class FilterSuggester(Suggester):
     """Give completion suggestions based either on columns or values
@@ -17,12 +35,13 @@ class FilterSuggester(Suggester):
                 with that same casing.
         """
         super().__init__(case_sensitive=case_sensitive)
-        self._suggestions = list(suggestions)
-        self._for_comparison = (
-            self._suggestions
-            if self.case_sensitive
-            else [suggestion.casefold() for suggestion in self._suggestions]
-        )
+        self._app = app
+        # self._suggestions = list(suggestions)
+        # self._for_comparison = (
+        #     self._suggestions
+        #     if self.case_sensitive
+        #     else [suggestion.casefold() for suggestion in self._suggestions]
+        # )
 
 class ColumnSuggester(FilterSuggester):
     async def get_suggestion(self, value: str) -> str | None:
@@ -34,7 +53,9 @@ class ColumnSuggester(FilterSuggester):
         Returns:
             A valid completion suggestion or `None`.
         """
-        for idx, suggestion in enumerate(self._for_comparison):
+        possible_suggestions = self._app.data.chosen_columns
+        for idx, suggestion in enumerate(possible_suggestions):
             if suggestion.startswith(value):
-                return self._suggestions[idx]
+                return possible_suggestions[idx]
         return None    
+    

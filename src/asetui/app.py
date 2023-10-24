@@ -1,9 +1,7 @@
-from typing import List
-
-from rich.text import Text
+from typing import List, Union
 
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, Input, Label
+from textual.widgets import Footer, Header, Input, Label, Select
 from textual.widgets._data_table import StringKey, RowKey, DataTable
 from textual.binding import Binding
 from textual.containers import Container
@@ -26,10 +24,8 @@ from asetui.table import AsetuiTable
 from asetui.details import Details
 from asetui.help import Help
 from asetui.search import ColumnAdd, Search
-
-# The labels showing marked and unmarked rows
-MARKED_LABEL = Text("\u25cf", style="bright_yellow")
-UNMARKED_LABEL = Text("\u2219", style="grey")
+from asetui.filter import Filter, FilterSuggester, ColumnSuggester
+from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL
 
 
 class ASETUI(App):
@@ -82,6 +78,17 @@ class ASETUI(App):
                 Input(id="search-box", placeholder="Search.."),
                 classes="searchbar",
             ),
+            Filter(Input(placeholder="Filter on column..",
+                         suggester=ColumnSuggester(self),
+                              id="filterkey"),
+                        Select([("==", "=="), (">", ">"), ("<", "<")],
+                               value="==",
+                               allow_blank=False,
+                               id="filteroperator"),
+                        Input(placeholder="Value",
+                              id="filtervalue"),
+                classes="searchbar",
+            ),
             Details(id="details"),
             Help(id="help"),
             AsetuiTable(id="table"),
@@ -95,7 +102,7 @@ class ASETUI(App):
         table = self.query_one(AsetuiTable)
 
         # Populate table with data using an external function
-        populate_table(table, data)
+        table.populate_table(data)
 
         table.focus()
         self.data = data
@@ -293,7 +300,11 @@ class ASETUI(App):
     # Filter
     def action_filter(self) -> None:
         self.show_filter = True
-        self.query_one("#filter-box").focus()
+        self.query_one("#filterkey").focus()
+
+        # search = self.query_one(Search)
+        # search._table = self.query_one(AsetuiTable)
+        # search._data = self.data
         
     def watch_show_filter(self, show_filter: bool) -> None:
         searchbar = self.query_one(Filter)
@@ -321,7 +332,7 @@ class ASETUI(App):
         # Clear the table including columns
         table.clear(columns=True)
         # Rebuilt the table with the currently chosen columns
-        populate_table(table, self.data, marked_rows=marked_rows)
+        table.populate_table(self.data, marked_rows=marked_rows)
         # Put the cursor back on the same column
         table.cursor_coordinate = table.validate_cursor_coordinate(
             Coordinate(cursor_row_index, cursor_column_index)
@@ -389,25 +400,6 @@ def toggle_mark_row(row_key: RowKey, table: AsetuiTable) -> None:
         table.rows[row_key].label = MARKED_LABEL
         table.marked_rows.append(row_key)
 
-
-def populate_table(
-    table: AsetuiTable, data: Data, marked_rows: List[int] = None
-) -> None:
-    # Columns
-    for col in data.chosen_columns:
-        table.add_column(col)
-
-    # Get ready for handling marked rows
-    marked_row_keys = []
-
-    # Populate rows by fetching data
-    for row in data.string_df().itertuples(index=True):
-        if marked_rows is not None and row[0] in marked_rows:
-            row_key = table.add_row(*row[1:], key=row[0], label=MARKED_LABEL)
-            marked_row_keys.append(row_key)
-        else:
-            table.add_row(*row[1:], key=row[0], label=UNMARKED_LABEL)
-    table.marked_rows = marked_row_keys
 
 
 class MiddleContainer(Container):

@@ -45,13 +45,30 @@ Title {
 .searchbar {
     width: 40%;
     height: 10;
-    
+    layer: search;
 }
 
 ColumnAdd {
     layer: columnadd;
 }
 
-Search {
-    layer: search;
+/* Search { */
+/* } */
+#filterkey {
+    max-width: 40%;
+    min-width: 20%;
+    # height: 3;
+    # border: round grey;
+}
+
+#filtervalue {
+    max-width: 40%;
+    min-width: 20%;
+    height: 3;
+    border: round grey;
+}
+
+Filter {
+    align: center middle;
+    layout: horizontal;
 }

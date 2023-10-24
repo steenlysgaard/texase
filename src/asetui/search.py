@@ -5,9 +5,12 @@ class ColumnAdd(Container):
 
 class Search(Container):
     _table = None
+    _data = None
     
     def on_input_changed(self, input):
+        print("on_input_changed")
         print(input)
-        for row_key, row in self._table.rows.items():
-            print(row)
+        print(self._data.search_for_string(input.value))
+        # for row_key, row in self._table.rows.items():
+        #     print(row)
 
