@@ -45,6 +45,7 @@ class ASETUI(App):
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
         Binding("ctrl+s", "search", "Search", show=False),
+        Binding("ctrl+f", "filter", "Filter", show=False),
         Binding("ctrl+g", "hide_all", "Hide all boxes", show=False),
         Binding("<", "move_to_top", "Move the cursor to the top", show=False),
         Binding(">", "move_to_bottom", "Move the cursor to the bottom", show=False),
@@ -55,6 +56,7 @@ class ASETUI(App):
     show_help = var(False)
     show_column_add = var(False)
     show_search_box = var(False)
+    show_filter = var(False)
 
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
@@ -282,11 +284,21 @@ class ASETUI(App):
         
         search = self.query_one(Search)
         search._table = self.query_one(AsetuiTable)
+        search._data = self.data
 
     def watch_show_search_box(self, show_search_box: bool) -> None:
         searchbar = self.query_one(Search)
         searchbar.display = show_search_box
 
+    # Filter
+    def action_filter(self) -> None:
+        self.show_filter = True
+        self.query_one("#filter-box").focus()
+        
+    def watch_show_filter(self, show_filter: bool) -> None:
+        searchbar = self.query_one(Filter)
+        searchbar.display = show_filter
+        
     # Column action
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
