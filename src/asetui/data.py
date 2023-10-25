@@ -22,6 +22,16 @@ ops = {'<': operator.lt,
        '>': operator.gt,
        '!=': operator.ne}
 
+# If the operator is the key then convert the comparison value with
+# the function specified in the value
+def nothing(_): pass
+operator_type_conversion = {'<': float,
+                            '<=': float,
+                            '==': nothing,
+                            '>=': float,
+                            '>': float,
+                            '!=': nothing}
+
 @dataclass
 class Data:
     df: pd.DataFrame
@@ -54,8 +64,9 @@ class Data:
         return self.get_df()[column].map(format_value, na_action="ignore").fillna("")
 
     def sort(self, columns, reverse):
-        self.get_df().sort_values(columns, ascending=not reverse, inplace=True)
-        return self.df.index
+        df = self.get_df()
+        df.sort_values(columns, ascending=not reverse, inplace=True)
+        return df.index
 
     def row_details(self, row) -> Tuple[Text, list]:
         """Returns key value pairs from the row in two items:"""
@@ -115,9 +126,18 @@ class Data:
     def filter(self) -> List:
         return self._filter
     
+    def add_filter(self, key, operator, value) -> None:
+        # We get the value as a string. Maybe we should convert it to
+        # the correct type if the column values are not strings? But
+        # how do we know? We try to deduce from the operator
+        
+        value = operator_type_conversion[operator](value)
+        
+        self._filter.append((key, operator, value))
+    
     @filter.setter
-    def filter(self, value) -> None:
-        self._filter.append(value)
+    def filter(self, _) -> None:
+        raise NotImplementedError("Use add_filter instead")
         
     @filter.deleter
     def filter(self) -> None:

@@ -21,8 +21,7 @@ class AsetuiTable(DataTable):
         self.clear()
         
         # Add the filter to the data object
-        # Maybe rather have an add filter method so we can remove single filters as well
-        self.ancestors[-1].data.filter((key, operator, value))
+        self.ancestors[-1].data.add_filter(key, operator, value)
         
         # Rebuild the table
         self.populate_table(self.ancestors[-1].data,

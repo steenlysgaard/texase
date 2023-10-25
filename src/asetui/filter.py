@@ -3,7 +3,6 @@ from textual.suggester import Suggester
 from textual.widgets import Input
 
 from asetui.table import AsetuiTable
-
 class ColumnAdd(Container):
     pass
 
@@ -15,7 +14,18 @@ class Filter(Container):
         key = self.query_one("#filterkey").value
         op = self.query_one("#filteroperator").value
         
-        self.query_one(AsetuiTable).add_filter(key, op, input.value)
+        # Not great way to get the table
+        app = self.ancestors[-1]
+        table = app.query_one(AsetuiTable)
+        table.add_filter(key, op, input.value)
+        
+        # Hide yourself
+        app.show_filter = False
+        
+        # Maybe clear the input
+        
+        # Focus on the table
+        table.focus()
         
 
 class FilterSuggester(Suggester):
