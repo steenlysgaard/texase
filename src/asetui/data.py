@@ -15,22 +15,30 @@ from textual.widgets import ListItem, Label
 
 from asetui.saved_columns import SavedColumns
 
-ops = {'<': operator.lt,
-       '<=': operator.le,
-       '==': operator.eq,
-       '>=': operator.ge,
-       '>': operator.gt,
-       '!=': operator.ne}
+ops = {
+    "==": operator.eq,
+    "!=": operator.ne,
+    "<": operator.lt,
+    ">": operator.gt,
+    "<=": operator.le,
+    ">=": operator.ge,
+}
 
 # If the operator is the key then convert the comparison value with
 # the function specified in the value
-def nothing(_): pass
-operator_type_conversion = {'<': float,
-                            '<=': float,
-                            '==': nothing,
-                            '>=': float,
-                            '>': float,
-                            '!=': nothing}
+def nothing(x):
+    return x
+
+
+operator_type_conversion = {
+    "<": float,
+    "<=": float,
+    "==": nothing,
+    ">=": float,
+    ">": float,
+    "!=": nothing,
+}
+
 
 @dataclass
 class Data:
@@ -118,40 +126,43 @@ class Data:
 
     def search_for_string(self, search_string: str):
         # Use the raw dataframe
-        mask = np.column_stack([self.df[col].astype(str).str.contains(search_string, na=False) for col in self.df])
+        mask = np.column_stack(
+            [
+                self.df[col].astype(str).str.contains(search_string, na=False)
+                for col in self.df
+            ]
+        )
         # df.loc[mask.any(axis=1)]
         return mask
-    
+
     @property
     def filter(self) -> List:
         return self._filter
-    
+
     def add_filter(self, key, operator, value) -> None:
         # We get the value as a string. Maybe we should convert it to
         # the correct type if the column values are not strings? But
         # how do we know? We try to deduce from the operator
-        
+
         value = operator_type_conversion[operator](value)
-        
+
         self._filter.append((key, operator, value))
-    
+
     @filter.setter
     def filter(self, _) -> None:
         raise NotImplementedError("Use add_filter instead")
-        
+
     @filter.deleter
     def filter(self) -> None:
         self._filter = []
-        
+
     def get_df(self) -> pd.DataFrame:
         df = self.df
         for filter_key, op, filter_value in self.filter:
             df = df[ops[op](df[filter_key], filter_value)]
         return df
-        
 
 
-        
 def format_value(val) -> Union[Text, str]:
     if isinstance(val, str):
         return val
