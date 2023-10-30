@@ -43,7 +43,7 @@ Title {
 }
 
 .searchbar {
-    width: 40%;
+    width: 70%;
     height: 10;
     layer: search;
 }
@@ -57,15 +57,33 @@ ColumnAdd {
 #filterkey {
     max-width: 40%;
     min-width: 20%;
-    # height: 3;
-    # border: round grey;
+    /* height: 3; */
+    /* border: round grey; */
 }
 
 #filtervalue {
     max-width: 40%;
     min-width: 20%;
-    height: 3;
-    border: round grey;
+}
+
+#filteroperator {
+    width: 10;
+}
+
+.filter-buttons {
+    min-width: 5;
+}
+
+#add-filter {
+    width: 6;
+}
+
+#only-marked-checkbox {
+    dock: bottom;
+}
+
+#filter-box {
+    height: 50%;
 }
 
 Filter {

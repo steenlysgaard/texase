@@ -53,10 +53,9 @@ class Data:
     def __post_init__(self):
         if self.row_cache is None:
             self.row_cache = {}
-        if self.data_filter is None:
-            self._filter = []
-        else:
-            self._filter = self.data_filter
+        self._filter = []
+        if self.data_filter is not None:
+            self.add_filter(*self.data_filter)
         self.db_path = Path(self.db_path).resolve()
         self.saved_columns = SavedColumns()
         self.update_chosen_columns()
@@ -144,9 +143,10 @@ class Data:
         # the correct type if the column values are not strings? But
         # how do we know? We try to deduce from the operator
 
-        value = operator_type_conversion[operator](value)
-
         self._filter.append((key, operator, value))
+        
+    def remove_filter(self, filter_tuple: Tuple[str, str, str]) -> None:
+        self._filter.remove(filter_tuple)
 
     @filter.setter
     def filter(self, _) -> None:
@@ -159,8 +159,19 @@ class Data:
     def get_df(self) -> pd.DataFrame:
         df = self.df
         for filter_key, op, filter_value in self.filter:
-            df = df[ops[op](df[filter_key], filter_value)]
+            df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
         return df
+    
+    def get_df_with_filter(self, filter_tuple: Tuple[str, str, str]) -> pd.DataFrame:
+        df = self.df
+        # Unpack filter_tuple
+        filter_key, op, filter_value = filter_tuple
+        df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
+        return df
+    
+    def get_index_of_df_with_filter(self, filter_tuple: Tuple[str, str, str]) -> pd.Index:
+        df = self.get_df_with_filter(filter_tuple)
+        return df.index
 
 
 def format_value(val) -> Union[Text, str]:

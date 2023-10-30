@@ -1,8 +1,8 @@
 from typing import List, Union
 
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, Input, Label, Select
-from textual.widgets._data_table import StringKey, RowKey, DataTable
+from textual.widgets import Footer, Header, Input, Label
+from textual.widgets._data_table import StringKey, DataTable
 from textual.binding import Binding
 from textual.containers import Container
 from textual.coordinate import Coordinate
@@ -24,30 +24,18 @@ from asetui.table import AsetuiTable
 from asetui.details import Details
 from asetui.help import Help
 from asetui.search import ColumnAdd, Search
-from asetui.filter import Filter, FilterSuggester, ColumnSuggester
-from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL
+from asetui.filter import Filter, FilterBox
 
 
 class ASETUI(App):
     BINDINGS = [
-        ("q", "quit", "Quit"),
-        ("?", "toggle_help", "Help"),
-        ("s", "sort_column", "Sort"),
-        ("f", "toggle_details", "Show details"),
-        ("v", "view", "View"),
-        ("+", "add_column", "Add column"),
-        ("-", "remove_column", "Remove column"),
-        ("space", "mark_row", "Mark row"),
-        Binding("u", "unmark_row", "Unmark row", show=False),
-        Binding("U", "unmark_all", "Unmark all", show=False),
-        Binding("ctrl+s", "search", "Search", show=False),
-        Binding("ctrl+f", "filter", "Filter", show=False),
         Binding("ctrl+g", "hide_all", "Hide all boxes", show=False),
-        Binding("<", "move_to_top", "Move the cursor to the top", show=False),
-        Binding(">", "move_to_bottom", "Move the cursor to the bottom", show=False),
     ]
+    
     CSS_PATH = "asetui.css"
 
+    # variables that are watched. Remember also to add them to the
+    # action_hide_all function
     show_details = var(False)
     show_help = var(False)
     show_column_add = var(False)
@@ -78,17 +66,10 @@ class ASETUI(App):
                 Input(id="search-box", placeholder="Search.."),
                 classes="searchbar",
             ),
-            Filter(Input(placeholder="Filter on column..",
-                         suggester=ColumnSuggester(self),
-                              id="filterkey"),
-                        Select([("==", "=="), (">", ">"), ("<", "<")],
-                               value="==",
-                               allow_blank=False,
-                               id="filteroperator"),
-                        Input(placeholder="Value",
-                              id="filtervalue"),
-                classes="searchbar",
-            ),
+            # ScrollableContainer(Filter(),
+            #                     Checkbox("Only mark filtered", id="only-marked-checkbox"),
+            #                     id="filter-box", classes="searchbar"),
+            FilterBox(id="filter-box", classes="searchbar"),
             Details(id="details"),
             Help(id="help"),
             AsetuiTable(id="table"),
@@ -192,56 +173,6 @@ class ASETUI(App):
         table = self.query_one(AsetuiTable)
         table.cursor_coordinate = Coordinate(len(table.rows) - 1, table.cursor_column)
 
-    # Selecting/marking rows
-    def action_mark_row(self) -> None:
-        table = self.query_one(AsetuiTable)
-        row_index = table.cursor_row
-        row_key = table.coordinate_to_cell_key(Coordinate(row_index, 0)).row_key
-        # row_key = list(table.rows.keys())[row_index]
-        toggle_mark_row(row_key, table)
-
-        # Tell the table that something has changed so it will refresh properly
-        table._update_count += 1
-        table.refresh_row(row_index)
-
-        # # Best effort so far for highlighting the background of a row
-        # marked_text = Text(style=table.get_component_styles("datatable--cursor").rich_style)
-        # for column_index, cell in enumerate(table.get_row_at(row)):
-        #     if isinstance(cell, Text):
-        #         cell.style = table.get_component_styles("datatable--cursor").rich_style
-        #         table.update_cell_at(Coordinate(row, column_index), cell)
-        #     else:
-        #         table.update_cell_at(Coordinate(row, column_index), marked_text + cell)
-
-    def action_unmark_row(self) -> None:
-        table = self.query_one(AsetuiTable)
-        row_index = table.cursor_row
-        row_key = list(table.rows.keys())[row_index]
-        if row_key in table.marked_rows:
-            table.marked_rows.remove(row_key)
-            table.rows[row_key].label = UNMARKED_LABEL
-            table._update_count += 1
-            table.refresh_row(row_index)
-
-    def action_unmark_all(self) -> None:
-        table = self.query_one(AsetuiTable)
-        # Remove all marked rows in one go, this requires a full table
-        # refresh. I don't know if it would be faster to call
-        # action_unmark_row() for each row.
-        for row_key in table.marked_rows:
-            table.rows[row_key].label = UNMARKED_LABEL
-        table.marked_rows = []
-        table._update_count += 1
-        table.refresh()
-
-    def on_data_table_row_label_selected(
-        self, selected: DataTable.RowLabelSelected
-    ) -> None:
-        table = selected.data_table
-        toggle_mark_row(selected.row_key, table=table)
-        table._update_count += 1
-        table.refresh_row(selected.row_index)
-
     # Details sidebar
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
@@ -270,6 +201,7 @@ class ASETUI(App):
         self.show_help = False
         self.show_column_add = False
         self.show_search_box = False
+        self.show_filter = False
         self.query_one(AsetuiTable).focus()
         
 
@@ -298,17 +230,29 @@ class ASETUI(App):
         searchbar.display = show_search_box
 
     # Filter
-    def action_filter(self) -> None:
+    async def action_filter(self) -> None:
         self.show_filter = True
-        self.query_one("#filterkey").focus()
+        # There could be more filters, so we focus on the last one
+        filters = self.query("#filterkey")
+        if len(filters) == 0:
+            await self.add_filter()
+            filters = self.query("#filterkey")
+        filters[-1].focus()
 
         # search = self.query_one(Search)
         # search._table = self.query_one(AsetuiTable)
         # search._data = self.data
         
     def watch_show_filter(self, show_filter: bool) -> None:
-        searchbar = self.query_one(Filter)
+        searchbar = self.query_one('#filter-box')
         searchbar.display = show_filter
+        
+    async def add_filter(self) -> Filter:
+        new_filter = Filter()
+        filterbox = self.query_one("#filter-box")
+        await filterbox.mount(new_filter)
+        new_filter.scroll_visible()
+        return new_filter
         
     # Column action
     def action_add_column(self) -> None:
@@ -392,13 +336,6 @@ def get_id_from_row(row) -> int:
     return int(str(row[0]))
 
 
-def toggle_mark_row(row_key: RowKey, table: AsetuiTable) -> None:
-    if row_key in table.marked_rows:
-        table.marked_rows.remove(row_key)
-        table.rows[row_key].label = UNMARKED_LABEL
-    else:
-        table.rows[row_key].label = MARKED_LABEL
-        table.marked_rows.append(row_key)
 
 
 
