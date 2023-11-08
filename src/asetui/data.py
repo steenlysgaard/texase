@@ -61,17 +61,32 @@ class Data:
         self.update_chosen_columns()
 
     def string_df(self) -> pd.DataFrame:
-        return (
-            self.get_df()[self.chosen_columns]
-            .applymap(format_value, na_action="ignore")
-            .fillna("", axis=1)
-        )
+        df_list = []
+        df = self.get_df()
+        for column in self.chosen_columns:
+            column_data = df[column]
+            if column == "age":
+                column_data = format_column(column_data, format_function=get_age_string)
+            elif column == "pbc":
+                column_data = format_column(column_data, format_function=get_pbc_string)
+            df_list.append(format_column(column_data))
+        return pd.concat(df_list, axis=1).fillna("", axis=1)
+        # return (
+        #     self.get_df()[self.chosen_columns]
+        #     .applymap(format_value, na_action="ignore")
+        #     .fillna("", axis=1)
+        # )
 
     def string_column(self, column):
-        return self.get_df()[column].map(format_value, na_action="ignore").fillna("")
+        return format_column(self.get_df()[column])
 
     def sort(self, columns, reverse):
         df = self.get_df()
+        # print columns if it's age
+        if columns == ["age"]:
+            print('*'*33)
+            print(df[columns])
+            print('*'*33)
         df.sort_values(columns, ascending=not reverse, inplace=True)
         return df.index
 
@@ -178,7 +193,7 @@ def format_value(val) -> Union[Text, str]:
     if isinstance(val, str):
         return val
     elif isinstance(val, float):
-        if abs(val) > 1e6 or abs(val) < 1e-4:
+        if abs(val) > 1e6 or abs(val) < 1e-3:
             format_spec = "#.3g"
         else:
             format_spec = ".2f"
@@ -188,6 +203,8 @@ def format_value(val) -> Union[Text, str]:
     else:
         return str(val)
 
+def format_column(col: pd.Series, format_function=format_value) -> pd.Series:
+    return col.map(format_function, na_action="ignore").fillna("")
 
 def instantiate_data(db_path: str, sel: str = "") -> Data:
     db = connect(db_path)
@@ -218,13 +235,19 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
     df["id"] = df["id"].astype("int")
     return df, list(user_keys)
 
+def get_age_string(ctime) -> str:
+    return float_to_time_string(now() - ctime)
+
+def get_pbc_string(pbc) -> str:
+    return "".join("FT"[int(p)] for p in pbc)
 
 def get_value(row, key) -> str:
     """Get the value from the row to the dataframe."""
     if key == "age":
-        value = float_to_time_string(now() - row.ctime)
-    elif key == "pbc":
-        value = "".join("FT"[int(p)] for p in row.pbc)
+        # value = float_to_time_string(now() - row.ctime)
+        value = row.ctime
+    # elif key == "pbc":
+    #     value = "".join("FT"[int(p)] for p in row.pbc)
     else:
         value = row.get(key, pd.NaT)
     return value
