@@ -82,11 +82,6 @@ class Data:
 
     def sort(self, columns, reverse):
         df = self.get_df()
-        # print columns if it's age
-        if columns == ["age"]:
-            print('*'*33)
-            print(df[columns])
-            print('*'*33)
         df.sort_values(columns, ascending=not reverse, inplace=True)
         return df.index
 
