@@ -39,7 +39,8 @@ Title {
 }
 
 #table {
-    layer: table
+    layer: table;
+    height: 100%;
 }
 
 .searchbar {

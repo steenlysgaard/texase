@@ -73,3 +73,4 @@ async def test_remove_column(db_path):
         await pilot.press("-")
         assert 'magmom' not in get_column_labels(table.columns)
         assert 'magmom' not in app.data.chosen_columns
+
