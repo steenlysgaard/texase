@@ -37,6 +37,7 @@ async def test_add_column(db_path):
         # Check status before adding
         assert not app.show_column_add
         assert 'str_key' not in get_column_labels(table.columns)
+        assert 'str_key' not in app.data.chosen_columns
         
         await pilot.press("+")
         # Check that the column add box is visible
@@ -51,6 +52,7 @@ async def test_add_column(db_path):
         
         # Check that the column has been added
         assert 'str_key' in get_column_labels(table.columns)
+        assert 'str_key' in app.data.chosen_columns
         
 @pytest.mark.asyncio
 async def test_remove_column(db_path):
@@ -59,6 +61,7 @@ async def test_remove_column(db_path):
         table = app.query_one(AsetuiTable)
         columns_init = get_column_labels(table.columns)
         assert 'magmom' in columns_init
+        assert 'magmom' in app.data.chosen_columns
         
         magmom_index = columns_init.index('magmom')
         
@@ -69,3 +72,4 @@ async def test_remove_column(db_path):
         # Remove magmom column
         await pilot.press("-")
         assert 'magmom' not in get_column_labels(table.columns)
+        assert 'magmom' not in app.data.chosen_columns
