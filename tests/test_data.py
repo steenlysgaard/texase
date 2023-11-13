@@ -58,4 +58,13 @@ def test_sort(data):
     # Actual output for sorting by id in descending order
     actual = data.sort(["id"], reverse=True)
     assert actual.equals(expected)
+    # Sort on strings
+    actual = data.sort(["formula"], reverse=False)
+    assert actual.equals(expected)
+    # Sort on something that's only present in one of the rows,
+    # i.e. the row where the key is present should be first
+    actual = data.sort(["float_key"], reverse=False)
+    assert actual.equals(expected[::-1])
+    
+    # How about mixed type columns?
     
