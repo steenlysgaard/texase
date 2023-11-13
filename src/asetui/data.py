@@ -1,6 +1,6 @@
 import operator
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Tuple, Union
 
@@ -29,6 +29,8 @@ ops = {
 def nothing(x):
     return x
 
+def get_default_columns():
+    return all_columns[:]
 
 operator_type_conversion = {
     "<": float,
@@ -46,7 +48,7 @@ class Data:
     db_path: Path
     user_keys: List[str]
     row_cache: Union[dict, None] = None
-    chosen_columns: Union[List, None] = None
+    chosen_columns: list = field(default_factory=get_default_columns)
     saved_columns: Union[SavedColumns, None] = None
     data_filter: Union[List[Tuple[str, str, str]], None] = None
 
@@ -126,9 +128,9 @@ class Data:
 
     def update_chosen_columns(self) -> None:
         # Check if db columns file exists. If so set chosen columns based on that.
-        self.chosen_columns = self.saved_columns[str(self.db_path)]
-        if self.chosen_columns is None:
-            self.chosen_columns = all_columns[:]
+        saved_columns = self.saved_columns[str(self.db_path)]
+        if saved_columns is not None:
+            self.chosen_columns = saved_columns
 
     def save_chosen_columns(self) -> None:
         self.saved_columns[str(self.db_path)] = self.chosen_columns
