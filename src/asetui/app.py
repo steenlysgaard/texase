@@ -139,8 +139,10 @@ class ASETUI(App):
             # If the column is already the first in the sort order, toggle the sort order
             self.sort_reverse = not self.sort_reverse
         else:
-            # Otherwise, add the column to the sort order at first
+            # Otherwise, add/move the column to the sort order at first
             # position and set the sort order to ascending
+            if col_name in self.sort_columns:
+                self.sort_columns.remove(col_name)
             self.sort_columns.insert(0, col_name)
             self.sort_reverse = False
         ordered_index = self.data.sort(self.sort_columns, self.sort_reverse)
