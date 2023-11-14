@@ -73,6 +73,7 @@ ColumnAdd {
 
 .filter-buttons {
     min-width: 5;
+    min-height: 1;
 }
 
 #add-filter {

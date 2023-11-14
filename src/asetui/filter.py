@@ -18,6 +18,8 @@ class FilterBox(ScrollableContainer):
         # box
         ("ctrl+g", "hide_filter", "Hide filter(s)"),
         ("ctrl+t", "toggle_only_marked", "Toggle only marked"),
+        ("ctrl+a", "add_filter", "Add filter"),
+        ("ctrl+r", "remove_filter", "Remove filter"),
     ]
     
     def action_toggle_only_marked(self) -> None:
@@ -25,9 +27,25 @@ class FilterBox(ScrollableContainer):
         checkbox = self.query_one("#only-marked-checkbox")
         checkbox.value = not checkbox.value
         
+    async def action_add_filter(self) -> None:
+        app = self.ancestors[-1]
+        await app.add_filter()
+
+    def action_remove_filter(self) -> None:
+        pass
+        
     def compose(self) -> ComposeResult:
         yield Filter()
         yield Checkbox("Only mark filtered", id="only-marked-checkbox")
+        
+    def on_button_pressed(self, pressed: Button.Pressed) -> None:
+        if pressed.button.id == "remove-filter":
+            # Remove the filter
+            pressed.button.ancestors[0].remove()
+            # If there are no more filters hide the filter box
+            if len(self.query(Filter)) == 0:
+                self.ancestors[-1].show_filter = False
+
 
 class Filter(Static):
     applied = False
@@ -73,12 +91,12 @@ class Filter(Static):
         # Focus on the table
         table.focus()
         
-    def on_button_pressed(self, pressed: Button.Pressed) -> None:
+    async def on_button_pressed(self, pressed: Button.Pressed) -> None:
         """Called when a button is pressed."""
         app = self.ancestors[-1]
         table = app.query_one(AsetuiTable)
         if pressed.button.id == "add-filter":
-            app.add_filter()
+            await app.add_filter()
         elif pressed.button.id == "remove-filter":
             # If this filter is applied to the data shown in the
             # table, it should be removed there as well
@@ -87,11 +105,10 @@ class Filter(Static):
                 op = self.query_one("#filteroperator").value
                 val = self.query_one("#filtervalue").value
                 table.remove_filter(key, op, val)
+            # After this the parent container takes care of removing this filter
                 
-            self.remove()
-            
     def compose(self) -> ComposeResult:
-        yield Button(Text("\uff0b", style="green"), id="add-filter", classes="filter-buttons")
+        yield Button(Text("\uff0b", style="green"), id="add-filter", classes="filter-buttons", variant="primary")
         yield Input(placeholder="Filter on column..",
                     suggester=ColumnSuggester(self.ancestors[-1]),
                     validate_on=['blur'],
@@ -103,7 +120,7 @@ class Filter(Static):
                      id="filteroperator")
         yield Input(placeholder="Value",
                     id="filtervalue")
-        yield Button(Text("\u2212", style="red"), id="remove-filter", classes="filter-buttons")
+        yield Button(Text("\u2212", style="red"), id="remove-filter", classes="filter-buttons", variant="warning")
         
 
 class FilterSuggester(Suggester):

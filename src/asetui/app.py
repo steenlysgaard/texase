@@ -249,6 +249,7 @@ class ASETUI(App):
         searchbar = self.query_one('#filter-box')
         searchbar.display = show_filter
         
+    # Could this be moved to filterbox??
     async def add_filter(self) -> Filter:
         new_filter = Filter()
         filterbox = self.query_one("#filter-box")
