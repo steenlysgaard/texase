@@ -22,7 +22,7 @@ class AsetuiTable(DataTable):
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
         Binding("ctrl+s", "search", "Search", show=False),
-        Binding("ctrl+f", "filter", "Filter", show=False),
+        Binding("/", "filter", "Filter rows"),
         Binding("<", "move_to_top", "Move the cursor to the top", show=False),
         Binding(">", "move_to_bottom", "Move the cursor to the bottom", show=False),
         Binding("k", "cursor_up", "Cursor Up", show=False),
