@@ -237,28 +237,12 @@ class ASETUI(App):
     # Filter
     async def action_filter(self) -> None:
         self.show_filter = True
-        # There could be more filters, so we focus on the last one
-        filters = self.query("#filterkey")
-        if len(filters) == 0:
-            await self.add_filter()
-            filters = self.query("#filterkey")
-        if filters[-1].disabled:
-            # The filter is disabled we focus on the + button instead
-            self.query("#add-filter")[-1].focus()
-        else:
-            filters[-1].focus()
+        filterbox = self.query_one("#filter-box")
+        await filterbox.focus_filterbox()
 
     def watch_show_filter(self, show_filter: bool) -> None:
         searchbar = self.query_one('#filter-box')
         searchbar.display = show_filter
-        
-    # Could this be moved to filterbox??
-    async def add_filter(self) -> Filter:
-        new_filter = Filter()
-        filterbox = self.query_one("#filter-box")
-        await filterbox.mount(new_filter)
-        new_filter.scroll_visible()
-        return new_filter
         
     # Column action
     def action_add_column(self) -> None:

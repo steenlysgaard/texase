@@ -88,5 +88,28 @@ async def test_add_more_filters(db_path):
         await pilot.press("/")
         await pilot.click("#add-filter")
         assert len(app.query(Filter)) == 2
-        await pilot.press("ctrl+a")
+        await pilot.press("ctrl+n")
         assert len(app.query(Filter)) == 3
+
+@pytest.mark.asyncio
+async def test_add_remove_filter(db_path):
+    app = ASETUI(path=db_path)
+    async with app.run_test(size=(200, 50)) as pilot:
+        filterbox = app.query_one("#filter-box")
+        
+        await pilot.press("/")
+        assert app.show_filter
+        assert filterbox.display
+        
+        await pilot.press("ctrl+r")
+        assert not app.show_filter
+        assert not filterbox.display
+
+        await pilot.press("/")
+        assert app.show_filter
+        assert filterbox.display
+        assert len(filterbox.query("#filterkey")) == 1
+        assert filterbox.query("#filterkey")[-1].has_focus
+        
+        
+        
