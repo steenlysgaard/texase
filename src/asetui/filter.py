@@ -4,7 +4,7 @@ from textual.app import ComposeResult
 from textual.containers import ScrollableContainer
 from textual.suggester import Suggester
 from textual.widgets import Input, Select, Button, Static, Checkbox
-from textual.validation import Validator, ValidationResult, Function
+from textual.validation import Function
 from textual.widgets._data_table import RowKey
 from rich.text import Text
 
@@ -32,7 +32,18 @@ class FilterBox(ScrollableContainer):
         await app.add_filter()
 
     def action_remove_filter(self) -> None:
-        pass
+        """Remove the currently focused filter, alternatively the last
+        filter.
+
+        """
+        filters = self.query(Filter)
+        for filter in filters:
+            if filter.has_focus_in_any_widget():
+                filter.remove()
+                return
+        # If no filter has focus, remove the last filter
+        if len(filters) > 0:
+            filters[-1].remove()
         
     def compose(self) -> ComposeResult:
         yield Filter()
@@ -94,25 +105,29 @@ class Filter(Static):
     async def on_button_pressed(self, pressed: Button.Pressed) -> None:
         """Called when a button is pressed."""
         app = self.ancestors[-1]
-        table = app.query_one(AsetuiTable)
         if pressed.button.id == "add-filter":
             await app.add_filter()
-        elif pressed.button.id == "remove-filter":
-            # If this filter is applied to the data shown in the
-            # table, it should be removed there as well
-            if self.applied:
-                key = self.query_one("#filterkey").value
-                op = self.query_one("#filteroperator").value
-                val = self.query_one("#filtervalue").value
-                table.remove_filter(key, op, val)
-            # After this the parent container takes care of removing this filter
+
+            
+    def remove(self) -> None:
+        # If this filter is applied to the data shown in the
+        # table, it should be removed there as well
+        
+        if self.applied:
+            key = self.query_one("#filterkey").value
+            op = self.query_one("#filteroperator").value
+            val = self.query_one("#filtervalue").value
+            self.app.remove_filter_from_table((key, op, val))
+        # After this the parent container takes care of removing this filter
+        
+        super().remove()
                 
     def compose(self) -> ComposeResult:
         yield Button(Text("\uff0b", style="green"), id="add-filter", classes="filter-buttons", variant="primary")
         yield Input(placeholder="Filter on column..",
                     suggester=ColumnSuggester(self.ancestors[-1]),
                     validate_on=['blur'],
-                    validators=[Function(lambda x: x in self.ancestors[-1].data.chosen_columns, "Column does not exist")],
+                    validators=[Function(lambda x: x in self.app.data.chosen_columns, "Column does not exist")],
                     id="filterkey")
         yield Select([(op, op) for op in ops.keys()],
                      value="==",
@@ -121,6 +136,13 @@ class Filter(Static):
         yield Input(placeholder="Value",
                     id="filtervalue")
         yield Button(Text("\u2212", style="red"), id="remove-filter", classes="filter-buttons", variant="warning")
+        
+    def has_focus_in_any_widget(self) -> bool:
+        """Return True if any widget in this container has focus."""
+        for selector in ["#add-filter", "#filterkey", "#filteroperator", "#filtervalue", "#remove-filter"]:
+            if self.query_one(selector).has_focus:
+                return True
+        return False
         
 
 class FilterSuggester(Suggester):
@@ -141,12 +163,6 @@ class FilterSuggester(Suggester):
         """
         super().__init__(case_sensitive=case_sensitive)
         self._app = app
-        # self._suggestions = list(suggestions)
-        # self._for_comparison = (
-        #     self._suggestions
-        #     if self.case_sensitive
-        #     else [suggestion.casefold() for suggestion in self._suggestions]
-        # )
 
 class ColumnSuggester(FilterSuggester):
     async def get_suggestion(self, value: str) -> str | None:
@@ -163,15 +179,4 @@ class ColumnSuggester(FilterSuggester):
             if suggestion.startswith(value):
                 return possible_suggestions[idx]
         return None    
-    
-
-# class ColumnValidator(Validator):
-#     def validate(self, value: str) -> ValidationResult:
-
-
-# class Palindrome(Validator):
-#     def validate(self, value: str) -> ValidationResult:
-#         def is_palindrome(value: str) -> bool:
-#             return value == value[::-1]
-#         return self.success() if is_palindrome(value) else self.failure("Not palindrome!")
     

@@ -125,6 +125,9 @@ class ASETUI(App):
         )
         self.sort_table(col_name, table)
 
+    def remove_filter_from_table(self, filter_tuple: tuple) -> None:
+        self.query_one(AsetuiTable).remove_filter(*filter_tuple)
+        
     def on_data_table_header_selected(self, selected: DataTable.HeaderSelected) -> None:
         table = selected.data_table
         col_name = str(selected.label)
@@ -239,12 +242,12 @@ class ASETUI(App):
         if len(filters) == 0:
             await self.add_filter()
             filters = self.query("#filterkey")
-        filters[-1].focus()
+        if filters[-1].disabled:
+            # The filter is disabled we focus on the + button instead
+            self.query("#add-filter")[-1].focus()
+        else:
+            filters[-1].focus()
 
-        # search = self.query_one(Search)
-        # search._table = self.query_one(AsetuiTable)
-        # search._data = self.data
-        
     def watch_show_filter(self, show_filter: bool) -> None:
         searchbar = self.query_one('#filter-box')
         searchbar.display = show_filter
