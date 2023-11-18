@@ -45,7 +45,6 @@ Title {
 
 .searchbar {
     width: 70%;
-    height: 10;
     layer: search;
 }
 
@@ -86,6 +85,11 @@ ColumnAdd {
 
 #filter-box {
     height: 50%;
+}
+
+#search-box {
+    dock: bottom;
+    height: 3;
 }
 
 Filter {

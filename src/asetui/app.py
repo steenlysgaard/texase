@@ -62,9 +62,8 @@ class ASETUI(App):
                 classes="searchbar",
             ),
             Search(
-                Label("Search"),
-                Input(id="search-box", placeholder="Search.."),
-                classes="searchbar",
+                Input(id="search-input", placeholder="Search.."),
+                classes="searchbar", id="search-box",
             ),
             # ScrollableContainer(Filter(),
             #                     Checkbox("Only mark filtered", id="only-marked-checkbox"),
@@ -224,11 +223,14 @@ class ASETUI(App):
         # show_search_box is set to True since the search bar is able
         # to close itself after a search.
         self.show_search_box = True
-        self.query_one("#search-box").focus()  # This is the input box
+        search_input = self.query_one("#search-input")
+        search_input.focus()  # This is the input box
         
         search = self.query_one(Search)
         search._table = self.query_one(AsetuiTable)
         search._data = self.data
+        search_input.value = ""
+        search.set_current_cursor_coordinate()
 
     def watch_show_search_box(self, show_search_box: bool) -> None:
         searchbar = self.query_one(Search)

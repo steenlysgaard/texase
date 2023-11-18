@@ -137,13 +137,14 @@ class Data:
 
     def search_for_string(self, search_string: str):
         # Use the raw dataframe
+        df = self.string_df()  # Cache this somehow
         mask = np.column_stack(
             [
-                self.df[col].astype(str).str.contains(search_string, na=False)
-                for col in self.df
+                df[col].astype(str).str.contains(search_string, na=False)
+                for col in self.chosen_columns
             ]
         )
-        # df.loc[mask.any(axis=1)]
+        return zip(*mask.nonzero())
         return mask
 
     @property
