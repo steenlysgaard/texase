@@ -25,6 +25,7 @@ async def test_search(big_db_path):
     app = ASETUI(path=big_db_path)
     async with app.run_test(size=(200, 50)) as pilot:
         searchbox = app.query_one("#search-box")
+        table = app.query_one(AsetuiTable)
 
         # Check status before adding filter
         assert not app.show_search_box
@@ -35,6 +36,17 @@ async def test_search(big_db_path):
         # Check status after adding filter
         assert app.show_search_box
         assert searchbox.display
+        
+        # No element starts with Q so cursor should stay
+        # at the same position
+        await pilot.press("Q")
+        assert table.cursor_column == 0
+        assert table.cursor_row == 0
+        await pilot.press("enter")
+        assert table.cursor_column == 0
+        assert table.cursor_row == 0
+        
+        await pilot.press("ctrl+s")
 
         # Search for Ar and check that the search box is not visible
         await pilot.press("A", "r", "enter")
@@ -43,7 +55,6 @@ async def test_search(big_db_path):
 
         # The selected row should be 17 since Ar is the 18th element
         # in the periodic table and the table is 0-indexed
-        table = app.query_one(AsetuiTable)
         assert table.cursor_row == 17
 
         # The row id, however, should be 18
@@ -75,3 +86,24 @@ async def test_next_and_previous(big_db_path):
         await pilot.press("ctrl+r")
         # Back to S
         assert table.cursor_row == 15
+
+
+@pytest.mark.asyncio
+async def test_search_wrap(big_db_path):
+    app = ASETUI(path=big_db_path)
+    async with app.run_test(size=(200, 50)) as pilot:
+        table = app.query_one(AsetuiTable)
+        await pilot.press("ctrl+s", "O")
+
+        # First hit for O should be O
+        assert table.cursor_row == 7
+        
+        await pilot.press("ctrl+s")
+        # Then Os
+        assert table.cursor_row == 75
+
+        await pilot.press("ctrl+s")
+        # Then back to O
+        assert table.cursor_row == 7
+        
+        
