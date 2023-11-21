@@ -1,5 +1,4 @@
 from typing import List, Union, Tuple, Set
-from pandas import set_eng_float_format
 
 from textual.binding import Binding
 from textual.coordinate import Coordinate
@@ -156,4 +155,18 @@ class AsetuiTable(DataTable):
             self.refresh_row(row_index)
         elif row_key is not None:
             self.refresh_row(self.get_row_index(row_key))
+            
+    def get_marked_row_ids(self) -> List[int]:
+        """Return the ids of the rows that are currently marked"""
+        return [
+            get_id_from_row(self.get_row(row_key)) for row_key in self.marked_rows
+        ]
+    
+    def get_id_of_current_row(self) -> int:
+        return get_id_from_row(self.get_row_at(self.cursor_row))
+
         
+def get_id_from_row(row) -> int:
+    # This assumes that the first index of the row is the id
+    return int(str(row[0]))
+

@@ -264,7 +264,7 @@ class ASETUI(App):
         # Remove the column from the table in data
         self.data.remove_from_chosen_columns(column_to_remove)
         # Remember marked rows before clearing the table
-        marked_rows = self.get_marked_row_ids()
+        marked_rows = table.get_marked_row_ids()
         # Clear the table including columns
         table.clear(columns=True)
         # Rebuilt the table with the currently chosen columns
@@ -273,13 +273,6 @@ class ASETUI(App):
         table.cursor_coordinate = table.validate_cursor_coordinate(
             Coordinate(cursor_row_index, cursor_column_index)
         )
-
-    def get_marked_row_ids(self) -> List[int]:
-        """Return the ids of the rows that are currently marked"""
-        table = self.query_one(AsetuiTable)
-        return [
-            get_id_from_row(table.get_row(row_key)) for row_key in table.marked_rows
-        ]
 
     def watch_show_column_add(self, show_column_add: bool) -> None:
         searchbar = self.query_one(ColumnAdd)
@@ -290,15 +283,12 @@ class ASETUI(App):
         selected then view the row the cursor is on"""
         table = self.query_one(AsetuiTable)
         if table.marked_rows:
-            images = [self.data.get_atoms(id) for id in self.get_marked_row_ids()]
+            images = [self.data.get_atoms(id) for id in table.get_marked_row_ids()]
         else:
             images = [
-                self.data.get_atoms(get_id_from_row(table.get_row_at(table.cursor_row)))
+                self.data.get_atoms(table.get_id_of_current_row())
             ]
         view(images)
-
-    def on_list_view_selected(self):
-        print("Selected on App")
 
     def on_input_submitted(self, submitted):
         if submitted.control.id == "column-add-box":
@@ -322,10 +312,6 @@ class ASETUI(App):
         self.data.save_chosen_columns()
         super().exit()
 
-
-def get_id_from_row(row) -> int:
-    # This assumes that the first index of the row is the id
-    return int(str(row[0]))
 
 
 
