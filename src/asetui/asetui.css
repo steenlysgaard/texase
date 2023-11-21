@@ -1,6 +1,6 @@
 Screen {
     /* align: center middle; */
-    layers: table details columnadd search;
+    layers: table details boxontop;
 }
 
 MiddleContainer {
@@ -43,13 +43,13 @@ Title {
     height: 100%;
 }
 
-.searchbar {
+.topbox {
     width: 70%;
-    layer: search;
+    layer: boxontop;
 }
 
-ColumnAdd {
-    layer: columnadd;
+.bottombox {
+    layer: table;
 }
 
 /* Search { */
