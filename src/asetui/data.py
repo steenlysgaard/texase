@@ -12,6 +12,7 @@ from ase.db.table import all_columns
 from ase import Atoms
 from rich.text import Text
 from textual.widgets import ListItem, Label
+from textual._cache import LRUCache
 
 from asetui.saved_columns import SavedColumns
 
@@ -29,8 +30,10 @@ ops = {
 def nothing(x):
     return x
 
+
 def get_default_columns():
     return all_columns[:]
+
 
 operator_type_conversion = {
     "<": float,
@@ -44,27 +47,38 @@ operator_type_conversion = {
 
 @dataclass
 class Data:
-    df: pd.DataFrame
+    df: pd.DataFrame  # If df is changed, the cache needs to be cleared
     db_path: Path
     user_keys: List[str]
-    row_cache: Union[dict, None] = None
     chosen_columns: list = field(default_factory=get_default_columns)
     saved_columns: Union[SavedColumns, None] = None
     data_filter: Union[List[Tuple[str, str, str]], None] = None
 
     def __post_init__(self):
-        if self.row_cache is None:
-            self.row_cache = {}
-        self._filter = []
+        self._filter = tuple()
         if self.data_filter is not None:
             self.add_filter(*self.data_filter)
         self.db_path = Path(self.db_path).resolve()
         self.saved_columns = SavedColumns()
         self.update_chosen_columns()
+        self._df_cache: LRUCache[Tuple, pd.DataFrame] = LRUCache(maxsize=128)
+        self._string_df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
 
     def string_df(self) -> pd.DataFrame:
+        """Get a representation of the DataFrame where all values are strings.
+
+        This is used for displaying the data in the table. The
+        function depends on self._filter and self.chosen_columns. The
+        result is cached in self._string_df_cache. Thus the cache key
+        needs to be built with self._filter and self.chosen_columns.
+
+        """
+        cache_key = hash((self._filter, tuple(self.chosen_columns)))
+        string_df = self._string_df_cache.get(cache_key)
+        if string_df is not None:
+            return string_df
+        df = self.get_df(self._filter)
         df_list = []
-        df = self.get_df()
         for column in self.chosen_columns:
             column_data = df[column]
             if column == "age":
@@ -72,7 +86,9 @@ class Data:
             elif column == "pbc":
                 column_data = format_column(column_data, format_function=get_pbc_string)
             df_list.append(format_column(column_data))
-        return pd.concat(df_list, axis=1).fillna("", axis=1)
+        string_df = pd.concat(df_list, axis=1).fillna("", axis=1)
+        self._string_df_cache[cache_key] = string_df
+        return string_df
         # return (
         #     self.get_df()[self.chosen_columns]
         #     .applymap(format_value, na_action="ignore")
@@ -80,10 +96,10 @@ class Data:
         # )
 
     def string_column(self, column):
-        return format_column(self.get_df()[column])
+        return format_column(self.get_df(self._filter)[column])
 
     def sort(self, columns, reverse):
-        df = self.get_df()
+        df = self.get_df(self._filter)
         df.sort_values(columns, ascending=not reverse, inplace=True)
         return df.index
 
@@ -92,7 +108,7 @@ class Data:
         static_kvps = ""
         dynamic_kvps = []
         editable_keys = self.user_keys + ["pbc"]
-        for key, value in self.get_df().iloc[row].dropna().items():
+        for key, value in self.get_df(self._filter).iloc[row].dropna().items():
             if key in editable_keys:
                 dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
             else:
@@ -100,7 +116,7 @@ class Data:
         return Text.from_markup(static_kvps[:-1]), dynamic_kvps
 
     def row_data(self, row: int) -> list:
-        row_id = int(self.get_df().iloc[row].id)
+        row_id = int(self.get_df(self._filter).iloc[row].id)
         dynamic_data = []
         for key, value in get_data(self.db_path, row_id).items():
             dynamic_data.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
@@ -136,7 +152,8 @@ class Data:
         self.saved_columns[str(self.db_path)] = self.chosen_columns
 
     def search_for_string(self, search_string: str):
-        # Use the raw dataframe
+        # Use the string representation of the dataframe, i.e. what is
+        # currently visible
         df = self.string_df()  # Cache this somehow
         mask = np.column_stack(
             [
@@ -145,10 +162,9 @@ class Data:
             ]
         )
         return zip(*mask.nonzero())
-        return mask
 
     @property
-    def filter(self) -> List:
+    def filter(self) -> tuple:
         return self._filter
 
     def add_filter(self, key, operator, value) -> None:
@@ -156,10 +172,12 @@ class Data:
         # the correct type if the column values are not strings? But
         # how do we know? We try to deduce from the operator
 
-        self._filter.append((key, operator, value))
-        
+        self._filter += ((key, operator, value),)
+
     def remove_filter(self, filter_tuple: Tuple[str, str, str]) -> None:
-        self._filter.remove(filter_tuple)
+        self._filter = tuple(
+            filter for filter in self._filter if filter != filter_tuple
+        )
 
     @filter.setter
     def filter(self, _) -> None:
@@ -167,23 +185,24 @@ class Data:
 
     @filter.deleter
     def filter(self) -> None:
-        self._filter = []
+        self._filter = tuple()
 
-    def get_df(self) -> pd.DataFrame:
+    def get_df(self, filters: tuple = ()) -> pd.DataFrame:
+        df = self._df_cache.get(filters)
+        if df is not None:
+            return df
         df = self.df
-        for filter_key, op, filter_value in self.filter:
+        for filter_key, op, filter_value in filters:
             df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
+        self._df_cache[filters] = df
         return df
-    
-    def get_df_with_filter(self, filter_tuple: Tuple[str, str, str]) -> pd.DataFrame:
-        df = self.df
-        # Unpack filter_tuple
-        filter_key, op, filter_value = filter_tuple
-        df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
-        return df
-    
-    def get_index_of_df_with_filter(self, filter_tuple: Tuple[str, str, str]) -> pd.Index:
-        df = self.get_df_with_filter(filter_tuple)
+
+    def get_index_of_df_with_filter(
+        self, filter_tuple: Tuple[str, str, str]
+    ) -> pd.Index:
+        if not isinstance(filter_tuple[0], tuple):
+            filter_tuple = (filter_tuple,)
+        df = self.get_df(filter_tuple)
         return df.index
 
 
@@ -201,8 +220,10 @@ def format_value(val) -> Union[Text, str]:
     else:
         return str(val)
 
+
 def format_column(col: pd.Series, format_function=format_value) -> pd.Series:
     return col.map(format_function, na_action="ignore").fillna("")
+
 
 def instantiate_data(db_path: str, sel: str = "") -> Data:
     db = connect(db_path)
@@ -233,11 +254,14 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
     df["id"] = df["id"].astype("int")
     return df, list(user_keys)
 
+
 def get_age_string(ctime) -> str:
     return float_to_time_string(now() - ctime)
 
+
 def get_pbc_string(pbc) -> str:
     return "".join("FT"[int(p)] for p in pbc)
+
 
 def get_value(row, key) -> str:
     """Get the value from the row to the dataframe."""

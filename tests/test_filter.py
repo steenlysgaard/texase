@@ -19,7 +19,7 @@ async def test_filter(db_path):
         # Check status before adding filter
         assert not app.show_filter
         assert not filterbox.display
-        assert app.data.filter == []
+        assert app.data.filter == ()
         assert len(table.rows.keys()) == 2
         
         await pilot.press("/")
@@ -48,7 +48,7 @@ async def test_filter(db_path):
         # Check that the filter box is not visible
         assert not app.show_filter
         assert not filterbox.display
-        assert app.data.filter == [('formula', '==', 'Au')]
+        assert app.data.filter == (('formula', '==', 'Au'), )
         assert len(table.rows.keys()) == 1
         
         # Remove filter
@@ -60,7 +60,7 @@ async def test_filter(db_path):
         # The last filter is removed so the filterbox should be hidden
         assert not app.show_filter
         assert not filterbox.display
-        assert app.data.filter == []
+        assert app.data.filter == ()
         assert len(table.rows.keys()) == 2
         
         
