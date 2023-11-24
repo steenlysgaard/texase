@@ -131,7 +131,10 @@ def test_df_caching(db_path):
     data.string_df()
     assert data._string_df_cache.misses == 1
     assert data._string_df_cache.hits == 1
-
+    
+    data.get_string_column_from_df("id")
+    assert data._string_column_cache.hits == 1
+    
     # What if the df is modified? Then the cache should be invalidated.
 
 

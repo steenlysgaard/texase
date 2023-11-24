@@ -2,7 +2,8 @@ import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, overload
+from functools import wraps
 
 import numpy as np
 import pandas as pd
@@ -45,9 +46,24 @@ operator_type_conversion = {
 }
 
 
+def cache(f):
+    @wraps(f)
+    def wrapper(self, *args, **kwds):
+        cache_key = hash(tuple(args))
+        cache = getattr(self, f.__name__ + "_cache")
+        result = cache.get(cache_key, None)
+        if result is not None:
+            return result
+        result = f(self, *args, **kwds)
+        cache[cache_key] = result
+        return result
+
+    return wrapper
+
+
 @dataclass
 class Data:
-    df: pd.DataFrame  # If df is changed, the cache needs to be cleared
+    df: pd.DataFrame  # If df is changed, the cache needs to be cleared using e.g. self._df_cache.clear()
     db_path: Path
     user_keys: List[str]
     chosen_columns: list = field(default_factory=get_default_columns)
@@ -55,7 +71,7 @@ class Data:
     data_filter: Union[List[Tuple[str, str, str]], None] = None
 
     def __post_init__(self):
-        self._filter = tuple()
+        self._filters = tuple()
         if self.data_filter is not None:
             self.add_filter(*self.data_filter)
         self.db_path = Path(self.db_path).resolve()
@@ -63,43 +79,13 @@ class Data:
         self.update_chosen_columns()
         self._df_cache: LRUCache[Tuple, pd.DataFrame] = LRUCache(maxsize=128)
         self._string_df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
-
-    def string_df(self) -> pd.DataFrame:
-        """Get a representation of the DataFrame where all values are strings.
-
-        This is used for displaying the data in the table. The
-        function depends on self._filter and self.chosen_columns. The
-        result is cached in self._string_df_cache. Thus the cache key
-        needs to be built with self._filter and self.chosen_columns.
-
-        """
-        cache_key = hash((self._filter, tuple(self.chosen_columns)))
-        string_df = self._string_df_cache.get(cache_key)
-        if string_df is not None:
-            return string_df
-        df = self.get_df(self._filter)
-        df_list = []
-        for column in self.chosen_columns:
-            column_data = df[column]
-            if column == "age":
-                column_data = format_column(column_data, format_function=get_age_string)
-            elif column == "pbc":
-                column_data = format_column(column_data, format_function=get_pbc_string)
-            df_list.append(format_column(column_data))
-        string_df = pd.concat(df_list, axis=1).fillna("", axis=1)
-        self._string_df_cache[cache_key] = string_df
-        return string_df
-        # return (
-        #     self.get_df()[self.chosen_columns]
-        #     .applymap(format_value, na_action="ignore")
-        #     .fillna("", axis=1)
-        # )
+        self._string_column_cache: LRUCache[int, pd.Series] = LRUCache(maxsize=128)
 
     def string_column(self, column):
-        return format_column(self.get_df(self._filter)[column])
+        return format_column(self.get_df()[column])
 
     def sort(self, columns, reverse):
-        df = self.get_df(self._filter)
+        df = self.get_df()
         df.sort_values(columns, ascending=not reverse, inplace=True)
         return df.index
 
@@ -108,7 +94,7 @@ class Data:
         static_kvps = ""
         dynamic_kvps = []
         editable_keys = self.user_keys + ["pbc"]
-        for key, value in self.get_df(self._filter).iloc[row].dropna().items():
+        for key, value in self.get_df().iloc[row].dropna().items():
             if key in editable_keys:
                 dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
             else:
@@ -116,7 +102,7 @@ class Data:
         return Text.from_markup(static_kvps[:-1]), dynamic_kvps
 
     def row_data(self, row: int) -> list:
-        row_id = int(self.get_df(self._filter).iloc[row].id)
+        row_id = int(self.get_df().iloc[row].id)
         dynamic_data = []
         for key, value in get_data(self.db_path, row_id).items():
             dynamic_data.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
@@ -165,18 +151,18 @@ class Data:
 
     @property
     def filter(self) -> tuple:
-        return self._filter
+        return self._filters
 
     def add_filter(self, key, operator, value) -> None:
         # We get the value as a string. Maybe we should convert it to
         # the correct type if the column values are not strings? But
         # how do we know? We try to deduce from the operator
 
-        self._filter += ((key, operator, value),)
+        self._filters += ((key, operator, value),)
 
     def remove_filter(self, filter_tuple: Tuple[str, str, str]) -> None:
-        self._filter = tuple(
-            filter for filter in self._filter if filter != filter_tuple
+        self._filters = tuple(
+            filter for filter in self._filters if filter != filter_tuple
         )
 
     @filter.setter
@@ -185,16 +171,36 @@ class Data:
 
     @filter.deleter
     def filter(self) -> None:
-        self._filter = tuple()
+        self._filters = tuple()
 
-    def get_df(self, filters: tuple = ()) -> pd.DataFrame:
-        df = self._df_cache.get(filters)
-        if df is not None:
-            return df
+    def string_df(self) -> pd.DataFrame:
+        return self._string_df(self._filters, tuple(self.chosen_columns))
+
+    @cache
+    def _string_df(self, filters, chosen_columns) -> pd.DataFrame:
+        """Get a representation of the DataFrame where all values are strings.
+
+        This is used for displaying the data in the table. The
+        function depends on self._filters and self.chosen_columns. The
+        result is cached in self._string_df_cache. Thus the cache key
+        needs to be built with self._filters and self.chosen_columns.
+
+        """
+        df_list = []
+        for column in chosen_columns:
+            df_list.append(self.get_string_column_from_df(column))
+        return pd.concat(df_list, axis=1).fillna("", axis=1)
+
+    def get_df(self, filters: tuple | None = None) -> pd.DataFrame:
+        if filters is None:
+            return self._df(self._filters)
+        return self._df(filters)
+
+    @cache
+    def _df(self, filters: tuple = ()) -> pd.DataFrame:
         df = self.df
         for filter_key, op, filter_value in filters:
             df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
-        self._df_cache[filters] = df
         return df
 
     def get_index_of_df_with_filter(
@@ -204,6 +210,19 @@ class Data:
             filter_tuple = (filter_tuple,)
         df = self.get_df(filter_tuple)
         return df.index
+
+    def get_string_column_from_df(self, column: str) -> pd.Series:
+        return self._string_column(self._filters, column)
+
+    @cache
+    def _string_column(self, filters, column) -> pd.Series:
+        df = self.get_df()
+        column_data = df[column]
+        if column == "age":
+            column_data = format_column(column_data, format_function=get_age_string)
+        elif column == "pbc":
+            column_data = format_column(column_data, format_function=get_pbc_string)
+        return format_column(column_data)
 
 
 def format_value(val) -> Union[Text, str]:
