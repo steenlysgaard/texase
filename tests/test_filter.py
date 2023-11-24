@@ -6,8 +6,6 @@ from asetui.app import ASETUI
 from asetui.table import AsetuiTable
 from asetui.filter import Filter
 
-from .shared_info import test_atoms, get_column_labels
-
 
 @pytest.mark.asyncio
 async def test_filter(db_path):

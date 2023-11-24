@@ -5,8 +5,12 @@ from textual.coordinate import Coordinate
 from textual.widgets import DataTable
 from textual.widgets._data_table import RowKey
 
+from ase.db.table import all_columns
+
 from asetui.data import Data
+from asetui.edit import EditBox
 from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL
+
 
 class AsetuiTable(DataTable):
     BINDINGS = [
@@ -14,6 +18,7 @@ class AsetuiTable(DataTable):
         ("?", "toggle_help", "Help"),
         ("s", "sort_column", "Sort"),
         ("f", "toggle_details", "Show details"),
+        ("e", "edit", "Edit"),
         ("v", "view", "View"),
         ("+", "add_column", "Add column"),
         ("-", "remove_column", "Remove column"),
@@ -31,12 +36,13 @@ class AsetuiTable(DataTable):
     ]
 
     marked_rows: Set = set()
-    
-    def _manipulate_filters(self, filter_tuple: Tuple[str, str, str],
-                           add: bool = True) -> None:
+
+    def _manipulate_filters(
+        self, filter_tuple: Tuple[str, str, str], add: bool = True
+    ) -> None:
         # Clear the table, but not the columns
         self.clear()
-        
+
         # Get the key, operator and value from the tuple
         key, operator, value = filter_tuple
 
@@ -46,22 +52,24 @@ class AsetuiTable(DataTable):
         else:
             # Remove the filter from the data object
             self.ancestors[-1].data.remove_filter(filter_tuple)
-        
+
         # Rebuild the table
-        self.populate_table(self.ancestors[-1].data,
-                            marked_rows=self.marked_rows,
-                            columns_cleared=False)
-        
+        self.populate_table(
+            self.ancestors[-1].data, marked_rows=self.marked_rows, columns_cleared=False
+        )
+
     def add_filter(self, key, operator, value) -> None:
         self._manipulate_filters((key, operator, value), add=True)
-        
+
     def remove_filter(self, key, operator, value) -> None:
         self._manipulate_filters((key, operator, value), add=False)
 
-    def populate_table(self, data: Data,
-                       marked_rows: Union[List[int], None] = None,
-                       *,
-                       columns_cleared: bool = True,
+    def populate_table(
+        self,
+        data: Data,
+        marked_rows: Union[List[int], None] = None,
+        *,
+        columns_cleared: bool = True,
     ) -> None:
         # Columns
         if columns_cleared:
@@ -80,6 +88,40 @@ class AsetuiTable(DataTable):
                 row_key = self.add_row(*row[1:], key=row[0], label=UNMARKED_LABEL)
         self.marked_rows = marked_row_keys
 
+    def is_cell_editable(self) -> bool:
+        # Check if current cell is editable
+        coordinate = self.cursor_coordinate
+
+        # Get current column name
+        column_name = str(list(self.columns.values())[coordinate.column].label)
+        if column_name in all_columns:
+            self.notify(
+                f"Column {column_name} can not be edited!",
+                severity="warning",
+                title="Warning",
+            )
+            return False
+        else:
+            return True
+        
+    def update_edit_box(self, editbox: EditBox) -> None:
+        # Check if current cell is editable
+        coordinate = self.cursor_coordinate
+
+        # Get current column name
+        column_name = str(list(self.columns.values())[coordinate.column].label)
+
+        label_str = f"Edit [bold]{column_name} =[/bold]"
+        editbox.query_one("#edit-label").renderable = label_str
+
+        # Get current cell value
+        cell_value = self.get_cell_at(coordinate)
+        editbox.query_one("#edit-input").value = str(cell_value)
+
+        # Special rules to edit e.g. pbc or volume (then get cell editor) etc.
+        
+    def update_cell_from_edit_box(self, new_value: str) -> None:
+        self.update_cell_at(self.cursor_coordinate, new_value, update_width=True)
 
     # Selecting/marking rows
     def action_mark_row(self) -> None:
@@ -118,13 +160,12 @@ class AsetuiTable(DataTable):
         self.toggle_mark_row(selected.row_key)
         self.update_row_after_mark_operation(row_index=selected.row_index)
 
-        
     def toggle_mark_row(self, row_key: RowKey) -> None:
         if row_key in self.marked_rows:
             self.unmark_row(row_key)
         else:
             self.mark_row(row_key)
-            
+
     def unmark_row(self, row_key: RowKey) -> None:
         """Unmark a row.
 
@@ -134,8 +175,7 @@ class AsetuiTable(DataTable):
             self.marked_rows.remove(row_key)
             self.rows[row_key].label = UNMARKED_LABEL
             self.update_row_after_mark_operation(row_key=row_key)
-        
-            
+
     def mark_row(self, row_key: RowKey) -> None:
         """Mark a row.
 
@@ -143,30 +183,27 @@ class AsetuiTable(DataTable):
         """
         self.rows[row_key].label = MARKED_LABEL
         self.marked_rows.add(row_key)
-        
-        self.update_row_after_mark_operation(row_key=row_key)
-        
 
-    def update_row_after_mark_operation(self, /, row_key: Union[RowKey, None] = None,
-                                        row_index: Union[int, None] = None) -> None:
+        self.update_row_after_mark_operation(row_key=row_key)
+
+    def update_row_after_mark_operation(
+        self, /, row_key: Union[RowKey, None] = None, row_index: Union[int, None] = None
+    ) -> None:
         """Tell the table that something has changed so it will refresh properly"""
         self._update_count += 1
         if row_index is not None:
             self.refresh_row(row_index)
         elif row_key is not None:
             self.refresh_row(self.get_row_index(row_key))
-            
+
     def get_marked_row_ids(self) -> List[int]:
         """Return the ids of the rows that are currently marked"""
-        return [
-            get_id_from_row(self.get_row(row_key)) for row_key in self.marked_rows
-        ]
-    
+        return [get_id_from_row(self.get_row(row_key)) for row_key in self.marked_rows]
+
     def get_id_of_current_row(self) -> int:
         return get_id_from_row(self.get_row_at(self.cursor_row))
 
-        
+
 def get_id_from_row(row) -> int:
     # This assumes that the first index of the row is the id
     return int(str(row[0]))
-

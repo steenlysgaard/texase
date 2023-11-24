@@ -2,7 +2,7 @@ import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union, overload
+from typing import List, Tuple, Union
 from functools import wraps
 
 import numpy as np

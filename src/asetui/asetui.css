@@ -96,3 +96,25 @@ Filter {
     align: center middle;
     layout: horizontal;
 }
+
+EditBox {
+    height: 3;
+    dock: bottom;
+}
+
+#edit-input {
+    border-left: none;
+    width: 1fr;
+    padding: 0 0;
+}
+
+#edit-label {
+    padding: 0 1;
+    background: $boost;
+    color: $text;
+    width: auto;
+    border: tall $accent;
+    border-right: none;
+    
+}
+

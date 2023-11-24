@@ -24,7 +24,8 @@ from asetui.table import AsetuiTable
 from asetui.details import Details
 from asetui.help import Help
 from asetui.search import ColumnAdd, Search
-from asetui.filter import Filter, FilterBox
+from asetui.filter import FilterBox
+from asetui.edit import EditBox
 
 
 class ASETUI(App):
@@ -41,6 +42,7 @@ class ASETUI(App):
     show_column_add = var(False)
     show_search_box = var(False)
     show_filter = var(False)
+    show_edit = var(False)
 
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
@@ -53,6 +55,7 @@ class ASETUI(App):
         yield Header()
         yield Footer()
         yield MiddleContainer(
+            # Boxes put centered at the top, but in a higher layer, of the table 
             ColumnAdd(
                 Label("Search"),
                 AutoComplete(
@@ -61,14 +64,16 @@ class ASETUI(App):
                 ),
                 classes="topbox",
             ),
+            FilterBox(id="filter-box", classes="topbox"),
+            
+            # Boxes docked at the bottom in the same layer of the table
             Search(
                 Input(id="search-input", placeholder="Search.."),
                 classes="bottombox", id="search-box",
             ),
-            # ScrollableContainer(Filter(),
-            #                     Checkbox("Only mark filtered", id="only-marked-checkbox"),
-            #                     id="filter-box", classes="searchbar"),
-            FilterBox(id="filter-box", classes="topbox"),
+            EditBox(id="edit-box", classes="bottombox"),
+            
+            # Other boxes
             Details(id="details"),
             Help(id="help"),
             AsetuiTable(id="table"),
@@ -206,6 +211,7 @@ class ASETUI(App):
         self.show_column_add = False
         self.show_search_box = False
         self.show_filter = False
+        self.show_edit = False
         self.query_one(AsetuiTable).focus()
         
 
@@ -218,6 +224,19 @@ class ASETUI(App):
         help_view = self.query_one(Help)
         help_view.display = show_help
 
+    # Edit
+    def action_edit(self) -> None:
+        table = self.query_one(AsetuiTable)
+        if table.is_cell_editable():
+            self.show_edit = True
+            editbox = self.query_one(EditBox)
+            table.update_edit_box(editbox)
+            editbox.focus()
+    
+    def watch_show_edit(self, show_edit: bool) -> None:
+        editbox = self.query_one(EditBox)
+        editbox.display = show_edit
+        
     # Search
     def action_search(self) -> None:
         # show_search_box is set to True since the search bar is able
@@ -291,12 +310,12 @@ class ASETUI(App):
         view(images)
 
     def on_input_submitted(self, submitted):
+        table = self.query_one(AsetuiTable)
         if submitted.control.id == "column-add-box":
             # Check if value is a possible column
             if self.data.add_to_chosen_columns(submitted.value):
                 self.query_one("#column-add-box").value = ""
                 self.show_column_add = False
-                table = self.query_one(AsetuiTable)
                 col_key = table.add_column(submitted.value)
                 # NOTE: data and table rows should be in the same order
                 values = self.data.string_column(submitted.value)
@@ -307,6 +326,15 @@ class ASETUI(App):
                     table_rows[-1], col_key, values.iloc[-1], update_width=True
                 )
                 table.focus()
+        elif submitted.control.id == "edit-input":
+            # Update table
+            table.update_cell_from_edit_box(submitted.value)
+            
+            # Update data
+            
+            # Go back to original view
+            self.show_edit = False
+            table.focus()
 
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
