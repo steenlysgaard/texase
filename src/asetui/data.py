@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -77,32 +79,48 @@ class Data:
         self.db_path = Path(self.db_path).resolve()
         self.saved_columns = SavedColumns()
         self.update_chosen_columns()
-        self._df_cache: LRUCache[Tuple, pd.DataFrame] = LRUCache(maxsize=128)
+        self._sort: np.ndarray = np.arange(len(self.df))
+        # self._df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
+        self._filter_mask_cache: LRUCache[int, np.ndarray] = LRUCache(maxsize=128)
         self._string_df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
         self._string_column_cache: LRUCache[int, pd.Series] = LRUCache(maxsize=128)
 
-    def string_column(self, column):
-        return format_column(self.get_df()[column])
+    def update_value(self, idx, column, value) -> None:
+        """Updates the value in the database and self.df"""
+        with connect(self.db_path) as db:
+            db.update(idx, **{column: value})
+            
+        # Update in self.df
+        self.df.loc[idx, column] = value
+        
+        # Clear the caches
+        self._string_df_cache.clear()
+        self._string_column_cache[column] = None
+        
+    def df_for_print(self) -> pd.DataFrame:
+        """Returns the final dataframe after applying all filters and current sort."""
+        df = self.string_df()
+        return apply_filter_and_sort_on_df(df, self.filter_mask, self._sort)
+        
+    def column_for_print(self, column):
+        """Get a string representation of a column in the DataFrame
+        including filters and sorting."""
+        col = self._string_column(column)
+        return col.iloc[self._sort].iloc[self.filter_mask[self._sort]]
 
-    def sort(self, columns, reverse):
-        df = self.get_df()
-        df.sort_values(columns, ascending=not reverse, inplace=True)
-        return df.index
-
-    def row_details(self, row) -> Tuple[Text, list]:
+    def row_details(self, row_id) -> Tuple[Text, list]:
         """Returns key value pairs from the row in two items:"""
         static_kvps = ""
         dynamic_kvps = []
         editable_keys = self.user_keys + ["pbc"]
-        for key, value in self.get_df().iloc[row].dropna().items():
+        for key, value in self.df.loc[self.df['id'] == row_id].squeeze().dropna().items():
             if key in editable_keys:
                 dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
             else:
                 static_kvps += f"[bold]{key}: [/bold]{value}\n"
         return Text.from_markup(static_kvps[:-1]), dynamic_kvps
 
-    def row_data(self, row: int) -> list:
-        row_id = int(self.get_df().iloc[row].id)
+    def row_data(self, row_id: int) -> list:
         dynamic_data = []
         for key, value in get_data(self.db_path, row_id).items():
             dynamic_data.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
@@ -140,7 +158,7 @@ class Data:
     def search_for_string(self, search_string: str):
         # Use the string representation of the dataframe, i.e. what is
         # currently visible
-        df = self.string_df()  # Cache this somehow
+        df = self.df_for_print()
         mask = np.column_stack(
             [
                 df[col].astype(str).str.contains(search_string, na=False)
@@ -149,10 +167,33 @@ class Data:
         )
         return zip(*mask.nonzero())
 
-    @property
-    def filter(self) -> tuple:
-        return self._filters
+    def sort(self, columns: list, reverse: bool) -> np.ndarray:
+        """Set the indices to sort self.df in self._sort. Return the sorted ids."""
+        df = self.df
+        self._sort = df.sort_values(columns, ascending=not reverse).index.to_numpy()
+        return self.id_array_with_filter_and_sort()
+    
+    def id_array_with_filter_and_sort(self, filter_mask: np.ndarray | None = None) -> np.ndarray:
+        """Returns an array of ids after applying filters and sorting."""
+        if filter_mask is None:
+            filter_mask = self.filter_mask
+        return apply_filter_and_sort_on_df(self.df, filter_mask, self._sort)["id"].to_numpy()
 
+    @property
+    def filter_mask(self) -> np.ndarray:
+        """Combine all boolean arrays from the filters into one."""
+        mask = np.ones(len(self.df), dtype=bool)
+        for filter in self._filters:
+            mask &= self._filter_mask(filter)
+        return mask
+
+    @cache
+    def _filter_mask(self, filter: tuple) -> np.ndarray:
+        """Returns a boolean array of indices that pass the filter"""
+        filter_key, op, filter_value = filter
+        mask = ops[op](self.df[filter_key], operator_type_conversion[op](filter_value))
+        return mask.to_numpy()
+    
     def add_filter(self, key, operator, value) -> None:
         # We get the value as a string. Maybe we should convert it to
         # the correct type if the column values are not strings? But
@@ -165,58 +206,46 @@ class Data:
             filter for filter in self._filters if filter != filter_tuple
         )
 
-    @filter.setter
-    def filter(self, _) -> None:
-        raise NotImplementedError("Use add_filter instead")
-
-    @filter.deleter
-    def filter(self) -> None:
-        self._filters = tuple()
-
     def string_df(self) -> pd.DataFrame:
-        return self._string_df(self._filters, tuple(self.chosen_columns))
+        return self._string_df(tuple(self.chosen_columns))
 
     @cache
-    def _string_df(self, filters, chosen_columns) -> pd.DataFrame:
+    def _string_df(self, chosen_columns) -> pd.DataFrame:
         """Get a representation of the DataFrame where all values are strings.
 
         This is used for displaying the data in the table. The
-        function depends on self._filters and self.chosen_columns. The
-        result is cached in self._string_df_cache. Thus the cache key
-        needs to be built with self._filters and self.chosen_columns.
+        function depends on self.chosen_columns. The result is cached
+        in self._string_df_cache. Thus the cache key will be built
+        with self.chosen_columns.
 
         """
         df_list = []
         for column in chosen_columns:
-            df_list.append(self.get_string_column_from_df(column))
+            df_list.append(self._string_column(column))
         return pd.concat(df_list, axis=1).fillna("", axis=1)
 
-    def get_df(self, filters: tuple | None = None) -> pd.DataFrame:
-        if filters is None:
-            return self._df(self._filters)
-        return self._df(filters)
+    # def get_df(self, filters: tuple | None = None) -> pd.DataFrame:
+    #     if filters is None:
+    #         return self._df(self._filters)
+    #     return self._df(filters)
 
-    @cache
-    def _df(self, filters: tuple = ()) -> pd.DataFrame:
-        df = self.df
-        for filter_key, op, filter_value in filters:
-            df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
-        return df
+    # @cache
+    # def _df(self, filters: tuple = ()) -> pd.DataFrame:
+    #     df = self.df
+    #     for filter_key, op, filter_value in filters:
+    #         df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
+    #     return df
 
-    def get_index_of_df_with_filter(
+    def get_mask_of_df_with_filter(
         self, filter_tuple: Tuple[str, str, str]
-    ) -> pd.Index:
-        if not isinstance(filter_tuple[0], tuple):
-            filter_tuple = (filter_tuple,)
-        df = self.get_df(filter_tuple)
-        return df.index
-
-    def get_string_column_from_df(self, column: str) -> pd.Series:
-        return self._string_column(self._filters, column)
+    ) -> np.ndarray:
+        return self._filter_mask(filter_tuple)
 
     @cache
-    def _string_column(self, filters, column) -> pd.Series:
-        df = self.get_df()
+    def _string_column(self, column: str) -> pd.Series:
+        """Get a string representation of a column in the raw
+        DataFrame without filters or sorting."""
+        df = self.df
         column_data = df[column]
         if column == "age":
             column_data = format_column(column_data, format_function=get_age_string)
@@ -224,6 +253,11 @@ class Data:
             column_data = format_column(column_data, format_function=get_pbc_string)
         return format_column(column_data)
 
+    
+def apply_filter_and_sort_on_df(df, filter_mask, sort) -> pd.DataFrame:
+    """Apply filter mask and sorting indices on a DataFrame. Return the result."""
+    return df.iloc[sort].iloc[filter_mask[sort]]
+    
 
 def format_value(val) -> Union[Text, str]:
     if isinstance(val, str):
@@ -269,7 +303,8 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
         for k in user_keys:
             cols[k].extend([pd.NaT] * (i - len(cols[k])) + [get_value(row, k)])
         i += 1
-    df = pd.DataFrame(cols, index=cols["id"])
+    df = pd.DataFrame(cols)
+    # df = pd.DataFrame(cols, index=cols["id"])
     df["id"] = df["id"].astype("int")
     return df, list(user_keys)
 

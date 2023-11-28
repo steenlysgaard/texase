@@ -14,15 +14,15 @@ async def test_mark_row(db_path):
         
         # Mark the first row
         await pilot.press("space")
-        assert table.marked_rows == {RowKey(1)}
+        assert table.marked_rows == {RowKey('1')}
         
         # Mark the second row
         await pilot.press("down", "space")
-        assert table.marked_rows == {RowKey(1), RowKey(2)}
+        assert table.marked_rows == {RowKey('1'), RowKey('2')}
         
         # Unmark the first row
         await pilot.press("up", "space")
-        assert table.marked_rows == {RowKey(2)}
+        assert table.marked_rows == {RowKey('2')}
         
         # Unmark all rows
         await pilot.press("U")
@@ -30,7 +30,7 @@ async def test_mark_row(db_path):
         
         # Mark the first row
         await pilot.press("space")
-        assert table.marked_rows == {RowKey(1)}
+        assert table.marked_rows == {RowKey('1')}
         
         # Unmark with u
         await pilot.press("u")
@@ -39,5 +39,5 @@ async def test_mark_row(db_path):
         # Mark with the mouse
         response = await pilot.click(selector=AsetuiTable, offset=(1, 2))
         assert response
-        assert table.marked_rows == {RowKey(2)}
+        assert table.marked_rows == {RowKey('2')}
         

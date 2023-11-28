@@ -80,12 +80,12 @@ class AsetuiTable(DataTable):
         marked_row_keys = set()
 
         # Populate rows by fetching data
-        for row in data.string_df().itertuples(index=True):
-            if marked_rows is not None and RowKey(row[0]) in marked_rows:
-                row_key = self.add_row(*row[1:], key=row[0], label=MARKED_LABEL)
+        for row in data.df_for_print().itertuples(index=False):
+            if marked_rows is not None and RowKey(str(row[0])) in marked_rows:
+                row_key = self.add_row(*row, key=str(row[0]), label=MARKED_LABEL)
                 marked_row_keys.add(row_key)
             else:
-                row_key = self.add_row(*row[1:], key=row[0], label=UNMARKED_LABEL)
+                row_key = self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
         self.marked_rows = marked_row_keys
 
     def is_cell_editable(self) -> bool:
@@ -103,7 +103,7 @@ class AsetuiTable(DataTable):
             return False
         else:
             return True
-        
+
     def update_edit_box(self, editbox: EditBox) -> None:
         # Check if current cell is editable
         coordinate = self.cursor_coordinate
@@ -119,9 +119,13 @@ class AsetuiTable(DataTable):
         editbox.query_one("#edit-input").value = str(cell_value)
 
         # Special rules to edit e.g. pbc or volume (then get cell editor) etc.
-        
+
     def update_cell_from_edit_box(self, new_value: str) -> None:
         self.update_cell_at(self.cursor_coordinate, new_value, update_width=True)
+
+    def column_at_cursor(self) -> str:
+        """Return the name of the column at the cursor."""
+        return str(list(self.columns.values())[self.cursor_column].label)
 
     # Selecting/marking rows
     def action_mark_row(self) -> None:
@@ -200,7 +204,8 @@ class AsetuiTable(DataTable):
         """Return the ids of the rows that are currently marked"""
         return [get_id_from_row(self.get_row(row_key)) for row_key in self.marked_rows]
 
-    def get_id_of_current_row(self) -> int:
+    def row_id_at_cursor(self) -> int:
+        """Return the row id at the cursor as an int."""
         return get_id_from_row(self.get_row_at(self.cursor_row))
 
 

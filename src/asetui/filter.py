@@ -118,11 +118,11 @@ class Filter(Static):
         filterbox = self.ancestors[0]
         if filterbox.query_one("#only-marked-checkbox").value:
             # Only mark
-            indices = app.data.get_index_of_df_with_filter(
+            filter_mask = app.data.get_mask_of_df_with_filter(
                 (key_input.value, op.value, input.value)
             )
-            for i in indices:
-                table.mark_row(RowKey(i))
+            for i in app.data.id_array_with_filter_and_sort(filter_mask):
+                table.mark_row(RowKey(str(i)))
         else:
             # Filter
             table.add_filter(key_input.value, op.value, input.value)

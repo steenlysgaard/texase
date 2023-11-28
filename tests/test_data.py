@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import pandas as pd
 from rich.text import Text
 
@@ -60,20 +61,20 @@ def data(db_path):
 
 def test_sort(data):
     # Expected output for sorting by id and age in descending order
-    expected = pd.Index([2, 1])
+    expected = np.array([2, 1])
     # Age is a special case so test for that specifically
     actual = data.sort(["age"], reverse=True)
-    assert actual.equals(expected)
+    assert (actual == expected).all()
     # Actual output for sorting by id in descending order
     actual = data.sort(["id"], reverse=True)
-    assert actual.equals(expected)
+    assert (actual == expected).all()
     # Sort on strings
     actual = data.sort(["formula"], reverse=False)
-    assert actual.equals(expected)
+    assert (actual == expected).all()
     # Sort on something that's only present in one of the rows,
     # i.e. the row where the key is present should be first
     actual = data.sort(["float_key"], reverse=False)
-    assert actual.equals(expected[::-1])
+    assert (actual == expected[::-1]).all()
 
     # How about mixed type columns?
 
@@ -85,13 +86,13 @@ def filtered_data(data):
     return data
 
 
-def test_filter_property(filtered_data):
-    assert filtered_data.filter == (("formula", "==", "Au"), ("id", "<", "5"))
+def test_filters_is_set(filtered_data):
+    assert filtered_data._filters == (("formula", "==", "Au"), ("id", "<", "5"))
 
 
 def test_add_filter(filtered_data):
     filtered_data.add_filter("id", ">", "1")
-    assert filtered_data.filter == (
+    assert filtered_data._filters == (
         ("formula", "==", "Au"),
         ("id", "<", "5"),
         ("id", ">", "1"),
@@ -100,39 +101,23 @@ def test_add_filter(filtered_data):
 
 def test_remove_filter(filtered_data):
     filtered_data.remove_filter(("id", "<", "5"))
-    assert filtered_data.filter == (("formula", "==", "Au"),)
-
-
-def test_filter_setter(filtered_data):
-    with pytest.raises(NotImplementedError):
-        filtered_data.filter = None
-
-
-def test_filter_deleter(filtered_data):
-    del filtered_data.filter
-    assert filtered_data.filter == ()
+    assert filtered_data._filters == (("formula", "==", "Au"),)
 
 
 def test_index_filtering(data):
-    assert list(data.get_index_of_df_with_filter(("id", "<", "2"))) == [1]
+    assert list(data.get_mask_of_df_with_filter(("id", "<", "2"))) == [True, False]
 
 
 def test_df_caching(db_path):
     # Use a new Data instance so we get the correct hits, misses statistics
     data = instantiate_data(db_path)
-    data.get_df()
-    df = data.get_df()
-    assert df.equals(data.df)
-
-    assert data._df_cache.misses == 1
-    assert data._df_cache.hits == 1
-
-    data.string_df()
-    data.string_df()
+    
+    sdf = data.string_df()
+    sdf.equals(data.string_df())
     assert data._string_df_cache.misses == 1
     assert data._string_df_cache.hits == 1
     
-    data.get_string_column_from_df("id")
+    data.column_for_print("id")
     assert data._string_column_cache.hits == 1
     
     # What if the df is modified? Then the cache should be invalidated.

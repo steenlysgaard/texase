@@ -32,7 +32,7 @@ class ASETUI(App):
     BINDINGS = [
         Binding("ctrl+g", "hide_all", "Hide all boxes", show=False),
     ]
-    
+
     CSS_PATH = "asetui.css"
 
     # variables that are watched. Remember also to add them to the
@@ -55,7 +55,7 @@ class ASETUI(App):
         yield Header()
         yield Footer()
         yield MiddleContainer(
-            # Boxes put centered at the top, but in a higher layer, of the table 
+            # Boxes put centered at the top, but in a higher layer, of the table
             ColumnAdd(
                 Label("Search"),
                 AutoComplete(
@@ -65,14 +65,13 @@ class ASETUI(App):
                 classes="topbox",
             ),
             FilterBox(id="filter-box", classes="topbox"),
-            
             # Boxes docked at the bottom in the same layer of the table
             Search(
                 Input(id="search-input", placeholder="Search.."),
-                classes="bottombox", id="search-box",
+                classes="bottombox",
+                id="search-box",
             ),
             EditBox(id="edit-box", classes="bottombox"),
-            
             # Other boxes
             Details(id="details"),
             Help(id="help"),
@@ -116,22 +115,15 @@ class ASETUI(App):
 
         return ordered
 
+    def remove_filter_from_table(self, filter_tuple: tuple) -> None:
+        self.query_one(AsetuiTable).remove_filter(*filter_tuple)
+
     # Sorting
     def action_sort_column(self) -> None:
         # Get the highlighted column
         table = self.query_one(AsetuiTable)
-        col_name = str(
-            table.columns[
-                table.coordinate_to_cell_key(
-                    Coordinate(0, table.cursor_column)
-                ).column_key
-            ].label
-        )
-        self.sort_table(col_name, table)
+        self.sort_table(table.column_at_cursor(), table)
 
-    def remove_filter_from_table(self, filter_tuple: tuple) -> None:
-        self.query_one(AsetuiTable).remove_filter(*filter_tuple)
-        
     def on_data_table_header_selected(self, selected: DataTable.HeaderSelected) -> None:
         table = selected.data_table
         col_name = str(selected.label)
@@ -153,9 +145,9 @@ class ASETUI(App):
             self.sort_columns.insert(0, col_name)
             self.sort_reverse = False
         ordered_index = self.data.sort(self.sort_columns, self.sort_reverse)
-
+        
         table._row_locations = TwoWayDict(
-            {StringKey(key): new_index for new_index, key in enumerate(ordered_index)}
+            {StringKey(str(key)): new_index for new_index, key in enumerate(ordered_index)}
         )
         table._update_count += 1
         table.refresh()
@@ -188,10 +180,10 @@ class ASETUI(App):
         table = self.query_one(AsetuiTable)
         if self.show_details:
             # Get the highlighted row
-            row = table.cursor_row
+            row_id = table.row_id_at_cursor()
             details = self.query_one(Details)
-            details.update_kvplist(*self.data.row_details(row))
-            details.update_data(self.data.row_data(row))
+            details.update_kvplist(*self.data.row_details(row_id))
+            details.update_data(self.data.row_data(row_id))
 
             # Set focus on the details sidebar
             self.query_one(Details).set_focus()
@@ -213,7 +205,6 @@ class ASETUI(App):
         self.show_filter = False
         self.show_edit = False
         self.query_one(AsetuiTable).focus()
-        
 
     # Help sidebar
     def action_toggle_help(self) -> None:
@@ -232,11 +223,11 @@ class ASETUI(App):
             editbox = self.query_one(EditBox)
             table.update_edit_box(editbox)
             editbox.focus()
-    
+
     def watch_show_edit(self, show_edit: bool) -> None:
         editbox = self.query_one(EditBox)
         editbox.display = show_edit
-        
+
     # Search
     def action_search(self) -> None:
         # show_search_box is set to True since the search bar is able
@@ -244,7 +235,7 @@ class ASETUI(App):
         self.show_search_box = True
         search_input = self.query_one("#search-input")
         search_input.focus()  # This is the input box
-        
+
         search = self.query_one(Search)
         search._table = self.query_one(AsetuiTable)
         search._data = self.data
@@ -262,9 +253,9 @@ class ASETUI(App):
         await filterbox.focus_filterbox()
 
     def watch_show_filter(self, show_filter: bool) -> None:
-        searchbar = self.query_one('#filter-box')
+        searchbar = self.query_one("#filter-box")
         searchbar.display = show_filter
-        
+
     # Column action
     def action_add_column(self) -> None:
         # Change this to True when the search bar is able to close
@@ -304,9 +295,7 @@ class ASETUI(App):
         if table.marked_rows:
             images = [self.data.get_atoms(id) for id in table.get_marked_row_ids()]
         else:
-            images = [
-                self.data.get_atoms(table.get_id_of_current_row())
-            ]
+            images = [self.data.get_atoms(table.row_id_at_cursor())]
         view(images)
 
     def on_input_submitted(self, submitted):
@@ -318,7 +307,7 @@ class ASETUI(App):
                 self.show_column_add = False
                 col_key = table.add_column(submitted.value)
                 # NOTE: data and table rows should be in the same order
-                values = self.data.string_column(submitted.value)
+                values = self.data.column_for_print(submitted.value)
                 table_rows = list(table.rows)
                 for row, val in zip(table_rows[:-1], values[:-1]):
                     table.update_cell(row, col_key, val)
@@ -329,9 +318,14 @@ class ASETUI(App):
         elif submitted.control.id == "edit-input":
             # Update table
             table.update_cell_from_edit_box(submitted.value)
-            
+
             # Update data
-            
+            self.data.update_value(
+                idx=table.row_id_at_cursor(),
+                column=table.column_at_cursor(),
+                value=submitted.value,
+            )
+
             # Go back to original view
             self.show_edit = False
             table.focus()
@@ -339,10 +333,6 @@ class ASETUI(App):
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
-
-
-
-
 
 
 class MiddleContainer(Container):

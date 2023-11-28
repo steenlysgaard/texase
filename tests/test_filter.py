@@ -17,7 +17,7 @@ async def test_filter(db_path):
         # Check status before adding filter
         assert not app.show_filter
         assert not filterbox.display
-        assert app.data.filter == ()
+        assert app.data._filters == ()
         assert len(table.rows.keys()) == 2
         
         await pilot.press("/")
@@ -46,7 +46,7 @@ async def test_filter(db_path):
         # Check that the filter box is not visible
         assert not app.show_filter
         assert not filterbox.display
-        assert app.data.filter == (('formula', '==', 'Au'), )
+        assert app.data._filters == (('formula', '==', 'Au'), )
         assert len(table.rows.keys()) == 1
         
         # Remove filter
@@ -58,7 +58,7 @@ async def test_filter(db_path):
         # The last filter is removed so the filterbox should be hidden
         assert not app.show_filter
         assert not filterbox.display
-        assert app.data.filter == ()
+        assert app.data._filters == ()
         assert len(table.rows.keys()) == 2
         
         
@@ -77,7 +77,9 @@ async def test_mark_with_filter(db_path):
         await pilot.press("f", "o", "r", "m", "u", "right", "tab", "tab", "A", "u", "enter")
 
         assert len(table.rows.keys()) == 2
-        assert table.marked_rows == {RowKey(1)}
+        for r in table.marked_rows:
+            print(r.value)
+        assert table.marked_rows == {RowKey('1')}
 
 @pytest.mark.asyncio
 async def test_add_more_filters(db_path):
