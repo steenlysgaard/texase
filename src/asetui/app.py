@@ -267,25 +267,20 @@ class ASETUI(App):
         self.query_one("#column-add-box").focus()
 
     def action_remove_column(self) -> None:
-        """This is currently done by removing the column from the data
-        object, clearing the table completely and then rebuilding the
-        table"""
+        """Remove the column that the cursor is on.
+
+        Also remove the column from chosen_columns."""
+        
         table = self.query_one(AsetuiTable)
         # Save the name of the column to remove
-        cursor_row_index, cursor_column_index = table.cursor_row, table.cursor_column
+        cursor_column_index = table.cursor_column
         column_to_remove = str(table.ordered_columns[cursor_column_index].label)
+        
         # Remove the column from the table in data
         self.data.remove_from_chosen_columns(column_to_remove)
-        # Remember marked rows before clearing the table
-        marked_rows = table.get_marked_row_ids()
-        # Clear the table including columns
-        table.clear(columns=True)
-        # Rebuilt the table with the currently chosen columns
-        table.populate_table(self.data, marked_rows=marked_rows)
-        # Put the cursor back on the same column
-        table.cursor_coordinate = table.validate_cursor_coordinate(
-            Coordinate(cursor_row_index, cursor_column_index)
-        )
+        
+        col_key = table.ordered_columns[cursor_column_index].key
+        table.remove_column(col_key)
 
     def watch_show_column_add(self, show_column_add: bool) -> None:
         searchbar = self.query_one(ColumnAdd)
