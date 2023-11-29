@@ -1,5 +1,7 @@
 import pytest
 
+from ase.db import connect
+
 from asetui.app import ASETUI
 from asetui.table import AsetuiTable
 
@@ -41,6 +43,8 @@ async def test_edit(db_path):
         # Change the value, but cancel and check that the value is unchanged
         await pilot.press("a", "b", "c", "ctrl+g", "e")
         assert editbox.query_one("#edit-input").value == user_dct["str_key"]
+        # Also in the cache
+        assert app.data._string_column_cache.get(("str_key", )).iloc[0] == user_dct["str_key"]
         
         # Change the value and accept
         await pilot.press("backspace", "a", "b", "c", "enter")
@@ -50,7 +54,18 @@ async def test_edit(db_path):
         # Check that the value is updated in the edit box
         await pilot.press("e")
         assert editbox.query_one("#edit-input").value == new_str
+        await pilot.press("ctrl+g")
+        
+        # Check that the value is updated in the dataframe
+        assert app.data.df["str_key"].iloc[0] == new_str
+        
+        # And also updated in the db itself
+        assert connect(db_path).get(id=1)["str_key"] == new_str
+        
+        # Also check that the respective column is discarded in the caches
+        assert app.data._string_column_cache.get(("str_key", )) is None
 
+        
         
         
 

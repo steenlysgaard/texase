@@ -1,10 +1,12 @@
 import pytest
 
+from textual.coordinate import Coordinate
+
 from asetui.app import ASETUI
 from asetui.data import Data
 from asetui.table import AsetuiTable
 
-from .shared_info import test_atoms, get_column_labels
+from .shared_info import test_atoms, get_column_labels, user_dct
 
 
 @pytest.mark.asyncio
@@ -109,3 +111,15 @@ async def test_sort_column(db_path):
         )  # The labels take 3 characters, id is next
         assert app.sort_columns == ["id", "formula"]
         check_row_ids(table, [1, 2])
+
+@pytest.mark.asyncio
+async def test_sort_then_add_column(db_path):
+    app = ASETUI(path=db_path)
+    async with app.run_test() as pilot:
+        table = app.query_one(AsetuiTable)
+        await pilot.press("s", "+", *list("str_key"), "enter")
+        
+        col_idx = get_column_labels(table.columns).index("str_key")
+        assert table.get_cell_at(Coordinate(1, col_idx)) == user_dct["str_key"]
+        assert table.get_cell_at(Coordinate(0, col_idx)) == ""
+        

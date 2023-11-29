@@ -145,9 +145,12 @@ class ASETUI(App):
             self.sort_columns.insert(0, col_name)
             self.sort_reverse = False
         ordered_index = self.data.sort(self.sort_columns, self.sort_reverse)
-        
+
         table._row_locations = TwoWayDict(
-            {StringKey(str(key)): new_index for new_index, key in enumerate(ordered_index)}
+            {
+                StringKey(str(key)): new_index
+                for new_index, key in enumerate(ordered_index)
+            }
         )
         table._update_count += 1
         table.refresh()
@@ -305,14 +308,20 @@ class ASETUI(App):
             if self.data.add_to_chosen_columns(submitted.value):
                 self.query_one("#column-add-box").value = ""
                 self.show_column_add = False
+
                 col_key = table.add_column(submitted.value)
-                # NOTE: data and table rows should be in the same order
+                col_index = table.get_column_index(col_key)
+
+                # Column_for_print gets the values in the same order
+                # as shown in the table, thus we can just use
+                # enumerate to get the row index
                 values = self.data.column_for_print(submitted.value)
-                table_rows = list(table.rows)
-                for row, val in zip(table_rows[:-1], values[:-1]):
-                    table.update_cell(row, col_key, val)
-                table.update_cell(
-                    table_rows[-1], col_key, values.iloc[-1], update_width=True
+                for i, val in enumerate(values[:-1]):
+                    table.update_cell_at(Coordinate(i, col_index), val)
+                table.update_cell_at(
+                    Coordinate(len(values) - 1, col_index),
+                    values.iloc[-1],
+                    update_width=True,
                 )
                 table.focus()
         elif submitted.control.id == "edit-input":

@@ -51,7 +51,7 @@ operator_type_conversion = {
 def cache(f):
     @wraps(f)
     def wrapper(self, *args, **kwds):
-        cache_key = hash(tuple(args))
+        cache_key = tuple(args)
         cache = getattr(self, f.__name__ + "_cache")
         result = cache.get(cache_key, None)
         if result is not None:
@@ -65,7 +65,7 @@ def cache(f):
 
 @dataclass
 class Data:
-    df: pd.DataFrame  # If df is changed, the cache needs to be cleared using e.g. self._df_cache.clear()
+    df: pd.DataFrame
     db_path: Path
     user_keys: List[str]
     chosen_columns: list = field(default_factory=get_default_columns)
@@ -81,27 +81,36 @@ class Data:
         self.update_chosen_columns()
         self._sort: np.ndarray = np.arange(len(self.df))
         # self._df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
-        self._filter_mask_cache: LRUCache[int, np.ndarray] = LRUCache(maxsize=128)
-        self._string_df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
-        self._string_column_cache: LRUCache[int, pd.Series] = LRUCache(maxsize=128)
+        self._filter_mask_cache: LRUCache[tuple, np.ndarray] = LRUCache(maxsize=128)
+        self._string_df_cache: LRUCache[tuple, pd.DataFrame] = LRUCache(maxsize=128)
+        self._string_column_cache: LRUCache[tuple, pd.Series] = LRUCache(maxsize=128)
 
     def update_value(self, idx, column, value) -> None:
         """Updates the value in the database and self.df"""
         with connect(self.db_path) as db:
             db.update(idx, **{column: value})
-            
+
         # Update in self.df
-        self.df.loc[idx, column] = value
-        
+        self.df.loc[self.index_from_row_id(idx), column] = value
+
         # Clear the caches
         self._string_df_cache.clear()
-        self._string_column_cache[column] = None
-        
+        self._remove_edited_column_from_caches(column)
+
+    def index_from_row_id(self, row_id) -> int:
+        return self.df.loc[self.df["id"] == row_id].index[0]
+
+    def _remove_edited_column_from_caches(self, column) -> None:
+        self._string_column_cache.discard((column,))
+        for key in self._filter_mask_cache.keys():
+            if column in key:
+                self._filter_mask_cache.discard(key)
+
     def df_for_print(self) -> pd.DataFrame:
         """Returns the final dataframe after applying all filters and current sort."""
         df = self.string_df()
         return apply_filter_and_sort_on_df(df, self.filter_mask, self._sort)
-        
+
     def column_for_print(self, column):
         """Get a string representation of a column in the DataFrame
         including filters and sorting."""
@@ -113,7 +122,9 @@ class Data:
         static_kvps = ""
         dynamic_kvps = []
         editable_keys = self.user_keys + ["pbc"]
-        for key, value in self.df.loc[self.df['id'] == row_id].squeeze().dropna().items():
+        for key, value in (
+            self.df.loc[self.df["id"] == row_id].squeeze().dropna().items()
+        ):
             if key in editable_keys:
                 dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
             else:
@@ -172,12 +183,16 @@ class Data:
         df = self.df
         self._sort = df.sort_values(columns, ascending=not reverse).index.to_numpy()
         return self.id_array_with_filter_and_sort()
-    
-    def id_array_with_filter_and_sort(self, filter_mask: np.ndarray | None = None) -> np.ndarray:
+
+    def id_array_with_filter_and_sort(
+        self, filter_mask: np.ndarray | None = None
+    ) -> np.ndarray:
         """Returns an array of ids after applying filters and sorting."""
         if filter_mask is None:
             filter_mask = self.filter_mask
-        return apply_filter_and_sort_on_df(self.df, filter_mask, self._sort)["id"].to_numpy()
+        return apply_filter_and_sort_on_df(self.df, filter_mask, self._sort)[
+            "id"
+        ].to_numpy()
 
     @property
     def filter_mask(self) -> np.ndarray:
@@ -193,7 +208,7 @@ class Data:
         filter_key, op, filter_value = filter
         mask = ops[op](self.df[filter_key], operator_type_conversion[op](filter_value))
         return mask.to_numpy()
-    
+
     def add_filter(self, key, operator, value) -> None:
         # We get the value as a string. Maybe we should convert it to
         # the correct type if the column values are not strings? But
@@ -253,11 +268,38 @@ class Data:
             column_data = format_column(column_data, format_function=get_pbc_string)
         return format_column(column_data)
 
-    
-def apply_filter_and_sort_on_df(df, filter_mask, sort) -> pd.DataFrame:
-    """Apply filter mask and sorting indices on a DataFrame. Return the result."""
+
+def apply_filter_and_sort_on_df(
+    df: pd.DataFrame, filter_mask: np.ndarray, sort: np.ndarray
+) -> pd.DataFrame:
+    """Apply filter mask and sorting indices on a DataFrame. Return the result.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to be filtered and sorted.
+    filter_mask : np.ndarray
+        A boolean array of the same length as the DataFrame's index, indicating which rows to keep.
+    sort : np.ndarray
+        An array of integers of the same length as the DataFrame's index, indicating the order of the rows.
+
+    Returns
+    -------
+    pd.DataFrame
+        The filtered and sorted DataFrame.
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({'name': ['Alice', 'Bob', 'Charlie', 'David'], 'age': [25, 30, 35, 40]})
+    >>> filter_mask = np.array([True, False, True, False])
+    >>> sort = np.array([2, 0, 3, 1])
+    >>> apply_filter_and_sort_on_df(df, filter_mask, sort)
+          name  age
+    2  Charlie   35
+    0    Alice   25
+    """
     return df.iloc[sort].iloc[filter_mask[sort]]
-    
+
 
 def format_value(val) -> Union[Text, str]:
     if isinstance(val, str):
