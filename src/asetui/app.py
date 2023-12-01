@@ -28,6 +28,7 @@ from asetui.search import ColumnAdd, Search
 from asetui.filter import FilterBox
 from asetui.edit import EditBox, AddBox
 from asetui.formatting import format_value
+from asetui.keys import KeyBox
 
 
 class ASETUI(App):
@@ -79,10 +80,12 @@ class ASETUI(App):
             # Other boxes
             Details(id="details"),
             Help(id="help"),
+            
             AsetuiTable(id="table"),
+            KeyBox(id="key-box"),
         )
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         # db data
         data = instantiate_data(self.path)
 
@@ -91,6 +94,9 @@ class ASETUI(App):
 
         # Populate table with data using an external function
         table.populate_table(data)
+        
+        # Populate the KeyBox with available keys
+        await self.query_one(KeyBox).populate_keys(data.unused_columns())
 
         table.focus()
         self.data = data
@@ -102,11 +108,7 @@ class ASETUI(App):
             return [DropdownItem("No match!")]
 
         # Get the highlighted column
-        used_columns = self.data.chosen_columns
-        unused = []
-        for col in self.data.user_keys + all_columns:
-            if col not in used_columns:
-                unused.append(DropdownItem(col))
+        unused = [DropdownItem(col) for col in self.data.unused_columns()]
 
         # Only keep columns that contain the Input value as a substring
         matches = [
@@ -269,7 +271,7 @@ class ASETUI(App):
     # Filter
     async def action_filter(self) -> None:
         self.show_filter = True
-        filterbox = self.query_one("#filter-box")
+        filterbox = self.query_one("#filter-box", FilterBox)
         await filterbox.focus_filterbox()
 
     def watch_show_filter(self, show_filter: bool) -> None:
@@ -278,12 +280,10 @@ class ASETUI(App):
 
     # Column action
     def action_add_column(self) -> None:
-        # Change this to True when the search bar is able to close
-        # itself after a search.
         self.show_column_add = True
         self.query_one("#column-add-box").focus()
 
-    def action_remove_column(self) -> None:
+    async def action_remove_column(self) -> None:
         """Remove the column that the cursor is on.
 
         Also remove the column from chosen_columns."""
@@ -292,6 +292,9 @@ class ASETUI(App):
         # Save the name of the column to remove
         cursor_column_index = table.cursor_column
         column_to_remove = str(table.ordered_columns[cursor_column_index].label)
+        
+        # Add the column to the KeyBox
+        await self.query_one(KeyBox).add_key(column_to_remove)
 
         # Remove the column from the table in data
         self.data.remove_from_chosen_columns(column_to_remove)
@@ -313,6 +316,12 @@ class ASETUI(App):
             images = [self.data.get_atoms(table.row_id_at_cursor())]
         view(images)
 
+    def add_column_to_table_and_remove_from_keybox(self, column: str) -> None:
+        """Add a column to the table and remove it from the KeyBox."""
+        table = self.query_one(AsetuiTable)
+        table.add_column_and_values(column)
+        self.query_one(KeyBox).remove_key(column)
+        
     def on_input_submitted(self, submitted):
         table = self.query_one(AsetuiTable)
         if submitted.control.id == "column-add-box":
@@ -321,7 +330,7 @@ class ASETUI(App):
                 self.query_one("#column-add-box").value = ""
                 self.show_column_add = False
 
-                table.add_column_and_values(submitted.value)
+                self.add_column_to_table_and_remove_from_keybox(submitted.value)
                 table.focus()
         elif submitted.control.id == "edit-input":
             # Update table

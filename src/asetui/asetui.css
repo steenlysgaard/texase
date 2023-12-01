@@ -40,7 +40,7 @@ Title {
 
 #table {
     layer: table;
-    height: 100%;
+    height: 1fr;
 }
 
 .topbox {
@@ -120,4 +120,11 @@ EditBox {
 .bottom-labels.-invalid {
     border: tall $error;
     border-right: none;
+}
+
+KeyBox {
+    width: 1fr;
+    height: auto;
+    layer: table;
+    /* dock: bottom; */
 }

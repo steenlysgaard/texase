@@ -1,8 +1,8 @@
 from textual.app import ComposeResult
 from textual.widgets import Input, Label
-from textual.containers import Horizontal
 from textual.validation import Function
 from textual import on
+from textual.containers import Horizontal
 
 
 class EditBox(Horizontal):

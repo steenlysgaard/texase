@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 from rich.text import Text
 
-from asetui.data import format_value, Data, instantiate_data, format_column, apply_filter_and_sort_on_df
+from asetui.data import Data, instantiate_data, format_column, apply_filter_and_sort_on_df
+from asetui.formatting import format_value
 
 from .shared_info import user_dct
 

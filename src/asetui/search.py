@@ -1,6 +1,5 @@
 from typing import Tuple
 from textual.containers import Container
-from textual.coordinate import Coordinate
 from textual.binding import Binding
 
 

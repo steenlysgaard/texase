@@ -86,6 +86,19 @@ class Data:
         self._string_df_cache: LRUCache[tuple, pd.DataFrame] = LRUCache(maxsize=128)
         self._string_column_cache: LRUCache[tuple, pd.Series] = LRUCache(maxsize=128)
 
+    def unused_columns(self) -> List[str]:
+        """Returns a list of columns that are not used in the table.
+
+        Go through all columns + self.user_keys and check if they are
+        in self.chosen_columns
+
+        """
+        return [
+            col
+            for col in all_columns + self.user_keys
+            if col not in self.chosen_columns
+        ]
+
     @overload
     def update_value(
         self, ids: int, column: str, value: Union[str, float, int]
@@ -334,7 +347,6 @@ def apply_filter_and_sort_on_df(
     0    Alice   25
     """
     return df.iloc[sort].iloc[filter_mask[sort]]
-
 
 
 def instantiate_data(db_path: str, sel: str = "") -> Data:
