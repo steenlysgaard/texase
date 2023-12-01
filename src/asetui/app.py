@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input, Label
@@ -18,6 +18,7 @@ from textual_autocomplete._autocomplete import (
 
 from ase.visualize import view
 from ase.db.table import all_columns
+from ase.db.core import check
 
 from asetui.data import instantiate_data, Data
 from asetui.table import AsetuiTable
@@ -25,7 +26,8 @@ from asetui.details import Details
 from asetui.help import Help
 from asetui.search import ColumnAdd, Search
 from asetui.filter import FilterBox
-from asetui.edit import EditBox
+from asetui.edit import EditBox, AddBox
+from asetui.formatting import format_value
 
 
 class ASETUI(App):
@@ -43,6 +45,7 @@ class ASETUI(App):
     show_search_box = var(False)
     show_filter = var(False)
     show_edit = var(False)
+    show_add_kvp = var(False)
 
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
@@ -72,6 +75,7 @@ class ASETUI(App):
                 id="search-box",
             ),
             EditBox(id="edit-box", classes="bottombox"),
+            AddBox(id="add-kvp-box", classes="bottombox"),
             # Other boxes
             Details(id="details"),
             Help(id="help"),
@@ -207,6 +211,7 @@ class ASETUI(App):
         self.show_search_box = False
         self.show_filter = False
         self.show_edit = False
+        self.show_add_kvp = False
         self.query_one(AsetuiTable).focus()
 
     # Help sidebar
@@ -218,17 +223,29 @@ class ASETUI(App):
         help_view = self.query_one(Help)
         help_view.display = show_help
 
+    # Add key-value-pairs
+    def action_add_key_value_pair(self) -> None:
+        table = self.query_one(AsetuiTable)
+        self.show_add_kvp = True
+        addbox = self.query_one("#add-kvp-box", AddBox)
+        table.update_add_box(addbox)
+        addbox.focus()
+
+    def watch_show_add_kvp(self, show_add_kvp: bool) -> None:
+        box = self.query_one("#add-kvp-box")
+        box.display = show_add_kvp
+
     # Edit
     def action_edit(self) -> None:
         table = self.query_one(AsetuiTable)
         if table.is_cell_editable():
             self.show_edit = True
-            editbox = self.query_one(EditBox)
+            editbox = self.query_one("#edit-box", EditBox)
             table.update_edit_box(editbox)
             editbox.focus()
 
     def watch_show_edit(self, show_edit: bool) -> None:
-        editbox = self.query_one(EditBox)
+        editbox = self.query_one("#edit-box")
         editbox.display = show_edit
 
     # Search
@@ -270,15 +287,15 @@ class ASETUI(App):
         """Remove the column that the cursor is on.
 
         Also remove the column from chosen_columns."""
-        
+
         table = self.query_one(AsetuiTable)
         # Save the name of the column to remove
         cursor_column_index = table.cursor_column
         column_to_remove = str(table.ordered_columns[cursor_column_index].label)
-        
+
         # Remove the column from the table in data
         self.data.remove_from_chosen_columns(column_to_remove)
-        
+
         col_key = table.ordered_columns[cursor_column_index].key
         table.remove_column(col_key)
 
@@ -304,20 +321,7 @@ class ASETUI(App):
                 self.query_one("#column-add-box").value = ""
                 self.show_column_add = False
 
-                col_key = table.add_column(submitted.value)
-                col_index = table.get_column_index(col_key)
-
-                # Column_for_print gets the values in the same order
-                # as shown in the table, thus we can just use
-                # enumerate to get the row index
-                values = self.data.column_for_print(submitted.value)
-                for i, val in enumerate(values[:-1]):
-                    table.update_cell_at(Coordinate(i, col_index), val)
-                table.update_cell_at(
-                    Coordinate(len(values) - 1, col_index),
-                    values.iloc[-1],
-                    update_width=True,
-                )
+                table.add_column_and_values(submitted.value)
                 table.focus()
         elif submitted.control.id == "edit-input":
             # Update table
@@ -325,7 +329,7 @@ class ASETUI(App):
 
             # Update data
             self.data.update_value(
-                idx=table.row_id_at_cursor(),
+                ids=table.row_id_at_cursor(),
                 column=table.column_at_cursor(),
                 value=submitted.value,
             )
@@ -334,6 +338,56 @@ class ASETUI(App):
             self.show_edit = False
             table.focus()
 
+        elif submitted.control.id == "add-input":
+            if not submitted.validation_result.is_valid:
+                return
+            # At this point the input should be validated, i.e. the
+            # value contains a = and the key/column is editable
+            # Split input value in key and value on =
+            key, value = submitted.value.split("=")
+            # Remove whitespace
+            key = key.strip()
+            value = convert_value_to_int_or_float(value.strip())
+
+            if not self.is_kvp_valid(key, value):
+                return
+
+            # Update data
+            if table.marked_rows:
+                # If there are marked rows, add the key value pair to
+                # all marked rows
+                self.data.update_value(
+                    ids=table.get_marked_row_ids(), column=key, value=value
+                )
+            else:
+                # If there are no marked rows, add the key value pair
+                # to the row the cursor is on
+                self.data.update_value(
+                    ids=table.row_id_at_cursor(), column=key, value=value
+                )
+
+            # Update table
+            table.update_cell_from_add_box(key, format_value(value))
+
+            # Go back to original view
+            self.show_add_kvp = False
+            table.focus()
+            
+    def is_kvp_valid(self, key, value):
+        """Check that key-value-pair is valid for ase.db"""
+        try:
+            check({key: value})
+        except ValueError as e:
+            # Notify that the key-value-pair is not valid with the
+            # raised ValueError and then return
+            self.notify(
+                str(e),
+                severity="error",
+                title="ValueError",
+            )
+            return False
+        return True
+
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
@@ -341,6 +395,18 @@ class ASETUI(App):
 
 class MiddleContainer(Container):
     pass
+
+
+def convert_value_to_int_or_float(value):
+    """Convert value to int or float if possible"""
+    for t in [int, float]:
+        try:
+            value = t(value)
+        except ValueError:
+            pass
+        else:
+            break
+    return value
 
 
 def main(path: str = "test.db"):

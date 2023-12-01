@@ -1,14 +1,15 @@
 from typing import List, Union, Tuple, Set
 
+from rich.text import Text
 from textual.binding import Binding
 from textual.coordinate import Coordinate
-from textual.widgets import DataTable
-from textual.widgets._data_table import RowKey
+from textual.widgets import DataTable, Input, Label
+from textual.widgets._data_table import RowKey, ColumnKey
 
 from ase.db.table import all_columns
 
 from asetui.data import Data
-from asetui.edit import EditBox
+from asetui.edit import EditBox, AddBox
 from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL
 
 
@@ -19,6 +20,9 @@ class AsetuiTable(DataTable):
         ("s", "sort_column", "Sort"),
         ("f", "toggle_details", "Show details"),
         ("e", "edit", "Edit"),
+        ("K", "add_key_value_pair", "Add key-value pair"),
+        # ("a", "add_configurations", "Add configuration(s)"),
+        # ("D", "delete_rows", "Delete row(s)"),
         ("v", "view", "View"),
         ("+", "add_column", "Add column"),
         ("-", "remove_column", "Remove column"),
@@ -74,7 +78,7 @@ class AsetuiTable(DataTable):
         # Columns
         if columns_cleared:
             for col in data.chosen_columns:
-                self.add_column(col)
+                self.add_column(col, key=col)
 
         # Get ready for handling marked rows
         marked_row_keys = set()
@@ -88,6 +92,31 @@ class AsetuiTable(DataTable):
                 row_key = self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
         self.marked_rows = marked_row_keys
 
+    def add_column_and_values(self, column_name: str) -> None:
+        """Add a column and its values to the table.
+
+        It is assumed that the column is present in the data.
+
+        Parameters
+        ----------
+        column_name : str
+            The name of the column to add.
+        """
+        col_key = self.add_column(column_name, key=column_name)
+        col_index = self.get_column_index(col_key)
+
+        # Column_for_print gets the values in the same order
+        # as shown in the table, thus we can just use
+        # enumerate to get the row index
+        values = self.app.data.column_for_print(column_name)
+        for i, val in enumerate(values[:-1]):
+            self.update_cell_at(Coordinate(i, col_index), val)
+        self.update_cell_at(
+            Coordinate(len(values) - 1, col_index),
+            values.iloc[-1],
+            update_width=True,
+        )
+        
     def is_cell_editable(self) -> bool:
         # Check if current cell is editable
         coordinate = self.cursor_coordinate
@@ -109,14 +138,14 @@ class AsetuiTable(DataTable):
         coordinate = self.cursor_coordinate
 
         # Get current column name
-        column_name = str(list(self.columns.values())[coordinate.column].label)
+        column_name = self.column_at_cursor()
 
         label_str = f"Edit [bold]{column_name} =[/bold]"
-        editbox.query_one("#edit-label").renderable = label_str
+        editbox.query_one("#edit-label", Label).renderable = label_str
 
         # Get current cell value
         cell_value = self.get_cell_at(coordinate)
-        editbox.query_one("#edit-input").value = str(cell_value)
+        editbox.query_one("#edit-input", Input).value = str(cell_value)
 
         # Special rules to edit e.g. pbc or volume (then get cell editor) etc.
 
@@ -126,6 +155,37 @@ class AsetuiTable(DataTable):
     def column_at_cursor(self) -> str:
         """Return the name of the column at the cursor."""
         return str(list(self.columns.values())[self.cursor_column].label)
+
+    # Add/Edit key value pairs
+    def update_add_box(self, addbox: AddBox) -> None:
+        # Set the value of the key input field to an empty string
+        input_field = addbox.query_one("#add-input", Input)
+        input_field.value = ""
+        input_field.placeholder = "key = value"
+
+        # Update label to show add kvp
+        label_str = f"Add/Edit key value pair:"
+        addbox.query_one("#add-label", Label).renderable = label_str
+
+    def update_cell_from_add_box(self, column: str, value: Text | str) -> None:
+        # Is column already present in the table? If so update the cells
+        if column in self.columns:
+            column_key = ColumnKey(column)
+            if len(self.marked_rows) > 0:
+                marked_list = list(self.marked_rows)
+                for row_key in marked_list[:-1]:
+                    self.update_cell(row_key, column_key, value)
+                self.update_cell(marked_list[-1], column_key, value, update_width=True)
+            else:
+                # Add the column to the current row
+                self.update_cell_at(
+                    Coordinate(self.cursor_row, self.get_column_index(column_key)),
+                    value,
+                    update_width=True,
+                )
+        # If not, add the column. The values is already set in the data.
+        else:
+            self.add_column_and_values(column)
 
     # Selecting/marking rows
     def action_mark_row(self) -> None:
@@ -212,3 +272,7 @@ class AsetuiTable(DataTable):
 def get_id_from_row(row) -> int:
     # This assumes that the first index of the row is the id
     return int(str(row[0]))
+
+
+def get_column_labels(columns) -> list:
+    return [str(c.label) for c in columns.values()]

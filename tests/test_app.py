@@ -4,9 +4,9 @@ from textual.coordinate import Coordinate
 
 from asetui.app import ASETUI
 from asetui.data import Data
-from asetui.table import AsetuiTable
+from asetui.table import AsetuiTable, get_column_labels
 
-from .shared_info import test_atoms, get_column_labels, user_dct
+from .shared_info import test_atoms, user_dct
 
 
 @pytest.mark.asyncio

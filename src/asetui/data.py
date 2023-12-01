@@ -4,7 +4,7 @@ import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, overload, Iterable
 from functools import wraps
 
 import numpy as np
@@ -18,6 +18,7 @@ from textual.widgets import ListItem, Label
 from textual._cache import LRUCache
 
 from asetui.saved_columns import SavedColumns
+from asetui.formatting import format_column
 
 ops = {
     "==": operator.eq,
@@ -85,17 +86,51 @@ class Data:
         self._string_df_cache: LRUCache[tuple, pd.DataFrame] = LRUCache(maxsize=128)
         self._string_column_cache: LRUCache[tuple, pd.Series] = LRUCache(maxsize=128)
 
-    def update_value(self, idx, column, value) -> None:
-        """Updates the value in the database and self.df"""
-        with connect(self.db_path) as db:
-            db.update(idx, **{column: value})
+    @overload
+    def update_value(
+        self, ids: int, column: str, value: Union[str, float, int]
+    ) -> None:
+        ...
+
+    @overload
+    def update_value(
+        self, ids: Iterable[int], column: str, value: Union[str, float, int]
+    ) -> None:
+        ...
+
+    def update_value(self, ids, column, value) -> None:
+        """Updates the value in the database and self.df
+
+        ids: list of ids
+        column: column name
+        value: new value
+        """
+        # Test if ids is iterable
+        try:
+            iter(ids)
+        except TypeError:
+            ids = [ids]
+
+        self.update_values_in_db(ids, column, value)
 
         # Update in self.df
-        self.df.loc[self.index_from_row_id(idx), column] = value
+        for row_id in ids:
+            self.df.loc[self.index_from_row_id(row_id), column] = value
 
         # Clear the caches
         self._string_df_cache.clear()
         self._remove_edited_column_from_caches(column)
+
+    def update_values_in_db(self, ids, column, value) -> None:
+        """Updates the value in the database and self.df
+
+        ids: list of row ids
+        column: column name
+        value: new value
+        """
+        with connect(self.db_path) as db:
+            for idx in ids:
+                db.update(idx, **{column: value})
 
     def index_from_row_id(self, row_id) -> int:
         return self.df.loc[self.df["id"] == row_id].index[0]
@@ -300,24 +335,6 @@ def apply_filter_and_sort_on_df(
     """
     return df.iloc[sort].iloc[filter_mask[sort]]
 
-
-def format_value(val) -> Union[Text, str]:
-    if isinstance(val, str):
-        return val
-    elif isinstance(val, float):
-        if abs(val) > 1e6 or abs(val) < 1e-3:
-            format_spec = "#.3g"
-        else:
-            format_spec = ".2f"
-        return Text("{1:{0}}".format(format_spec, val), justify="right")
-    elif isinstance(val, int):
-        return Text(str(val), justify="right")
-    else:
-        return str(val)
-
-
-def format_column(col: pd.Series, format_function=format_value) -> pd.Series:
-    return col.map(format_function, na_action="ignore").fillna("")
 
 
 def instantiate_data(db_path: str, sel: str = "") -> Data:

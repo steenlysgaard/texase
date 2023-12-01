@@ -102,19 +102,22 @@ EditBox {
     dock: bottom;
 }
 
-#edit-input {
+.bottom-inputs {
     border-left: none;
     width: 1fr;
     padding: 0 0;
 }
 
-#edit-label {
+.bottom-labels {
     padding: 0 1;
     background: $boost;
     color: $text;
     width: auto;
     border: tall $accent;
     border-right: none;
-    
 }
 
+.bottom-labels.-invalid {
+    border: tall $error;
+    border-right: none;
+}
