@@ -97,26 +97,6 @@ class ASETUI(App):
         key_box = self.query_one(KeyBox)
         await key_box.populate_keys(self.data.unused_columns())
         
-    def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
-        if not hasattr(self, "data"):
-            # On first call data has not been set to the ASETUI object
-            # so we have to cheat it
-            return [DropdownItem("No match!")]
-
-        # Get the highlighted column
-        unused = [DropdownItem(col) for col in self.data.unused_columns()]
-
-        # Only keep columns that contain the Input value as a substring
-        matches = [
-            c for c in unused if input_state.value.lower() in c.main.plain.lower()
-        ]
-        # Favour items that start with the Input value, pull them to the top
-        ordered = sorted(
-            matches, key=lambda v: v.main.plain.startswith(input_state.value.lower())
-        )
-
-        return ordered
-
     def remove_filter_from_table(self, filter_tuple: tuple) -> None:
         self.query_one(AsetuiTable).remove_filter(*filter_tuple)
 
