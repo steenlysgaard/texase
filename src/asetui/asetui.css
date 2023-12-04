@@ -87,17 +87,22 @@ Title {
     height: 50%;
 }
 
-#search-box {
-    dock: bottom;
-    height: 3;
-}
+/* #search-box { */
+/*     dock: bottom; */
+/*     height: 3; */
+/* } */
 
 Filter {
     align: center middle;
     layout: horizontal;
 }
 
-EditBox {
+/* EditBox { */
+/*     height: 3; */
+/*     dock: bottom; */
+/* } */
+
+.bottombox {
     height: 3;
     dock: bottom;
 }

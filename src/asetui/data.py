@@ -189,13 +189,17 @@ class Data:
         db = connect(self.db_path)
         return db.get_atoms(id=row)
 
-    def add_to_chosen_columns(self, column) -> bool:
-        if column not in self.chosen_columns and column in all_columns + self.user_keys:
-            self.chosen_columns.append(column)
-            # chosen_columns now contain column, return True
-            return True
-        # Nothing has been added return False
-        return False
+    def can_column_be_added(self, column) -> bool:
+        """Check if a column can be added to the table, i.e. is it
+        present in the data but not in the table."""
+        return column in self.unused_columns()
+    
+    def add_to_chosen_columns(self, column) -> None:
+        """Add a column to the table.
+
+        Before calling this function it is checked that the column is valid.
+        """
+        self.chosen_columns.append(column)
 
     def remove_from_chosen_columns(self, column) -> bool:
         # Check that the column is in chosen_columns

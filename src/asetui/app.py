@@ -1,7 +1,8 @@
 from typing import List
 
+from textual import work
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, Input, Label
+from textual.widgets import Footer, Header, Input
 from textual.widgets._data_table import StringKey, DataTable
 from textual.binding import Binding
 from textual.containers import Container
@@ -9,22 +10,15 @@ from textual.coordinate import Coordinate
 from textual.reactive import var
 from textual._two_way_dict import TwoWayDict
 
-from textual_autocomplete._autocomplete import (
-    AutoComplete,
-    DropdownItem,
-    Dropdown,
-    InputState,
-)
-
 from ase.visualize import view
-from ase.db.table import all_columns
 from ase.db.core import check
 
-from asetui.data import instantiate_data, Data
+from asetui.data import instantiate_data
 from asetui.table import AsetuiTable
 from asetui.details import Details
 from asetui.help import Help
-from asetui.search import ColumnAdd, Search
+from asetui.search import Search
+from asetui.addcolumn import AddColumnBox
 from asetui.filter import FilterBox
 from asetui.edit import EditBox, AddBox
 from asetui.formatting import format_value
@@ -42,7 +36,7 @@ class ASETUI(App):
     # action_hide_all function
     show_details = var(False)
     show_help = var(False)
-    show_column_add = var(False)
+    show_add_column_box = var(False)
     show_search_box = var(False)
     show_filter = var(False)
     show_edit = var(False)
@@ -52,7 +46,6 @@ class ASETUI(App):
         self.path = path
         self.sort_columns = ["id"]
         self.sort_reverse = False
-        self.set_key_box_first_time = False
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -61,14 +54,6 @@ class ASETUI(App):
         yield Footer()
         yield MiddleContainer(
             # Boxes put centered at the top, but in a higher layer, of the table
-            ColumnAdd(
-                Label("Search"),
-                AutoComplete(
-                    Input(id="column-add-box", placeholder="Column to add.."),
-                    Dropdown(items=self.unused_columns),
-                ),
-                classes="topbox",
-            ),
             FilterBox(id="filter-box", classes="topbox"),
             # Boxes docked at the bottom in the same layer of the table
             Search(
@@ -78,6 +63,7 @@ class ASETUI(App):
             ),
             EditBox(id="edit-box", classes="bottombox"),
             AddBox(id="add-kvp-box", classes="bottombox"),
+            AddColumnBox(id="add-column-box", classes="bottombox"),
             # Other boxes
             Details(id="details"),
             Help(id="help"),
@@ -87,30 +73,30 @@ class ASETUI(App):
         )
 
     def on_mount(self) -> None:
-        # db data
-        data = instantiate_data(self.path)
-
         # Table
         table = self.query_one(AsetuiTable)
+        table.loading = True
+
+        self.load_data(table)
+        
+    @work
+    async def load_data(self, table: AsetuiTable) -> None:
+        # db data
+        data = instantiate_data(self.path)
+        self.data = data
 
         # Populate table with data using an external function
         table.populate_table(data)
+        await self.populate_key_box()  # type: ignore
         
+        table.loading = False
         table.focus()
-        self.data = data
         
-        self.populate_key_box()  # type: ignore
 
     async def populate_key_box(self) -> None:
         key_box = self.query_one(KeyBox)
         await key_box.populate_keys(self.data.unused_columns())
         
-    async def on_idle(self) -> None:
-        # Populate the KeyBox with available keys
-        if not self.set_key_box_first_time:
-            await self.query_one(KeyBox).populate_keys(self.data.unused_columns())
-            self.set_key_box_first_time = True
-
     def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
         if not hasattr(self, "data"):
             # On first call data has not been set to the ASETUI object
@@ -219,7 +205,7 @@ class ASETUI(App):
     def action_hide_all(self) -> None:
         self.show_details = False
         self.show_help = False
-        self.show_column_add = False
+        self.show_add_column_box = False
         self.show_search_box = False
         self.show_filter = False
         self.show_edit = False
@@ -290,8 +276,8 @@ class ASETUI(App):
 
     # Column action
     def action_add_column(self) -> None:
-        self.show_column_add = True
-        self.query_one("#column-add-box").focus()
+        self.show_add_column_box = True
+        self.query_one("#add-column-box").focus()
 
     async def action_remove_column(self) -> None:
         """Remove the column that the cursor is on.
@@ -312,9 +298,9 @@ class ASETUI(App):
         col_key = table.ordered_columns[cursor_column_index].key
         table.remove_column(col_key)
 
-    def watch_show_column_add(self, show_column_add: bool) -> None:
-        searchbar = self.query_one(ColumnAdd)
-        searchbar.display = show_column_add
+    def watch_show_add_column_box(self, show_box: bool) -> None:
+        addcolumnbox = self.query_one(AddColumnBox)
+        addcolumnbox.display = show_box
 
     def action_view(self) -> None:
         """View the currently selected images, if no images are
@@ -329,19 +315,19 @@ class ASETUI(App):
     def add_column_to_table_and_remove_from_keybox(self, column: str) -> None:
         """Add a column to the table and remove it from the KeyBox."""
         table = self.query_one(AsetuiTable)
+        self.data.add_to_chosen_columns(column)
         table.add_column_and_values(column)
         self.query_one(KeyBox).remove_key(column)
         
     def on_input_submitted(self, submitted):
         table = self.query_one(AsetuiTable)
-        if submitted.control.id == "column-add-box":
-            # Check if value is a possible column
-            if self.data.add_to_chosen_columns(submitted.value):
-                self.query_one("#column-add-box").value = ""
-                self.show_column_add = False
+        if submitted.control.id == "add-column-input":
+            if not submitted.validation_result.is_valid:
+                return
+            self.add_column_to_table_and_remove_from_keybox(submitted.value)
 
-                self.add_column_to_table_and_remove_from_keybox(submitted.value)
-                table.focus()
+            self.show_add_column_box = False
+            table.focus()
         elif submitted.control.id == "edit-input":
             # Update table
             table.update_cell_from_edit_box(submitted.value)

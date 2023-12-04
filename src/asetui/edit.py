@@ -10,7 +10,7 @@ class EditBox(Horizontal):
         # Hiding boxes shortcut is already defined in app, just
         # redefining the binding here to make it show in the edit
         # box
-        ("ctrl+g", "hide_edit", "Undo/Hide edit"),
+        ("ctrl+g", "hide_edit", "Undo/Hide"),
     ]
 
     input_widget_id = "edit-input"
@@ -23,8 +23,8 @@ class EditBox(Horizontal):
     def focus(self) -> None:
         self.query_one(f"#{self.input_widget_id}").focus()
 
-    def on_blur(self) -> None:
-        self.query_one(f"#{self.input_widget_id}").value = ""
+    def on_hide(self) -> None:
+        self.query_one(f"#{self.input_widget_id}", Input).value = ""
 
 
 class AddBox(EditBox):

@@ -36,20 +36,20 @@ async def test_add_column(db_path):
     async with app.run_test() as pilot:
         table = app.query_one(AsetuiTable)
         # Check status before adding
-        assert not app.show_column_add
+        assert not app.show_add_column_box
         assert "str_key" not in get_column_labels(table.columns)
         assert "str_key" not in app.data.chosen_columns
 
         await pilot.press("+")
         # Check that the column add box is visible
-        assert app.show_column_add
-        assert app.query_one("#column-add-box").display
+        assert app.show_add_column_box
+        assert app.query_one("#add-column-box").display
 
-        # Type one of the user columns and tab complete
-        await pilot.press("s", "t", "r", "tab", "enter")
+        # Type one of the user columns and complete
+        await pilot.press("s", "t", "r", "right", "enter")
 
         # Check that the column add box is not visible
-        assert not app.show_column_add
+        assert not app.show_add_column_box
 
         # Check that the column has been added
         assert "str_key" in get_column_labels(table.columns)
