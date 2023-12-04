@@ -10,6 +10,5 @@ async def test_add_column_from_keybox(db_path):
         keybox = app.query_one(KeyBox)
         key_button = keybox.query_one("#key-str_key", Key)
         key_button.press()
-        # Why won't you wait for the button to be pressed???
-        print(app.data.chosen_columns)
+        await pilot.pause()
         assert "str_key" in app.data.chosen_columns

@@ -52,6 +52,7 @@ class ASETUI(App):
         self.path = path
         self.sort_columns = ["id"]
         self.sort_reverse = False
+        self.set_key_box_first_time = False
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -85,7 +86,7 @@ class ASETUI(App):
             KeyBox(id="key-box"),
         )
 
-    async def on_mount(self) -> None:
+    def on_mount(self) -> None:
         # db data
         data = instantiate_data(self.path)
 
@@ -95,11 +96,20 @@ class ASETUI(App):
         # Populate table with data using an external function
         table.populate_table(data)
         
-        # Populate the KeyBox with available keys
-        await self.query_one(KeyBox).populate_keys(data.unused_columns())
-
         table.focus()
         self.data = data
+        
+        self.populate_key_box()  # type: ignore
+
+    async def populate_key_box(self) -> None:
+        key_box = self.query_one(KeyBox)
+        await key_box.populate_keys(self.data.unused_columns())
+        
+    async def on_idle(self) -> None:
+        # Populate the KeyBox with available keys
+        if not self.set_key_box_first_time:
+            await self.query_one(KeyBox).populate_keys(self.data.unused_columns())
+            self.set_key_box_first_time = True
 
     def unused_columns(self, input_state: InputState) -> List[DropdownItem]:
         if not hasattr(self, "data"):
