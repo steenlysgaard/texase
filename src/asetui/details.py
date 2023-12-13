@@ -70,7 +70,6 @@ class Details(Container):
         
     def action_save(self) -> None:
         """Save the changes to the table, dataframe and database."""
-        print("Saving changes to database")
 
         # Get the key value pairs from the KVPList
         key_value_pairs = {}

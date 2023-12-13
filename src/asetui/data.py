@@ -126,7 +126,7 @@ class Data:
 
         # Update in self.df
         for row_id in ids:
-            self.df.loc[self.index_from_row_id(row_id), column] = value
+            self.update_df(row_id, column, value)
 
         # Clear the caches
         self._string_df_cache.clear()
@@ -143,6 +143,20 @@ class Data:
             for idx in ids:
                 db.update(idx, **{column: value})
 
+    def update_row_in_db(self, row_id: int, key_value_pairs: dict | None = None, data: dict | None = None) -> None:
+        atoms = None
+        with connect(self.db_path) as db:
+            if key_value_pairs is not None:
+                if 'pbc' in key_value_pairs:
+                    # Get the atoms and modify directly
+                    atoms = db.get_atoms(row_id)
+                    atoms.pbc = pbc_str_to_list(key_value_pairs.pop('pbc'))
+                db.update(row_id, atoms, **key_value_pairs, data=data)
+            
+                
+    def update_df(self, row_id: int, column: str, value: Union[str, float, int]) -> None:
+        self.df.loc[self.index_from_row_id(row_id), column] = value
+                
     def index_from_row_id(self, row_id) -> int:
         return self.df.loc[self.df["id"] == row_id].index[0]
 
@@ -180,19 +194,6 @@ class Data:
             else:
                 static_kvps[key] = value
         return static_kvps, dynamic_kvps
-
-        # static_kvps = ""
-        # dynamic_kvps = []
-        # editable_keys = self.user_keys + ["pbc"]
-        # for key, value in (
-        #     self.df.loc[self.df["id"] == row_id].squeeze().dropna().items()
-        # ):
-        #     if key in editable_keys:
-        #         # dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
-        #         dynamic_kvps.append(ListItem(Input(value=f"{key}: {value}")))
-        #     else:
-        #         static_kvps += f"[bold]{key}: [/bold]{value}\n"
-        # return Text.from_markup(static_kvps[:-1]), dynamic_kvps
 
     def row_data(self, row_id: int) -> list:
         dynamic_data = []
@@ -416,3 +417,7 @@ def get_value(row, key) -> str:
 def get_data(db_path, row_id):
     db = connect(db_path)
     return db.get(id=row_id).data
+
+def pbc_str_to_list(pbc_str: str) -> list:
+    """Convert e.g. the string TFT to [True, False, True]"""
+    return [c == "T" for c in pbc_str]

@@ -184,8 +184,9 @@ class ASETUI(App):
         table.update_row_editable_cells(key_value_pairs)
         
         row_id = table.row_id_at_cursor()
+        self.data.update_row_in_db(row_id, key_value_pairs, data)
         for column, value in key_value_pairs.items():
-            self.data.update_value(row_id, column, value)
+            self.data.update_df(row_id, column, value)
         
     def watch_show_details(self, show_details: bool) -> None:
         """Called when show_details is modified."""
