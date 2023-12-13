@@ -21,7 +21,7 @@ from asetui.search import Search
 from asetui.addcolumn import AddColumnBox
 from asetui.filter import FilterBox
 from asetui.edit import EditBox, AddBox
-from asetui.formatting import format_value
+from asetui.formatting import format_value, convert_value_to_int_or_float
 from asetui.keys import KeyBox
 
 
@@ -167,6 +167,7 @@ class ASETUI(App):
             # Get the highlighted row
             row_id = table.row_id_at_cursor()
             details = self.query_one(Details)
+            details.clear_modified_keys()
             details.update_kvplist(*self.data.row_details(row_id))
             details.update_data(self.data.row_data(row_id))
 
@@ -176,7 +177,16 @@ class ASETUI(App):
         else:
             # Set focus back on the table
             table.focus()
-
+            
+    def save_details(self, key_value_pairs: dict, data: dict) -> None:
+        
+        table = self.query_one(AsetuiTable)
+        table.update_row_editable_cells(key_value_pairs)
+        
+        row_id = table.row_id_at_cursor()
+        for column, value in key_value_pairs.items():
+            self.data.update_value(row_id, column, value)
+        
     def watch_show_details(self, show_details: bool) -> None:
         """Called when show_details is modified."""
         dv = self.query_one(Details)
@@ -380,18 +390,6 @@ class ASETUI(App):
 
 class MiddleContainer(Container):
     pass
-
-
-def convert_value_to_int_or_float(value):
-    """Convert value to int or float if possible"""
-    for t in [int, float]:
-        try:
-            value = t(value)
-        except ValueError:
-            pass
-        else:
-            break
-    return value
 
 
 def main(path: str = "test.db"):

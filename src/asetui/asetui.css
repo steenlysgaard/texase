@@ -36,6 +36,7 @@ Title {
     /* border-right: vkey $background; */
     text-align: center;
     text-style: bold;
+    width: 1fr;
 }
 
 #table {
@@ -132,4 +133,10 @@ KeyBox {
     height: auto;
     layer: table;
     /* dock: bottom; */
+}
+
+.editable-input {
+    padding: 0 0;
+    border: none;
+    
 }

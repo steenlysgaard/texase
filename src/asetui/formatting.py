@@ -1,11 +1,15 @@
 from __future__ import annotations
+from typing import Callable
 
 import pandas as pd
 from rich.text import Text
 
+from ase.db.core import float_to_time_string, now
+
 # The labels showing marked and unmarked rows
 MARKED_LABEL = Text("\u25cf", style="bright_yellow")
 UNMARKED_LABEL = Text("\u2219", style="grey")
+
 
 def format_value(val) -> Text | str:
     if isinstance(val, str):
@@ -22,7 +26,27 @@ def format_value(val) -> Text | str:
         return str(val)
 
 
-def format_column(col: pd.Series, format_function=format_value) -> pd.Series:
+def format_column(
+    col: pd.Series, format_function: Callable = format_value
+) -> pd.Series:
     return col.map(format_function, na_action="ignore").fillna("")
 
 
+def get_pbc_string(pbc) -> str:
+    return "".join("FT"[int(p)] for p in pbc)
+
+
+def get_age_string(ctime) -> str:
+    return float_to_time_string(now() - ctime)
+
+
+def convert_value_to_int_or_float(value):
+    """Convert value to int or float if possible"""
+    for t in [int, float]:
+        try:
+            value = t(value)
+        except ValueError:
+            pass
+        else:
+            break
+    return value

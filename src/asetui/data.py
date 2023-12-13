@@ -10,15 +10,13 @@ from functools import wraps
 import numpy as np
 import pandas as pd
 from ase.db import connect
-from ase.db.core import float_to_time_string, now
 from ase.db.table import all_columns
 from ase import Atoms
-from rich.text import Text
 from textual.widgets import ListItem, Label
 from textual._cache import LRUCache
 
 from asetui.saved_columns import SavedColumns
-from asetui.formatting import format_column
+from asetui.formatting import format_column, get_age_string, get_pbc_string
 
 ops = {
     "==": operator.eq,
@@ -165,19 +163,36 @@ class Data:
         col = self._string_column(column)
         return col.iloc[self._sort].iloc[self.filter_mask[self._sort]]
 
-    def row_details(self, row_id) -> Tuple[Text, list]:
-        """Returns key value pairs from the row in two items:"""
-        static_kvps = ""
-        dynamic_kvps = []
+    def row_details(self, row_id: int) -> Tuple[dict, dict]:
+        """Returns key value pairs from the row in two dictionaries:
+
+        Static and editable key value pairs.
+        All user keys and pbc are editable.
+        """
+        static_kvps = {}
+        dynamic_kvps = {}
         editable_keys = self.user_keys + ["pbc"]
         for key, value in (
             self.df.loc[self.df["id"] == row_id].squeeze().dropna().items()
         ):
             if key in editable_keys:
-                dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
+                dynamic_kvps[key] = value
             else:
-                static_kvps += f"[bold]{key}: [/bold]{value}\n"
-        return Text.from_markup(static_kvps[:-1]), dynamic_kvps
+                static_kvps[key] = value
+        return static_kvps, dynamic_kvps
+
+        # static_kvps = ""
+        # dynamic_kvps = []
+        # editable_keys = self.user_keys + ["pbc"]
+        # for key, value in (
+        #     self.df.loc[self.df["id"] == row_id].squeeze().dropna().items()
+        # ):
+        #     if key in editable_keys:
+        #         # dynamic_kvps.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
+        #         dynamic_kvps.append(ListItem(Input(value=f"{key}: {value}")))
+        #     else:
+        #         static_kvps += f"[bold]{key}: [/bold]{value}\n"
+        # return Text.from_markup(static_kvps[:-1]), dynamic_kvps
 
     def row_data(self, row_id: int) -> list:
         dynamic_data = []
@@ -384,12 +399,6 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
     return df, list(user_keys)
 
 
-def get_age_string(ctime) -> str:
-    return float_to_time_string(now() - ctime)
-
-
-def get_pbc_string(pbc) -> str:
-    return "".join("FT"[int(p)] for p in pbc)
 
 
 def get_value(row, key) -> str:

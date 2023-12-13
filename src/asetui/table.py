@@ -10,7 +10,7 @@ from ase.db.table import all_columns
 
 from asetui.data import Data
 from asetui.edit import EditBox, AddBox
-from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL
+from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
 
 
 class AsetuiTable(DataTable):
@@ -132,6 +132,32 @@ class AsetuiTable(DataTable):
             return False
         else:
             return True
+        
+    def update_row_editable_cells(self, key_value_pairs: dict) -> None:
+        """Update the editable cells of a row.
+
+        This should be called from details, thus it is assumed that
+        the cursor position hasn't changed and we can just use the
+        cursor row.
+
+        Parameters
+        ----------
+        row_id : int
+            The row id of the row to update.
+        key_value_pairs : dict
+            A dictionary of key-value pairs to update.
+
+        """
+        for key, value in key_value_pairs.items():
+            # Check that the column is actually shown
+            if key not in self.columns:
+                continue
+            
+            # Get the column index
+            col_index = self.get_column_index(key)
+
+            # Update the cell
+            self.update_cell_at(Coordinate(self.cursor_row, col_index), format_value(value), update_width=True)
 
     def update_edit_box(self, editbox: EditBox) -> None:
         # Check if current cell is editable
