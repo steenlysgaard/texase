@@ -50,3 +50,7 @@ def convert_value_to_int_or_float(value):
         else:
             break
     return value
+
+def pbc_str_to_list(pbc_str: str) -> list:
+    """Convert e.g. the string TFT to [True, False, True]"""
+    return [c == "T" for c in pbc_str]

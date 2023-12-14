@@ -184,7 +184,7 @@ class ASETUI(App):
         table.update_row_editable_cells(key_value_pairs)
         
         row_id = table.row_id_at_cursor()
-        self.data.update_row_in_db(row_id, key_value_pairs, data)
+        self.data.update_in_db(row_id, key_value_pairs, data)
         for column, value in key_value_pairs.items():
             self.data.update_df(row_id, column, value)
         
@@ -370,24 +370,55 @@ class ASETUI(App):
             table.focus()
             
     def is_kvp_valid(self, key, value):
-        """Check that key-value-pair is valid for ase.db"""
+        """Check that key-value-pair is valid for ase.db
+
+        It is ok to edit pbc, we make this check first."""
+
+        if key == 'pbc':
+            try:
+                check_pbc_string_validity(value)
+            except ValueError as e:
+                self.notify_value_error(str(e))
+                return False
+            return True
+        
         try:
             check({key: value})
         except ValueError as e:
             # Notify that the key-value-pair is not valid with the
             # raised ValueError and then return
-            self.notify(
-                str(e),
-                severity="error",
-                title="ValueError",
-            )
+            self.notify_value_error(str(e))
             return False
         return True
+    
+    def notify_value_error(self, e: str) -> None:
+        self.notify(
+            e,
+            severity="error",
+            title="ValueError",
+        )
 
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
 
+def check_pbc_string_validity(string):
+    # check if the string has exactly three characters
+    if len(string) == 3:
+        # convert the string to upper case
+        string = string.upper()
+        # loop through each character in the string
+        for char in string:
+            # check if the character is either t or f
+            if char not in ["T", "F"]:
+                # raise a ValueError with a descriptive message
+                raise ValueError(f"{string} contains characters that are not T or F!")
+        # return True if all characters are t or f
+        return True
+    else:
+        # raise a ValueError with a descriptive message
+        raise ValueError(f"{string} does not have exactly three characters!")
+        
 
 class MiddleContainer(Container):
     pass

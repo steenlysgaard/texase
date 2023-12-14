@@ -16,7 +16,7 @@ from textual.widgets import ListItem, Label
 from textual._cache import LRUCache
 
 from asetui.saved_columns import SavedColumns
-from asetui.formatting import format_column, get_age_string, get_pbc_string
+from asetui.formatting import format_column, get_age_string, get_pbc_string, pbc_str_to_list
 
 ops = {
     "==": operator.eq,
@@ -122,7 +122,7 @@ class Data:
         except TypeError:
             ids = [ids]
 
-        self.update_values_in_db(ids, column, value)
+        self.update_in_db(ids, {column: value})
 
         # Update in self.df
         for row_id in ids:
@@ -140,20 +140,28 @@ class Data:
         value: new value
         """
         with connect(self.db_path) as db:
-            for idx in ids:
                 db.update(idx, **{column: value})
 
-    def update_row_in_db(self, row_id: int, key_value_pairs: dict | None = None, data: dict | None = None) -> None:
+    def update_in_db(self, row_ids: int | Iterable[int],
+                     key_value_pairs: dict | None = None,
+                     data: dict | None = None) -> None:
+        """Update the row id(s) db with the given key value pairs and data"""
+        try:
+            iter(row_ids)
+        except TypeError:
+            row_ids = [row_ids]
+
         atoms = None
         with connect(self.db_path) as db:
-            if key_value_pairs is not None:
-                if 'pbc' in key_value_pairs:
-                    # Get the atoms and modify directly
-                    atoms = db.get_atoms(row_id)
-                    atoms.pbc = pbc_str_to_list(key_value_pairs.pop('pbc'))
-                db.update(row_id, atoms, **key_value_pairs, data=data)
-            
-                
+            for idx in row_ids:
+                if key_value_pairs is not None:
+                    if 'pbc' in key_value_pairs:
+                        # Get the atoms and modify directly
+                        atoms = db.get_atoms(idx)
+                        atoms.pbc = pbc_str_to_list(key_value_pairs.pop('pbc'))
+                    db.update(idx, atoms, **key_value_pairs, data=data)
+        
+        
     def update_df(self, row_id: int, column: str, value: Union[str, float, int]) -> None:
         self.df.loc[self.index_from_row_id(row_id), column] = value
                 
@@ -418,6 +426,3 @@ def get_data(db_path, row_id):
     db = connect(db_path)
     return db.get(id=row_id).data
 
-def pbc_str_to_list(pbc_str: str) -> list:
-    """Convert e.g. the string TFT to [True, False, True]"""
-    return [c == "T" for c in pbc_str]

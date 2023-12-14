@@ -12,6 +12,7 @@ from asetui.data import Data
 from asetui.edit import EditBox, AddBox
 from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
 
+UNEDITABLE_COLUMNS = [c for c in all_columns if c not in ["pbc"]]
 
 class AsetuiTable(DataTable):
     BINDINGS = [
@@ -123,7 +124,7 @@ class AsetuiTable(DataTable):
 
         # Get current column name
         column_name = str(list(self.columns.values())[coordinate.column].label)
-        if column_name in all_columns:
+        if column_name in UNEDITABLE_COLUMNS:
             self.notify(
                 f"Column {column_name} can not be edited!",
                 severity="warning",
