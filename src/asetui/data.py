@@ -16,7 +16,7 @@ from textual.widgets import ListItem, Label
 from textual._cache import LRUCache
 
 from asetui.saved_columns import SavedColumns
-from asetui.formatting import format_column, get_age_string, get_pbc_string, pbc_str_to_list
+from asetui.formatting import format_column, get_age_string, pbc_str_to_array
 
 ops = {
     "==": operator.eq,
@@ -156,11 +156,24 @@ class Data:
             for idx in row_ids:
                 if key_value_pairs is not None:
                     if 'pbc' in key_value_pairs:
+                        # We need to remove pbc from key_value_pairs,
+                        # thus first we copy the dict and then pop pbc
+                        # from the copy
+                        key_value_pairs = dict(key_value_pairs)
+                        
                         # Get the atoms and modify directly
                         atoms = db.get_atoms(idx)
-                        atoms.pbc = pbc_str_to_list(key_value_pairs.pop('pbc'))
+                        atoms.pbc = pbc_str_to_array(key_value_pairs.pop('pbc'))
                     db.update(idx, atoms, **key_value_pairs, data=data)
         
+    def update_row(self, row_id: int, key_value_pairs: dict | None = None, data: dict | None = None) -> None:
+        """Update the row id db with the given key value pairs and data.
+
+        It is assumed that only editable keys are passed in key_value_pairs."""
+        
+        self.update_in_db(row_id, key_value_pairs, data)
+        for key, value in key_value_pairs.items():
+            self.update_df(row_id, key, value)
         
     def update_df(self, row_id: int, column: str, value: Union[str, float, int]) -> None:
         self.df.loc[self.index_from_row_id(row_id), column] = value
@@ -340,8 +353,6 @@ class Data:
         column_data = df[column]
         if column == "age":
             column_data = format_column(column_data, format_function=get_age_string)
-        elif column == "pbc":
-            column_data = format_column(column_data, format_function=get_pbc_string)
         return format_column(column_data)
 
 
@@ -415,8 +426,10 @@ def get_value(row, key) -> str:
     if key == "age":
         # value = float_to_time_string(now() - row.ctime)
         value = row.ctime
-    # elif key == "pbc":
-    #     value = "".join("FT"[int(p)] for p in row.pbc)
+    elif key == "pbc":
+        # Convert pbc to a string of F and T because we don't want
+        # to save arrays in the df
+        value = "".join("FT"[int(p)] for p in row.pbc)
     else:
         value = row.get(key, pd.NaT)
     return value

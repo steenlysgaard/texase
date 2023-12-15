@@ -179,14 +179,11 @@ class ASETUI(App):
             table.focus()
             
     def save_details(self, key_value_pairs: dict, data: dict) -> None:
-        
         table = self.query_one(AsetuiTable)
         table.update_row_editable_cells(key_value_pairs)
-        
         row_id = table.row_id_at_cursor()
-        self.data.update_in_db(row_id, key_value_pairs, data)
-        for column, value in key_value_pairs.items():
-            self.data.update_df(row_id, column, value)
+
+        self.data.update_row(row_id, key_value_pairs, data)
         
     def watch_show_details(self, show_details: bool) -> None:
         """Called when show_details is modified."""

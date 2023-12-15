@@ -1,6 +1,6 @@
 import pytest
 
-from textual.widgets._data_table import Coordinate
+from textual.coordinate import Coordinate
 from textual.widgets import Input
 
 from ase.db import connect
@@ -8,6 +8,7 @@ from ase.db import connect
 from asetui.app import ASETUI
 from asetui.table import AsetuiTable, get_column_labels
 from asetui.details import Details, KVPList, EditableItem
+from asetui.formatting import pbc_str_to_array
 
 from .shared_info import pbc
 
@@ -64,7 +65,8 @@ async def test_edit(db_path):
         column_labels = get_column_labels(table.columns)
         idx = column_labels.index("pbc")
         assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == inv_pbc
-        assert app.data.df.iloc[table.cursor_row]["pbc"] == inv_pbc
+        assert app.data.df.iloc[0]["pbc"] == inv_pbc
+        assert all(connect(db_path).get(1).pbc == pbc_str_to_array(inv_pbc))
 
         
         

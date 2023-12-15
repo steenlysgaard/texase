@@ -1,14 +1,16 @@
 import pytest
 
-from asetui.formatting import pbc_str_to_list
+import numpy as np
 
-def test_pbc_str_to_list():
+from asetui.formatting import pbc_str_to_array
+
+def test_pbc_str_to_array():
     # Test valid inputs
-    assert pbc_str_to_list("TFT") == [True, False, True]
-    assert pbc_str_to_list("FTF") == [False, True, False]
-    assert pbc_str_to_list("TTT") == [True, True, True]
-    assert pbc_str_to_list("FFF") == [False, False, False]
+    assert np.all(pbc_str_to_array("TFT") == np.array([True, False, True]))
+    assert np.all(pbc_str_to_array("FTF") == np.array([False, True, False]))
+    assert np.all(pbc_str_to_array("TTT") == np.array([True, True, True]))
+    assert np.all(pbc_str_to_array("FFF") == np.array([False, False, False]))
 
     # Test invalid inputs
     with pytest.raises(TypeError):
-        pbc_str_to_list(123)  # type: ignore
+        pbc_str_to_array(123)  # type: ignore

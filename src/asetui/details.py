@@ -5,7 +5,7 @@ from textual.widgets import ListView, ListItem
 from textual.containers import Container, Horizontal
 from rich.text import Text
 
-from asetui.formatting import convert_value_to_int_or_float, get_age_string, get_pbc_string
+from asetui.formatting import convert_value_to_int_or_float, get_age_string
 
 
 class Details(Container):
@@ -46,8 +46,6 @@ class Details(Container):
         kvp_widget = self.query_one(KVPList)
         kvp_widget.clear()
         for key, value in dynamic_kvps.items():
-            if key == 'pbc':
-                value = get_pbc_string(value)
             kvp_widget.append(ListItem(EditableItem(key, value)))
             
     def update_data(self, dynamic_data: list) -> None:
@@ -66,7 +64,6 @@ class Details(Container):
         item = sender.item.get_child_by_type(EditableItem)
         item.focus()
         self.modified_keys.add(item.key)
-        # print('Selected on Details', sender.item, sender.time, sender.item.get_child_by_type(EditableItem).value, sender.item.get_child_by_type(EditableItem).key)
         
     def action_save(self) -> None:
         """Save the changes to the table, dataframe and database."""
@@ -99,6 +96,8 @@ class EditableItem(Horizontal):
 
         Then the KVPList takes back focus.
         """
+        # TODO: First validate the key and new value pair
+        
         self.value = submitted.value
         
         

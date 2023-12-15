@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Callable
 
+import numpy as np
 import pandas as pd
 from rich.text import Text
 
@@ -32,10 +33,6 @@ def format_column(
     return col.map(format_function, na_action="ignore").fillna("")
 
 
-def get_pbc_string(pbc) -> str:
-    return "".join("FT"[int(p)] for p in pbc)
-
-
 def get_age_string(ctime) -> str:
     return float_to_time_string(now() - ctime)
 
@@ -51,6 +48,6 @@ def convert_value_to_int_or_float(value):
             break
     return value
 
-def pbc_str_to_list(pbc_str: str) -> list:
+def pbc_str_to_array(pbc_str: str) -> np.ndarray:
     """Convert e.g. the string TFT to [True, False, True]"""
-    return [c == "T" for c in pbc_str]
+    return np.array([c == "T" for c in pbc_str])
