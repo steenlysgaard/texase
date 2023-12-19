@@ -54,6 +54,9 @@ class Details(Container):
         for kvp in dynamic_data:
             data_widget.append(kvp)
 
+    def on_hide(self) -> None:
+        self.clear_modified_keys()
+
     def clear_modified_keys(self) -> None:
         self.modified_keys = set()
             
@@ -77,6 +80,7 @@ class Details(Container):
                 value = convert_value_to_int_or_float(item.value)
                 key_value_pairs[key] = value
         self.app.save_details(key_value_pairs, None)
+        self.clear_modified_keys()
 
 class EditableItem(Horizontal):
     def __init__(self, key, value):

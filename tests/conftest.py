@@ -7,7 +7,7 @@ from ase.data import chemical_symbols
 from .shared_info import user_dct, cell, pbc, test_atoms
 
 # Define a fixture that returns a dictionary object
-@pytest.fixture(scope="package")
+@pytest.fixture
 def db_path(tmp_path_factory):
     fn = tmp_path_factory.mktemp("test_db") / "test.db"
     db = connect(fn)
@@ -17,7 +17,7 @@ def db_path(tmp_path_factory):
     return fn
 
 # Define a fixture with a big db
-@pytest.fixture(scope="package")
+@pytest.fixture
 def big_db_path(tmp_path_factory):
     fn = tmp_path_factory.mktemp("test_db") / "test.db"
     db = connect(fn)
