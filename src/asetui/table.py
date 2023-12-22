@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List, Union, Tuple, Set
 
 from rich.text import Text
@@ -176,7 +178,7 @@ class AsetuiTable(DataTable):
 
         # Special rules to edit e.g. pbc or volume (then get cell editor) etc.
 
-    def update_cell_from_edit_box(self, new_value: str) -> None:
+    def update_cell_from_edit_box(self, new_value: Text | str) -> None:
         self.update_cell_at(self.cursor_coordinate, new_value, update_width=True)
 
     def column_at_cursor(self) -> str:

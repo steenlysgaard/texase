@@ -132,16 +132,6 @@ class Data:
         self._string_df_cache.clear()
         self._remove_edited_column_from_caches(column)
 
-    def update_values_in_db(self, ids, column, value) -> None:
-        """Updates the value in the database and self.df
-
-        ids: list of row ids
-        column: column name
-        value: new value
-        """
-        with connect(self.db_path) as db:
-                db.update(idx, **{column: value})
-
     def update_in_db(self, row_ids: int | Iterable[int],
                      key_value_pairs: dict | None = None,
                      data: dict | None = None) -> None:

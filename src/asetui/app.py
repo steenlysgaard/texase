@@ -1,5 +1,3 @@
-from typing import List
-
 from textual import work
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input
@@ -317,14 +315,23 @@ class ASETUI(App):
             self.show_add_column_box = False
             table.focus()
         elif submitted.control.id == "edit-input":
+            column = table.column_at_cursor()
+            if column == 'pbc':
+                value = submitted.value.upper()
+            else:
+                value = convert_value_to_int_or_float(submitted.value)
+                
+            if not self.is_kvp_valid(column, value):
+                return
+            
             # Update table
-            table.update_cell_from_edit_box(submitted.value)
+            table.update_cell_from_edit_box(format_value(value))
 
             # Update data
             self.data.update_value(
                 ids=table.row_id_at_cursor(),
                 column=table.column_at_cursor(),
-                value=submitted.value,
+                value=value,
             )
 
             # Go back to original view

@@ -77,8 +77,7 @@ class Details(Container):
             item = h.get_child_by_type(EditableItem)
             key = item.key
             if key in self.modified_keys:
-                value = convert_value_to_int_or_float(item.value)
-                key_value_pairs[key] = value
+                key_value_pairs[key] = item.value
         self.app.save_details(key_value_pairs, None)
         self.clear_modified_keys()
 
@@ -100,9 +99,16 @@ class EditableItem(Horizontal):
 
         Then the KVPList takes back focus.
         """
-        # TODO: First validate the key and new value pair
+        # TODO: Exactly the same code as in app.py. Refactor?
+        if self.key == 'pbc':
+            value = submitted.value.upper()
+        else:
+            value = convert_value_to_int_or_float(submitted.value)
+        if not self.app.is_kvp_valid(self.key, value):
+            submitted.stop()  # stop bubbling further
+            return
         
-        self.value = submitted.value
+        self.value = value
         
         
 class Title(Label):
