@@ -12,5 +12,5 @@ def test_pbc_str_to_array():
     assert np.all(pbc_str_to_array("FFF") == np.array([False, False, False]))
 
     # Test invalid inputs
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         pbc_str_to_array(123)  # type: ignore
