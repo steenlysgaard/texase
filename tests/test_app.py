@@ -122,4 +122,22 @@ async def test_sort_then_add_column(db_path):
         col_idx = get_column_labels(table.columns).index("str_key")
         assert table.get_cell_at(Coordinate(1, col_idx)) == user_dct["str_key"]
         assert table.get_cell_at(Coordinate(0, col_idx)) == ""
+
+@pytest.mark.asyncio
+async def test_rows_to_act_on(db_path):
+    app = ASETUI(path=db_path)
+    async with app.run_test() as pilot:
+        table = app.query_one(AsetuiTable)
+        
+        # Nothing marked
+        assert table.ids_to_act_on() == [1]
+        
+        # One marked, not the row we are on
+        await pilot.press("space", "down")
+        assert table.ids_to_act_on() == [1]
+        
+        # Two marked
+        await pilot.press("space")
+        assert sorted(table.ids_to_act_on()) == [1, 2]
+        
         

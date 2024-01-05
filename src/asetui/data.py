@@ -4,7 +4,7 @@ import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Tuple, Union, overload, Iterable
+from typing import Any, List, Tuple, Union, overload, Iterable, Dict
 from functools import wraps
 
 import numpy as np
@@ -99,13 +99,13 @@ class Data:
 
     @overload
     def update_value(
-        self, ids: int, column: str, value: Union[str, float, int]
+        self, ids: int, column: str, value: str | float | int | None
     ) -> None:
         ...
 
     @overload
     def update_value(
-        self, ids: Iterable[int], column: str, value: Union[str, float, int]
+        self, ids: Iterable[int], column: str, value: str | float | int | None
     ) -> None:
         ...
 
@@ -122,7 +122,10 @@ class Data:
         except TypeError:
             ids = [ids]
 
-        self.update_in_db(ids, {column: value})
+        if value is None:
+            self.update_in_db(ids, delete_keys=[column])
+        else:
+            self.update_in_db(ids, {column: value})
 
         # Update in self.df
         for row_id in ids:
@@ -133,18 +136,20 @@ class Data:
         self._remove_edited_column_from_caches(column)
 
     def update_in_db(self, row_ids: int | Iterable[int],
-                     key_value_pairs: dict | None = None,
-                     data: dict | None = None) -> None:
+                     key_value_pairs: Dict[str, Any] = {},
+                     data: dict | None = None,
+                     delete_keys: list = []) -> None:
         """Update the row id(s) db with the given key value pairs and data"""
         try:
-            iter(row_ids)
+            iter(row_ids)  # type: ignore
         except TypeError:
-            row_ids = [row_ids]
+            row_ids = [row_ids]  # type: ignore
 
         atoms = None
         with connect(self.db_path) as db:
             for idx in row_ids:
-                if key_value_pairs is not None:
+                atoms = None
+                if key_value_pairs:
                     if 'pbc' in key_value_pairs:
                         # We need to remove pbc from key_value_pairs,
                         # thus first we copy the dict and then pop pbc
@@ -154,9 +159,10 @@ class Data:
                         # Get the atoms and modify directly
                         atoms = db.get_atoms(idx)
                         atoms.pbc = pbc_str_to_array(key_value_pairs.pop('pbc'))
-                    db.update(idx, atoms, **key_value_pairs, data=data)
+                db.update(idx, atoms, **key_value_pairs,
+                          delete_keys=delete_keys, data=data)
         
-    def update_row(self, row_id: int, key_value_pairs: dict | None = None, data: dict | None = None) -> None:
+    def update_row(self, row_id: int, key_value_pairs: dict = {}, data: dict | None = None) -> None:
         """Update the row id db with the given key value pairs and data.
 
         It is assumed that only editable keys are passed in key_value_pairs."""
@@ -165,7 +171,9 @@ class Data:
         for key, value in key_value_pairs.items():
             self.update_df(row_id, key, value)
         
-    def update_df(self, row_id: int, column: str, value: Union[str, float, int]) -> None:
+    def update_df(self, row_id: int, column: str, value: str | float | int | None) -> None:
+        if value is None:
+            value = pd.NaT
         self.df.loc[self.index_from_row_id(row_id), column] = value
                 
     def index_from_row_id(self, row_id) -> int:

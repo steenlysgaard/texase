@@ -11,6 +11,7 @@ class YesNoScreen(Screen[bool]):
     DEFAULT_CSS = """
     YesNoScreen {
         align: center middle;
+        background: rgba(0, 0, 0, 0.5);
     }
 
     YesNoScreen > Label {

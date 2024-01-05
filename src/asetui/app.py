@@ -230,10 +230,10 @@ class ASETUI(App):
         if await self.push_screen_wait(YesNoScreen(question)):
             table.delete_selected_key_value_pairs()
 
-            # Remove in df
-
-            # Remove in db
-
+            # Remove in db and df
+            self.data.update_value(table.ids_to_act_on(),
+                                   column=table.column_at_cursor(),
+                                   value=None)
 
     # Edit
     def action_edit(self) -> None:

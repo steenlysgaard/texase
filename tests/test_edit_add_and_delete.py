@@ -1,4 +1,7 @@
 import pytest
+import pytest_asyncio
+
+import pandas as pd
 
 from textual.widgets._data_table import ColumnKey, RowKey
 
@@ -6,6 +9,7 @@ from ase.db import connect
 
 from asetui.app import ASETUI
 from asetui.table import AsetuiTable, get_column_labels
+from asetui.yesno import YesNoScreen
 
 from .shared_info import user_dct
 
@@ -111,7 +115,6 @@ async def test_add_kvp(db_path):
 async def test_invalid_kvps(db_path):
     app = ASETUI(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
         addbox = app.query_one("#add-kvp-box")
 
         # Try a reserved key
@@ -127,3 +130,52 @@ async def test_invalid_kvps(db_path):
             assert addbox.display
         
         
+@pytest_asyncio.fixture
+async def app_with_cursor_on_str_key(db_path):
+    app = ASETUI(path=db_path)
+    async with app.run_test(size=(200, 50)) as pilot:
+        table = app.query_one(AsetuiTable)
+        
+        # Add an editable column, i.e. a user key
+        await pilot.press("+", *list("str_key"), "enter")
+        
+        column_labels = get_column_labels(table.columns)
+        idx = column_labels.index("str_key")
+        # Move to the new column
+        await pilot.press(*(idx * ("right", )))
+        
+        yield app, pilot
+
+@pytest.mark.asyncio
+async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
+    app, pilot = app_with_cursor_on_str_key
+    table = app.query_one(AsetuiTable)
+        
+    # Press D and then n to cancel
+    await pilot.press("D")
+    assert isinstance(app.screen, YesNoScreen)
+    await pilot.press("n")
+    assert table.get_cell_at(table.cursor_coordinate) == user_dct["str_key"]
+
+    # Press D and then y to delete
+    await pilot.press("D", "y")
+    assert table.get_cell_at(table.cursor_coordinate) == ""
+
+    # Check that the value removed in the dataframe
+    assert app.data.df["str_key"].iloc[0] is pd.NaT
+
+    # And also removed in the db itself
+    assert connect(db_path).get(id=1).get("str_key", None) is None
+        
+@pytest.mark.asyncio
+async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
+    app, pilot = app_with_cursor_on_str_key
+    
+    table = app.query_one(AsetuiTable)
+    
+    # Mark both rows and delete
+    await pilot.press("space", "down", "space", "D", "y")
+    for i in range(2):
+        assert app.data.df["str_key"].iloc[i] is pd.NaT
+        assert table.get_cell(RowKey(str(i+1)), ColumnKey("str_key")) == ""
+        assert connect(db_path).get(id=i+1).get("str_key", None) is None

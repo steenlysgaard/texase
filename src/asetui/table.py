@@ -220,11 +220,7 @@ class AsetuiTable(DataTable):
     def delete_kvp_question(self) -> Text:
         """Return the question to ask when deleting a key value pair."""
         # Get the ids of the marked or currently selected rows
-        if self.marked_rows:
-            ids = self.get_marked_row_ids()
-        else:
-            ids = [self.row_id_at_cursor()]
-            
+        ids = self.ids_to_act_on()
         no_rows = len(ids)
 
         # Get the column name
@@ -245,17 +241,10 @@ class AsetuiTable(DataTable):
         pairs of all marked rows, else delete the key value pair of
         the current row."""
         
-        cursor_cell_key = self.coordinate_to_cell_key(Coordinate(self.cursor_row, self.cursor_column))
+        rows = self.row_keys_to_act_on()
         
-        if self.marked_rows:
-            rows = list(self.marked_rows)
-        else:
-            rows = [cursor_cell_key.row_key]
-            
         for row_key in rows:
-            self.update_cell(row_key, cursor_cell_key.column_key, "")
-            
-        
+            self.update_cell(row_key, self.column_index_to_column_key(self.cursor_column), "")
             
             
     # Selecting/marking rows
@@ -339,6 +328,32 @@ class AsetuiTable(DataTable):
         """Return the row id at the cursor as an int."""
         return get_id_from_row(self.get_row_at(self.cursor_row))
 
+    def ids_to_act_on(self) -> List[int]:
+        """Get the ids of the rows to act on using the same logic as
+        row_keys_to_act_on."""
+        return [get_id_from_row(self.get_row(row_key))
+                for row_key in self.row_keys_to_act_on()]
+    
+    def row_keys_to_act_on(self) -> List[RowKey]:
+        """Get the row keys of the rows to act on. If some rows are marked,
+        then return the row keys of those rows, otherwise return a list of the RowKey of
+        the row where the cursor is."""
+        if self.marked_rows:
+            rows = list(self.marked_rows)
+        else:
+            rows = [self.row_index_to_row_key(self.cursor_row)]
+        return rows
+    
+    def row_index_to_row_key(self, row_index) -> RowKey:
+        """Return the row key of the row at the given row index"""
+        return self.coordinate_to_cell_key(Coordinate(row_index, 0)).row_key
+    
+    def column_index_to_column_key(self, column_index) -> ColumnKey:
+        """Return the column key of the column at the given column index"""
+        return self.coordinate_to_cell_key(Coordinate(0, column_index)).column_key
+        
+        
+            
 
 def get_id_from_row(row) -> int:
     # This assumes that the first index of the row is the id
