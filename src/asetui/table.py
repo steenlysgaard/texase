@@ -25,10 +25,11 @@ class AsetuiTable(DataTable):
         ("e", "edit", "Edit"),
         ("K", "add_key_value_pair", "Add key-value pair"),
         # ("a", "add_configurations", "Add configuration(s)"),
-        # ("D", "delete_rows", "Delete row(s)"),
+        # ("d", "delete_rows", "Delete row(s)"),
+        ("D", "delete_key_value_pairs", "Delete key-value pair(s)"),
         ("v", "view", "View"),
         ("+", "add_column", "Add column"),
-        ("-", "remove_column", "Remove column"),
+        ("-", "remove_column", "Hide column"),
         ("space", "mark_row", "Mark row"),
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
@@ -120,13 +121,13 @@ class AsetuiTable(DataTable):
             update_width=True,
         )
         
-    def is_cell_editable(self) -> bool:
+    def is_cell_editable(self, uneditable_columns: List[str] = UNEDITABLE_COLUMNS) -> bool:
         # Check if current cell is editable
         coordinate = self.cursor_coordinate
 
         # Get current column name
         column_name = str(list(self.columns.values())[coordinate.column].label)
-        if column_name in UNEDITABLE_COLUMNS:
+        if column_name in uneditable_columns:
             self.notify(
                 f"Column {column_name} can not be edited!",
                 severity="warning",
@@ -185,7 +186,7 @@ class AsetuiTable(DataTable):
         """Return the name of the column at the cursor."""
         return str(list(self.columns.values())[self.cursor_column].label)
 
-    # Add/Edit key value pairs
+    # Add/Edit/Delete key value pairs
     def update_add_box(self, addbox: AddBox) -> None:
         # Set the value of the key input field to an empty string
         input_field = addbox.query_one("#add-input", Input)
@@ -215,7 +216,48 @@ class AsetuiTable(DataTable):
         # If not, add the column. The values is already set in the data.
         else:
             self.add_column_and_values(column)
+            
+    def delete_kvp_question(self) -> Text:
+        """Return the question to ask when deleting a key value pair."""
+        # Get the ids of the marked or currently selected rows
+        if self.marked_rows:
+            ids = self.get_marked_row_ids()
+        else:
+            ids = [self.row_id_at_cursor()]
+            
+        no_rows = len(ids)
 
+        # Get the column name
+        column_name = self.column_at_cursor()
+        
+        # Create the question
+        ids_str = ", ".join([str(id) for id in ids])
+        plural = [" ", "s "][no_rows > 1]
+        q = "Do you want to delete the key value pair" + plural
+        q += f"[bold]{column_name}[/bold] in row" + plural
+        q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
+        return Text.from_markup(q)
+    
+            
+    def delete_selected_key_value_pairs(self) -> None:
+        """Delete key value pairs of the currently hightlighted
+        column. If some rows are marked then delete the key value
+        pairs of all marked rows, else delete the key value pair of
+        the current row."""
+        
+        cursor_cell_key = self.coordinate_to_cell_key(Coordinate(self.cursor_row, self.cursor_column))
+        
+        if self.marked_rows:
+            rows = list(self.marked_rows)
+        else:
+            rows = [cursor_cell_key.row_key]
+            
+        for row_key in rows:
+            self.update_cell(row_key, cursor_cell_key.column_key, "")
+            
+        
+            
+            
     # Selecting/marking rows
     def action_mark_row(self) -> None:
         row_index = self.cursor_row

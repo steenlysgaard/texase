@@ -10,6 +10,7 @@ from textual._two_way_dict import TwoWayDict
 
 from ase.visualize import view
 from ase.db.core import check
+from ase.db.table import all_columns
 
 from asetui.data import instantiate_data
 from asetui.table import AsetuiTable
@@ -21,6 +22,7 @@ from asetui.filter import FilterBox
 from asetui.edit import EditBox, AddBox
 from asetui.formatting import format_value, convert_value_to_int_or_float
 from asetui.keys import KeyBox
+from asetui.yesno import YesNoScreen
 
 
 class ASETUI(App):
@@ -207,7 +209,7 @@ class ASETUI(App):
         help_view = self.query_one(Help)
         help_view.display = show_help
 
-    # Add key-value-pairs
+    # Add/Delete key-value-pairs
     def action_add_key_value_pair(self) -> None:
         table = self.query_one(AsetuiTable)
         self.show_add_kvp = True
@@ -218,6 +220,20 @@ class ASETUI(App):
     def watch_show_add_kvp(self, show_add_kvp: bool) -> None:
         box = self.query_one("#add-kvp-box")
         box.display = show_add_kvp
+        
+    @work
+    async def action_delete_key_value_pairs(self) -> None:
+        table = self.query_one(AsetuiTable)
+        if not table.is_cell_editable(uneditable_columns=all_columns):
+            return
+        question = table.delete_kvp_question()
+        if await self.push_screen_wait(YesNoScreen(question)):
+            table.delete_selected_key_value_pairs()
+
+            # Remove in df
+
+            # Remove in db
+
 
     # Edit
     def action_edit(self) -> None:
