@@ -1547,20 +1547,20 @@ syntax = ["tree-sitter (>=0.20.1,<0.21.0)", "tree_sitter_languages (>=1.7.0)"]
 
 [[package]]
 name = "textual-dev"
-version = "1.2.1"
+version = "1.4.0"
 description = "Development tools for working with Textual"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.8,<4.0"
 files = [
-    {file = "textual_dev-1.2.1-py3-none-any.whl", hash = "sha256:a96ff43841cadf853dd689d68c2fc920a23ad71cfa9a33917ca53e96d1cc81f3"},
-    {file = "textual_dev-1.2.1.tar.gz", hash = "sha256:0bda11adfc541e0cc9e49bdf37a8b852281dc2387bb6ff3d01f40c7a3f841684"},
+    {file = "textual_dev-1.4.0-py3-none-any.whl", hash = "sha256:330beec18b8f469adf7cdf9d69cc94965bf3e69d9aec23625d62cdedcadab044"},
+    {file = "textual_dev-1.4.0.tar.gz", hash = "sha256:a20ea746a93e66978e9dfe71a7e5409854c96cc3e46550cc40760b199d7a5d3b"},
 ]
 
 [package.dependencies]
 aiohttp = ">=3.8.1"
 click = ">=8.1.2"
 msgpack = ">=1.0.3"
-textual = ">=0.33.0"
+textual = ">=0.36.0"
 typing-extensions = ">=4.4.0,<5.0.0"
 
 [[package]]
@@ -1742,4 +1742,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "6c6af93383b1154b1fcbac78051ae81c68b345842ec8ae67f3a1c3822eec00d9"
+content-hash = "d80110d112255113af08fa107879886cf8822e3fa46fbef06d5c5122a36687e4"
