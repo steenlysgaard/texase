@@ -10,7 +10,7 @@ packages = [{include = "asetui", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.8"
 ase = ">=3.19.0"
-textual = "0.41.0"
+textual = "0.47.0"
 pandas = "^2.0.3"
 pytest-asyncio = "^0.21.1"
 
