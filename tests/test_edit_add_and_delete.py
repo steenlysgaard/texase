@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 import pandas as pd
 
@@ -130,22 +129,6 @@ async def test_invalid_kvps(db_path):
             assert addbox.display
         
         
-@pytest_asyncio.fixture
-async def app_with_cursor_on_str_key(db_path):
-    app = ASETUI(path=db_path)
-    async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
-        
-        # Add an editable column, i.e. a user key
-        await pilot.press("+", *list("str_key"), "enter")
-        
-        column_labels = get_column_labels(table.columns)
-        idx = column_labels.index("str_key")
-        # Move to the new column
-        await pilot.press(*(idx * ("right", )))
-        
-        yield app, pilot
-
 @pytest.mark.asyncio
 async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key

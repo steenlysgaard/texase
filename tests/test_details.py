@@ -1,5 +1,7 @@
 import pytest
 
+import pandas as pd
+
 from textual.coordinate import Coordinate
 from textual.widgets import Input
 
@@ -12,12 +14,12 @@ from asetui.formatting import pbc_str_to_array
 
 from .shared_info import pbc
 
-def get_pbc_index_and_item(details: Details) -> tuple[int, EditableItem]:
+def get_key_index_and_item(details: Details, key: str = 'pbc') -> tuple[int, EditableItem]:
     kvp_list = details.query_one(KVPList)
     # pbc will always be present in the kvp list as it comes from the Atoms object
     for i, listitem in enumerate(kvp_list.children):
         item = listitem.get_child_by_type(EditableItem)
-        if item.key == "pbc":
+        if item.key == key:
             break
     return i, item  # type: ignore
         
@@ -37,7 +39,7 @@ async def test_edit(db_path):
         assert app.show_details
         assert details.display
         
-        i, item = get_pbc_index_and_item(details)
+        i, item = get_key_index_and_item(details)
         
         # Press down arrow to select the pbc row
         await pilot.press(*(i * ("down", )))
@@ -81,11 +83,10 @@ async def test_cancel_edit(db_path):
         
         await pilot.press("f")
         
-        i, _ = get_pbc_index_and_item(details)
+        i, _ = get_key_index_and_item(details)
         
         # Press down arrow to select the pbc row
         await pilot.press(*(i * ("down", )), "enter")
-
         
         # Modify pbc
         await pilot.press("enter", *(3 * ("backspace", )))
@@ -107,7 +108,35 @@ async def test_cancel_edit(db_path):
         assert all(connect(db_path).get(1).pbc == pbc)
         
         await pilot.press("f")
-        _, item = get_pbc_index_and_item(details)
+        _, item = get_key_index_and_item(details)
         input_widget = item.query_one(Input)
         assert input_widget.value == "".join(['FT'[i] for i in pbc])
 
+@pytest.mark.asyncio
+async def test_delete(app_with_cursor_on_str_key, db_path):
+    app, pilot = app_with_cursor_on_str_key
+    details = app.query_one("#details", Details)
+    table = app.query_one(AsetuiTable)
+
+    await pilot.press("f")
+
+    i, _ = get_key_index_and_item(details, 'str_key')
+
+    # Press down arrow to select the pbc row
+    await pilot.press(*(i * ("down", )))
+
+    # Delete the key
+    await pilot.press("ctrl+d")
+
+    assert details.deleted_keys == {"str_key"}
+
+    # Save the changes and hide the details
+    await pilot.press("ctrl+s", "ctrl+g")
+
+    # Check that the value was deleted
+    column_labels = get_column_labels(table.columns)
+    idx = column_labels.index("str_key")
+    assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == ""
+    assert app.data.df.iloc[0]["str_key"] is pd.NaT
+    with pytest.raises(AttributeError):
+        connect(db_path).get(1).str_key

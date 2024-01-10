@@ -1,8 +1,12 @@
 import pytest
+import pytest_asyncio
 
 from ase.db import connect
 from ase import Atoms
 from ase.data import chemical_symbols
+
+from asetui.app import ASETUI
+from asetui.table import AsetuiTable, get_column_labels
 
 from .shared_info import user_dct, cell, pbc, test_atoms
 
@@ -26,8 +30,19 @@ def big_db_path(tmp_path_factory):
                  key_value_pairs=user_dct)
     return fn
 
-# # Define another fixture that depends on the previous one
-# @pytest.fixture
-# def my_object_with_id(my_object):
-#     my_object["id"] = 123
-#     return my_object
+@pytest_asyncio.fixture
+async def app_with_cursor_on_str_key(db_path):
+    app = ASETUI(path=db_path)
+    async with app.run_test(size=(200, 50)) as pilot:
+        table = app.query_one(AsetuiTable)
+        
+        # Add an editable column, i.e. a user key
+        await pilot.press("+", *list("str_key"), "enter")
+        
+        column_labels = get_column_labels(table.columns)
+        idx = column_labels.index("str_key")
+        # Move to the new column
+        await pilot.press(*(idx * ("right", )))
+        
+        yield app, pilot
+
