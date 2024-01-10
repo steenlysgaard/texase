@@ -1,26 +1,25 @@
 from rich.text import Text
-from textual.screen import Screen
+from textual.screen import ModalScreen
 from textual.widgets import Footer, Label
 from textual.binding import Binding
 from textual.app import ComposeResult
 
 
-class YesNoScreen(Screen[bool]):
+class YesNoScreen(ModalScreen[bool]):
     """Screen with a question that can be answered yes or no."""
     
     DEFAULT_CSS = """
-    YesNoScreen {
-        align: center middle;
-        background: rgba(0, 0, 0, 0.5);
-    }
+        YesNoScreen {
+            align: center middle;
+        }
 
-    YesNoScreen > Label {
-        text-align: center;
-        width: 50%;
-        height: auto;
-        border: heavy $warning;
-        padding: 2 4;
-    }
+        YesNoScreen > Label {
+            text-align: center;
+            width: 50%;
+            height: auto;
+            border: heavy $warning;
+            padding: 2 4;
+        }
 """
     
     BINDINGS = [

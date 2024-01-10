@@ -135,9 +135,15 @@ KeyBox {
     /* dock: bottom; */
 }
 
+EditableItem > Label {
+    background: $boost;
+    
+}
+
 .editable-input {
     padding: 0 0;
     border: none;
-    
+    height: 1;
+    background: $boost;
 }
 
