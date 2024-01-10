@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from textual.app import ComposeResult
 from textual import on
 from textual.widgets import Label, Input
@@ -15,9 +17,11 @@ class Details(Container):
         # box
         ("ctrl+g", "hide_edit", "Undo/Hide"),
         ("ctrl+s", "save", "Save changes"),
+        ("ctrl+d", "delete", "Delete"),
     ]
     
     modified_keys: set = set()
+    deleted_keys: set = set()
     
     def compose(self) -> ComposeResult:
         yield Title(
@@ -55,10 +59,11 @@ class Details(Container):
             data_widget.append(kvp)
 
     def on_hide(self) -> None:
-        self.clear_modified_keys()
+        self.clear_modified_and_deleted_keys()
 
-    def clear_modified_keys(self) -> None:
+    def clear_modified_and_deleted_keys(self) -> None:
         self.modified_keys = set()
+        self.deleted_keys = set()
             
     def on_list_view_selected(self, sender):
         """When a row is selected in the KVPList, focus on the input
@@ -78,8 +83,16 @@ class Details(Container):
             key = item.key
             if key in self.modified_keys:
                 key_value_pairs[key] = item.value
-        self.app.save_details(key_value_pairs, None)
-        self.clear_modified_keys()
+        self.app.save_details(key_value_pairs, None, self.deleted_keys)
+        self.clear_modified_and_deleted_keys()
+        
+    def action_delete(self) -> None:
+        """Delete the current key value pair or data."""
+        kvplist = self.query_one(KVPList)
+        selected_key = kvplist.selected_key()
+        if selected_key is not None:
+            self.deleted_keys.add(selected_key)
+        kvplist.delete_selected()
 
 class EditableItem(Horizontal):
     def __init__(self, key, value):
@@ -124,6 +137,18 @@ class KVPList(ListView):
     def take_back_focus(self, _):
         """When the user presses enter in the input field, take back focus."""
         self.focus()
+        
+    def delete_selected(self) -> None:
+        """Delete the current key value pair."""
+        current_index = self.index
+        if self.highlighted_child is not None:
+            self.highlighted_child.remove()
+        self.index = current_index
+        
+    def selected_key(self) -> str | None:
+        """Return the key of the currently selected key value pair."""
+        if self.highlighted_child is not None:
+            return self.highlighted_child.get_child_by_type(EditableItem).key
 
 
 class DataList(ListView):

@@ -25,7 +25,7 @@ def test_format_value_int():
 
 
 def test_format_value_None():
-    assert format_value(None) == "None"
+    assert format_value(None) == ""
 
 
 def test_instantiating_data(data, db_path):

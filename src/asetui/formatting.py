@@ -13,6 +13,8 @@ UNMARKED_LABEL = Text("\u2219", style="grey")
 
 
 def format_value(val) -> Text | str:
+    if val is None:
+        return ""
     if isinstance(val, str):
         return val
     elif isinstance(val, float):

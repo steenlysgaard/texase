@@ -167,22 +167,28 @@ class ASETUI(App):
             # Get the highlighted row
             row_id = table.row_id_at_cursor()
             details = self.query_one(Details)
-            details.clear_modified_keys()
+            details.clear_modified_and_deleted_keys()
             details.update_kvplist(*self.data.row_details(row_id))
             details.update_data(self.data.row_data(row_id))
 
             # Set focus on the details sidebar
-            self.query_one(Details).set_focus()
+            details.set_focus()
 
         else:
             # Set focus back on the table
             table.focus()
             
-    def save_details(self, key_value_pairs: dict, data: dict) -> None:
+    def save_details(self, key_value_pairs: dict, data: dict, deleted_keys: set) -> None:
+        """Called when the user calls save in the details sidebar."""
+        
+        # Add deleted keys to key_value_pairs with None values
+        for key in deleted_keys:
+            key_value_pairs[key] = None
+        
         table = self.query_one(AsetuiTable)
         table.update_row_editable_cells(key_value_pairs)
-        row_id = table.row_id_at_cursor()
 
+        row_id = table.row_id_at_cursor()
         self.data.update_row(row_id, key_value_pairs, data)
         
     def watch_show_details(self, show_details: bool) -> None:

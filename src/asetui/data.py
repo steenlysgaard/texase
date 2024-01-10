@@ -167,9 +167,17 @@ class Data:
 
         It is assumed that only editable keys are passed in key_value_pairs."""
         
-        self.update_in_db(row_id, key_value_pairs, data)
+        delete_keys = []
         for key, value in key_value_pairs.items():
             self.update_df(row_id, key, value)
+            # Create delete_keys with the keys in key_value_pairs that have None as value
+            if value is None:
+                delete_keys.append(key)
+        # Remove the keys in key_value_pairs that are going to be deleted
+        for key in delete_keys:
+            key_value_pairs.pop(key)
+                
+        self.update_in_db(row_id, key_value_pairs, data, delete_keys=delete_keys)
         
     def update_df(self, row_id: int, column: str, value: str | float | int | None) -> None:
         if value is None:
