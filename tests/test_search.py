@@ -4,8 +4,8 @@ from textual.coordinate import Coordinate
 
 from ase.data import atomic_numbers
 
-from asetui.app import ASETUI
-from asetui.table import AsetuiTable
+from texase.app import TEXASE
+from texase.table import TexaseTable
 
 
 async def check_element_search(table, pilot, element):
@@ -22,10 +22,10 @@ async def check_element_search(table, pilot, element):
 
 @pytest.mark.asyncio
 async def test_search(big_db_path):
-    app = ASETUI(path=big_db_path)
+    app = TEXASE(path=big_db_path)
     async with app.run_test(size=(200, 50)) as pilot:
         searchbox = app.query_one("#search-box")
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
 
         # Check status before adding filter
         assert not app.show_search_box
@@ -67,9 +67,9 @@ async def test_search(big_db_path):
 
 @pytest.mark.asyncio
 async def test_next_and_previous(big_db_path):
-    app = ASETUI(path=big_db_path)
+    app = TEXASE(path=big_db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         await pilot.press("ctrl+s", "S")
 
         # First hit for S should be Si
@@ -90,9 +90,9 @@ async def test_next_and_previous(big_db_path):
 
 @pytest.mark.asyncio
 async def test_search_wrap(big_db_path):
-    app = ASETUI(path=big_db_path)
+    app = TEXASE(path=big_db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         await pilot.press("ctrl+s", "O")
 
         # First hit for O should be O

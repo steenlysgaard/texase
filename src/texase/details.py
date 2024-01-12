@@ -7,7 +7,7 @@ from textual.widgets import ListView, ListItem
 from textual.containers import Container, Horizontal
 from rich.text import Text
 
-from asetui.formatting import convert_value_to_int_or_float, get_age_string
+from texase.formatting import convert_value_to_int_or_float, get_age_string
 
 
 class Details(Container):

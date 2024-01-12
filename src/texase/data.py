@@ -15,8 +15,8 @@ from ase import Atoms
 from textual.widgets import ListItem, Label
 from textual._cache import LRUCache
 
-from asetui.saved_columns import SavedColumns
-from asetui.formatting import format_column, get_age_string, pbc_str_to_array
+from texase.saved_columns import SavedColumns
+from texase.formatting import format_column, get_age_string, pbc_str_to_array
 
 ops = {
     "==": operator.eq,

@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from asetui.formatting import pbc_str_to_array
+from texase.formatting import pbc_str_to_array
 
 def test_pbc_str_to_array():
     # Test valid inputs

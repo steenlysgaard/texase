@@ -8,8 +8,8 @@ from textual.validation import Function
 from textual.widgets._data_table import RowKey
 from rich.text import Text
 
-from asetui.table import AsetuiTable
-from asetui.data import ops
+from texase.table import TexaseTable
+from texase.data import ops
 
 
 class FilterBox(ScrollableContainer):
@@ -114,7 +114,7 @@ class Filter(Static):
         key_input = self.query_one("#filterkey")
         op = self.query_one("#filteroperator")
 
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         filterbox = self.ancestors[0]
         if filterbox.query_one("#only-marked-checkbox").value:
             # Only mark

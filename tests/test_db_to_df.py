@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from ase.db import connect
-from asetui.data import db_to_df
+from texase.data import db_to_df
 
 from .shared_info import user_dct, cell, pbc
 

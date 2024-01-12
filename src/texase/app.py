@@ -12,25 +12,25 @@ from ase.visualize import view
 from ase.db.core import check
 from ase.db.table import all_columns
 
-from asetui.data import instantiate_data
-from asetui.table import AsetuiTable
-from asetui.details import Details
-from asetui.help import Help
-from asetui.search import Search
-from asetui.addcolumn import AddColumnBox
-from asetui.filter import FilterBox
-from asetui.edit import EditBox, AddBox
-from asetui.formatting import format_value, convert_value_to_int_or_float
-from asetui.keys import KeyBox
-from asetui.yesno import YesNoScreen
+from texase.data import instantiate_data
+from texase.table import TexaseTable
+from texase.details import Details
+from texase.help import Help
+from texase.search import Search
+from texase.addcolumn import AddColumnBox
+from texase.filter import FilterBox
+from texase.edit import EditBox, AddBox
+from texase.formatting import format_value, convert_value_to_int_or_float
+from texase.keys import KeyBox
+from texase.yesno import YesNoScreen
 
 
-class ASETUI(App):
+class TEXASE(App):
     BINDINGS = [
         Binding("ctrl+g", "hide_all", "Hide all boxes", show=False),
     ]
 
-    CSS_PATH = "asetui.css"
+    CSS_PATH = "texase.tcss"
 
     # variables that are watched. Remember also to add them to the
     # action_hide_all function
@@ -68,19 +68,19 @@ class ASETUI(App):
             Details(id="details"),
             Help(id="help"),
             
-            AsetuiTable(id="table"),
+            TexaseTable(id="table"),
             KeyBox(id="key-box"),
         )
 
     def on_mount(self) -> None:
         # Table
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         table.loading = True
 
         self.load_data(table)
         
     @work
-    async def load_data(self, table: AsetuiTable) -> None:
+    async def load_data(self, table: TexaseTable) -> None:
         # db data
         data = instantiate_data(self.path)
         self.data = data
@@ -98,12 +98,12 @@ class ASETUI(App):
         await key_box.populate_keys(self.data.unused_columns())
         
     def remove_filter_from_table(self, filter_tuple: tuple) -> None:
-        self.query_one(AsetuiTable).remove_filter(*filter_tuple)
+        self.query_one(TexaseTable).remove_filter(*filter_tuple)
 
     # Sorting
     def action_sort_column(self) -> None:
         # Get the highlighted column
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         self.sort_table(table.column_at_cursor(), table)
 
     def on_data_table_header_selected(self, selected: DataTable.HeaderSelected) -> None:
@@ -111,7 +111,7 @@ class ASETUI(App):
         col_name = str(selected.label)
         self.sort_table(col_name, table)
 
-    def sort_table(self, col_name: str, table: AsetuiTable) -> None:
+    def sort_table(self, col_name: str, table: TexaseTable) -> None:
         # Save the row key of the current cursor position
         row_key = table.coordinate_to_cell_key(Coordinate(table.cursor_row, 0)).row_key
 
@@ -152,17 +152,17 @@ class ASETUI(App):
 
     # Movement
     def action_move_to_top(self) -> None:
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         table.cursor_coordinate = Coordinate(0, table.cursor_column)
 
     def action_move_to_bottom(self) -> None:
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         table.cursor_coordinate = Coordinate(len(table.rows) - 1, table.cursor_column)
 
     # Details sidebar
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         if self.show_details:
             # Get the highlighted row
             row_id = table.row_id_at_cursor()
@@ -185,7 +185,7 @@ class ASETUI(App):
         for key in deleted_keys:
             key_value_pairs[key] = None
         
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         table.update_row_editable_cells(key_value_pairs)
 
         row_id = table.row_id_at_cursor()
@@ -204,7 +204,7 @@ class ASETUI(App):
         self.show_filter = False
         self.show_edit = False
         self.show_add_kvp = False
-        self.query_one(AsetuiTable).focus()
+        self.query_one(TexaseTable).focus()
 
     # Help sidebar
     def action_toggle_help(self) -> None:
@@ -217,7 +217,7 @@ class ASETUI(App):
 
     # Add/Delete key-value-pairs
     def action_add_key_value_pair(self) -> None:
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         self.show_add_kvp = True
         addbox = self.query_one("#add-kvp-box", AddBox)
         table.update_add_box(addbox)
@@ -229,7 +229,7 @@ class ASETUI(App):
         
     @work
     async def action_delete_key_value_pairs(self) -> None:
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         if not table.is_cell_editable(uneditable_columns=all_columns):
             return
         question = table.delete_kvp_question()
@@ -243,7 +243,7 @@ class ASETUI(App):
 
     # Edit
     def action_edit(self) -> None:
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         if table.is_cell_editable():
             self.show_edit = True
             editbox = self.query_one("#edit-box", EditBox)
@@ -263,7 +263,7 @@ class ASETUI(App):
         search_input.focus()  # This is the input box
 
         search = self.query_one(Search)
-        search._table = self.query_one(AsetuiTable)
+        search._table = self.query_one(TexaseTable)
         search._data = self.data
         search_input.value = ""
         search.set_current_cursor_coordinate()
@@ -292,7 +292,7 @@ class ASETUI(App):
 
         Also remove the column from chosen_columns."""
 
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         # Save the name of the column to remove
         cursor_column_index = table.cursor_column
         column_to_remove = str(table.ordered_columns[cursor_column_index].label)
@@ -313,7 +313,7 @@ class ASETUI(App):
     def action_view(self) -> None:
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         if table.marked_rows:
             images = [self.data.get_atoms(id) for id in table.get_marked_row_ids()]
         else:
@@ -322,13 +322,13 @@ class ASETUI(App):
 
     def add_column_to_table_and_remove_from_keybox(self, column: str) -> None:
         """Add a column to the table and remove it from the KeyBox."""
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         self.data.add_to_chosen_columns(column)
         table.add_column_and_values(column)
         self.query_one(KeyBox).remove_key(column)
         
     def on_input_submitted(self, submitted):
-        table = self.query_one(AsetuiTable)
+        table = self.query_one(TexaseTable)
         if submitted.control.id == "add-column-input":
             if not submitted.validation_result.is_valid:
                 return
@@ -452,7 +452,7 @@ class MiddleContainer(Container):
 
 def main(path: str = "test.db"):
 
-    app = ASETUI(path=path)
+    app = TEXASE(path=path)
     app.run()
 
 

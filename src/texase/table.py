@@ -10,13 +10,13 @@ from textual.widgets._data_table import RowKey, ColumnKey
 
 from ase.db.table import all_columns
 
-from asetui.data import Data
-from asetui.edit import EditBox, AddBox
-from asetui.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
+from texase.data import Data
+from texase.edit import EditBox, AddBox
+from texase.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
 
 UNEDITABLE_COLUMNS = [c for c in all_columns if c not in ["pbc"]]
 
-class AsetuiTable(DataTable):
+class TexaseTable(DataTable):
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("?", "toggle_help", "Help"),

@@ -6,17 +6,17 @@ from textual.widgets._data_table import ColumnKey, RowKey
 
 from ase.db import connect
 
-from asetui.app import ASETUI
-from asetui.table import AsetuiTable, get_column_labels
-from asetui.yesno import YesNoScreen
+from texase.app import TEXASE
+from texase.table import TexaseTable, get_column_labels
+from texase.yesno import YesNoScreen
 
 from .shared_info import user_dct
 
 @pytest.mark.asyncio
 async def test_edit(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         editbox = app.query_one("#edit-box")
         
         # Check status before adding filter
@@ -73,9 +73,9 @@ async def test_edit(db_path):
         
 @pytest.mark.asyncio
 async def test_add_kvp(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         addbox = app.query_one("#add-kvp-box")
         
         # Check status before adding filter
@@ -112,7 +112,7 @@ async def test_add_kvp(db_path):
         
 @pytest.mark.asyncio
 async def test_invalid_kvps(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
         addbox = app.query_one("#add-kvp-box")
 
@@ -132,7 +132,7 @@ async def test_invalid_kvps(db_path):
 @pytest.mark.asyncio
 async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
-    table = app.query_one(AsetuiTable)
+    table = app.query_one(TexaseTable)
         
     # Press D and then n to cancel
     await pilot.press("D")
@@ -154,7 +154,7 @@ async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
 async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
     
-    table = app.query_one(AsetuiTable)
+    table = app.query_one(TexaseTable)
     
     # Mark both rows and delete
     await pilot.press("space", "down", "space", "D", "y")

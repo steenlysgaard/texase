@@ -2,16 +2,16 @@ import pytest
 
 from textual.widgets._data_table import RowKey
 
-from asetui.app import ASETUI
-from asetui.table import AsetuiTable
-from asetui.filter import Filter
+from texase.app import TEXASE
+from texase.table import TexaseTable
+from texase.filter import Filter
 
 
 @pytest.mark.asyncio
 async def test_filter(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         filterbox = app.query_one("#filter-box")
         
         # Check status before adding filter
@@ -65,9 +65,9 @@ async def test_filter(db_path):
         
 @pytest.mark.asyncio
 async def test_mark_with_filter(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         await pilot.press("/")
         
         # Toggle only mark
@@ -83,7 +83,7 @@ async def test_mark_with_filter(db_path):
 
 @pytest.mark.asyncio
 async def test_add_more_filters(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
         await pilot.press("/")
         await pilot.click("#add-filter")
@@ -93,7 +93,7 @@ async def test_add_more_filters(db_path):
 
 @pytest.mark.asyncio
 async def test_add_remove_filter(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
         filterbox = app.query_one("#filter-box")
         

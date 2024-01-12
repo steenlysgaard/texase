@@ -2,20 +2,20 @@ import pytest
 
 from textual.coordinate import Coordinate
 
-from asetui.app import ASETUI
-from asetui.data import Data
-from asetui.table import AsetuiTable, get_column_labels
+from texase.app import TEXASE
+from texase.data import Data
+from texase.table import TexaseTable, get_column_labels
 
 from .shared_info import test_atoms, user_dct
 
 
 @pytest.mark.asyncio
 async def test_start_app(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test() as _:
         assert isinstance(app.data, Data)
         # Test that table is populated
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         no_rows = len(table.rows.keys())
         assert no_rows == 2
 
@@ -32,9 +32,9 @@ async def test_start_app(db_path):
 
 @pytest.mark.asyncio
 async def test_add_column(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test() as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         # Check status before adding
         assert not app.show_add_column_box
         assert "str_key" not in get_column_labels(table.columns)
@@ -58,9 +58,9 @@ async def test_add_column(db_path):
 
 @pytest.mark.asyncio
 async def test_remove_column(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test() as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         columns_init = get_column_labels(table.columns)
         assert "magmom" in columns_init
         assert "magmom" in app.data.chosen_columns
@@ -77,16 +77,16 @@ async def test_remove_column(db_path):
         assert "magmom" not in app.data.chosen_columns
 
 
-def check_row_ids(table: AsetuiTable, row_ids: list):
+def check_row_ids(table: TexaseTable, row_ids: list):
     for i in range(len(row_ids)):
         assert int(str(table.get_row_at(i)[0])) == row_ids[i]
 
 
 @pytest.mark.asyncio
 async def test_sort_column(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test() as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         # Check status before sorting
         assert app.sort_columns == ["id"]
         assert not app.sort_reverse
@@ -107,16 +107,16 @@ async def test_sort_column(db_path):
 
         # Sort with the mouse by clicking the id column header
         await pilot.click(
-            selector=AsetuiTable, offset=(5, 0)
+            selector=TexaseTable, offset=(5, 0)
         )  # The labels take 3 characters, id is next
         assert app.sort_columns == ["id", "formula"]
         check_row_ids(table, [1, 2])
 
 @pytest.mark.asyncio
 async def test_sort_then_add_column(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test() as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         await pilot.press("s", "+", *list("str_key"), "enter")
         
         col_idx = get_column_labels(table.columns).index("str_key")
@@ -125,9 +125,9 @@ async def test_sort_then_add_column(db_path):
 
 @pytest.mark.asyncio
 async def test_rows_to_act_on(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test() as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         
         # Nothing marked
         assert table.ids_to_act_on() == [1]

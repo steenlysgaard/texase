@@ -6,7 +6,7 @@ from pathlib import Path
 class SavedColumns:
     def __init__(self):
         self._columns_file_path = Path(
-            os.environ.get("ASETUI_COLUMNS_FILE", Path.home() / ".asetui-columns.json")
+            os.environ.get("TEXASE_COLUMNS_FILE", Path.home() / ".texase-columns.json")
         )
         self._files_and_columns = self._read_columns_file()
 

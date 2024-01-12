@@ -2,14 +2,14 @@ import pytest
 
 from textual.widgets._data_table import RowKey
 
-from asetui.app import ASETUI
-from asetui.table import AsetuiTable
+from texase.app import TEXASE
+from texase.table import TexaseTable
 
 @pytest.mark.asyncio
 async def test_mark_row(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test() as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         assert not table.marked_rows
         
         # Mark the first row
@@ -37,7 +37,7 @@ async def test_mark_row(db_path):
         assert not table.marked_rows
         
         # Mark with the mouse
-        response = await pilot.click(selector=AsetuiTable, offset=(1, 2))
+        response = await pilot.click(selector=TexaseTable, offset=(1, 2))
         assert response
         assert table.marked_rows == {RowKey('2')}
         

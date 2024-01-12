@@ -5,7 +5,7 @@ from textual.widgets import Markdown
 HELP_MARKDOWN = """\
 # Help
 
-[See also (clicking links doesn't work)](https://github.com/steenlysgaard/asetui)
+[See also (clicking links doesn't work)](https://github.com/steenlysgaard/texase)
 
 ## Key bindings
 

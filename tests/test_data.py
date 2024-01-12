@@ -3,8 +3,8 @@ import numpy as np
 import pandas as pd
 from rich.text import Text
 
-from asetui.data import Data, instantiate_data, format_column, apply_filter_and_sort_on_df
-from asetui.formatting import format_value
+from texase.data import Data, instantiate_data, format_column, apply_filter_and_sort_on_df
+from texase.formatting import format_value
 
 from .shared_info import user_dct
 

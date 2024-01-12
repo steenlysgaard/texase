@@ -1,11 +1,11 @@
 import os
 import json
-from asetui.saved_columns import SavedColumns
+from texase.saved_columns import SavedColumns
 
 def test_saved_columns(tmp_path):
     # create a temporary file for testing
     columns_file_path = tmp_path / "columns.json"
-    os.environ["ASETUI_COLUMNS_FILE"] = str(columns_file_path)
+    os.environ["TEXASE_COLUMNS_FILE"] = str(columns_file_path)
     # create an instance of SavedColumns
     saved_columns = SavedColumns()
     # test the __init__ method
@@ -29,7 +29,7 @@ def test_saved_columns(tmp_path):
 def test_read_and_write_saved_columns(tmp_path):
     # create a temporary file for testing
     columns_file_path = tmp_path / "columns.json"
-    os.environ["ASETUI_COLUMNS_FILE"] = str(columns_file_path)
+    os.environ["TEXASE_COLUMNS_FILE"] = str(columns_file_path)
     # create an instance of SavedColumns
     saved_columns = SavedColumns()
     # test the _read_columns_file method

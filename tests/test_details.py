@@ -7,10 +7,10 @@ from textual.widgets import Input
 
 from ase.db import connect
 
-from asetui.app import ASETUI
-from asetui.table import AsetuiTable, get_column_labels
-from asetui.details import Details, KVPList, EditableItem
-from asetui.formatting import pbc_str_to_array
+from texase.app import TEXASE
+from texase.table import TexaseTable, get_column_labels
+from texase.details import Details, KVPList, EditableItem
+from texase.formatting import pbc_str_to_array
 
 from .shared_info import pbc
 
@@ -25,9 +25,9 @@ def get_key_index_and_item(details: Details, key: str = 'pbc') -> tuple[int, Edi
         
 @pytest.mark.asyncio
 async def test_edit(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         details = app.query_one("#details", Details)
         
         # Check status
@@ -76,10 +76,10 @@ async def test_edit(db_path):
         
 @pytest.mark.asyncio
 async def test_cancel_edit(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
         details = app.query_one("#details", Details)
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         
         await pilot.press("f")
         
@@ -116,7 +116,7 @@ async def test_cancel_edit(db_path):
 async def test_delete(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
     details = app.query_one("#details", Details)
-    table = app.query_one(AsetuiTable)
+    table = app.query_one(TexaseTable)
 
     await pilot.press("f")
 

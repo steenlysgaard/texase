@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "asetui"
+name = "texase"
 version = "0.1.0"
-description = "Terminal User Interface for ASE db."
+description = "Textual user interface for ASE db."
 authors = ["Steen Lysgaard <stly@dtu.dk>"]
 license = "MPL"
 readme = "README.md"
-packages = [{include = "asetui", from = "src"}]
+packages = [{include = "texase", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -14,7 +14,7 @@ textual = "0.47.0"
 pandas = "^2.0.3"
 
 [tool.poetry.scripts]
-asetui = 'asetui.asetui:main'
+texase = 'texase.texase:main'
 
 [tool.poetry.group.dev.dependencies]
 textual-dev = "1.4.0"

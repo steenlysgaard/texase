@@ -5,8 +5,8 @@ from textual.app import ComposeResult
 from textual.widgets import Input, Label
 from textual.validation import Validator, ValidationResult
 
-from asetui.edit import EditBox
-from asetui.filter import FilterSuggester
+from texase.edit import EditBox
+from texase.filter import FilterSuggester
 
 class AddColumnBox(EditBox):
     input_widget_id = "add-column-input"

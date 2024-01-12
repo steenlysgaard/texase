@@ -5,8 +5,8 @@ from ase.db import connect
 from ase import Atoms
 from ase.data import chemical_symbols
 
-from asetui.app import ASETUI
-from asetui.table import AsetuiTable, get_column_labels
+from texase.app import TEXASE
+from texase.table import TexaseTable, get_column_labels
 
 from .shared_info import user_dct, cell, pbc, test_atoms
 
@@ -32,9 +32,9 @@ def big_db_path(tmp_path_factory):
 
 @pytest_asyncio.fixture
 async def app_with_cursor_on_str_key(db_path):
-    app = ASETUI(path=db_path)
+    app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(AsetuiTable)
+        table = app.query_one(TexaseTable)
         
         # Add an editable column, i.e. a user key
         await pilot.press("+", *list("str_key"), "enter")
