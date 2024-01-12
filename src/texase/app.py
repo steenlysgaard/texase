@@ -106,7 +106,7 @@ class TEXASE(App):
         table = self.query_one(TexaseTable)
         self.sort_table(table.column_at_cursor(), table)
 
-    def on_data_table_header_selected(self, selected: DataTable.HeaderSelected) -> None:
+    def on_data_table_header_selected(self, selected: TexaseTable.HeaderSelected) -> None:
         table = selected.data_table
         col_name = str(selected.label)
         self.sort_table(col_name, table)
@@ -241,6 +241,20 @@ class TEXASE(App):
                                    column=table.column_at_cursor(),
                                    value=None)
 
+    # Delete rows
+    @work
+    async def action_delete_rows(self) -> None:
+        """Delete the currently marked rows."""
+        table = self.query_one(TexaseTable)
+        if await self.push_screen_wait(YesNoScreen(table.delete_row_question())):
+            # Remove in db and df
+            self.data.delete_rows(table.ids_to_act_on())
+            
+            # Then remove in table
+            table.delete_selected_rows()
+
+
+            
     # Edit
     def action_edit(self) -> None:
         table = self.query_one(TexaseTable)

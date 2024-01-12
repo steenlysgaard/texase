@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import List, Union, Tuple, Set
 
 from rich.text import Text
+from textual import work
 from textual.binding import Binding
 from textual.coordinate import Coordinate
 from textual.widgets import DataTable, Input, Label
@@ -25,7 +26,7 @@ class TexaseTable(DataTable):
         ("e", "edit", "Edit"),
         ("K", "add_key_value_pair", "Add key-value pair"),
         # ("a", "add_configurations", "Add configuration(s)"),
-        # ("d", "delete_rows", "Delete row(s)"),
+        ("d", "delete_rows", "Delete row(s)"),
         ("D", "delete_key_value_pairs", "Delete key-value pair(s)"),
         ("v", "view", "View"),
         ("+", "add_column", "Add column"),
@@ -245,8 +246,26 @@ class TexaseTable(DataTable):
         
         for row_key in rows:
             self.update_cell(row_key, self.column_index_to_column_key(self.cursor_column), "")
-            
-            
+
+    def delete_row_question(self) -> Text:
+        """Return the question to ask when deleting a key value pair."""
+        # Get the ids of the marked or currently selected rows
+        ids = self.ids_to_act_on()
+        no_rows = len(ids)
+        
+        # Create the question
+        ids_str = ", ".join([str(id) for id in ids])
+        plural = [" ", "s "][no_rows > 1]
+        q = "Do you want to delete the row" + plural
+        q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
+        return Text.from_markup(q)
+    
+    def delete_selected_rows(self) -> None:
+        for row_key in self.row_keys_to_act_on():
+            self.remove_row(row_key)
+        self.marked_rows = set()
+        
+        
     # Selecting/marking rows
     def action_mark_row(self) -> None:
         row_index = self.cursor_row
@@ -331,8 +350,8 @@ class TexaseTable(DataTable):
     def ids_to_act_on(self) -> List[int]:
         """Get the ids of the rows to act on using the same logic as
         row_keys_to_act_on."""
-        return [get_id_from_row(self.get_row(row_key))
-                for row_key in self.row_keys_to_act_on()]
+        return sorted([get_id_from_row(self.get_row(row_key))
+                       for row_key in self.row_keys_to_act_on()])
     
     def row_keys_to_act_on(self) -> List[RowKey]:
         """Get the row keys of the rows to act on. If some rows are marked,
