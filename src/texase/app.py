@@ -1,3 +1,5 @@
+import typer
+
 from textual import work
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input
@@ -464,13 +466,11 @@ class MiddleContainer(Container):
     pass
 
 
-def main(path: str = "test.db"):
+def main(db_path: str):
 
-    app = TEXASE(path=path)
+    app = TEXASE(path=db_path)
     app.run()
 
 
 if __name__ == "__main__":
-    import sys
-
-    main(sys.argv[1])
+    typer.run(main)
