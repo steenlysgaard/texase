@@ -14,7 +14,7 @@ textual = "0.47.0"
 pandas = "^2.0.3"
 
 [tool.poetry.scripts]
-texase = 'texase.texase:main'
+texase = 'texase.app:main'
 
 [tool.poetry.group.dev.dependencies]
 textual-dev = "1.4.0"
