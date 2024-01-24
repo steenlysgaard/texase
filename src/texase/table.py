@@ -272,6 +272,9 @@ class TexaseTable(DataTable):
         row_key = self.coordinate_to_cell_key(Coordinate(row_index, 0)).row_key
         # row_key = list(self.rows.keys())[row_index]
         self.toggle_mark_row(row_key)
+        
+        # Go to the next row after marking
+        self.action_cursor_down()
 
         # # Best effort so far for highlighting the background of a row
         # marked_text = Text(style=table.get_component_styles("datatable--cursor").rich_style)
@@ -286,6 +289,9 @@ class TexaseTable(DataTable):
         row_index = self.cursor_row
         row_key = list(self.rows.keys())[row_index]
         self.unmark_row(row_key)
+
+        # Go to the next row after unmarking
+        self.action_cursor_down()
 
     def action_unmark_all(self) -> None:
         # Remove all marked rows in one go, this requires a full table

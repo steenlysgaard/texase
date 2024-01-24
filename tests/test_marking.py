@@ -17,7 +17,7 @@ async def test_mark_row(db_path):
         assert table.marked_rows == {RowKey('1')}
         
         # Mark the second row
-        await pilot.press("down", "space")
+        await pilot.press("space")
         assert table.marked_rows == {RowKey('1'), RowKey('2')}
         
         # Unmark the first row
@@ -29,11 +29,11 @@ async def test_mark_row(db_path):
         assert not table.marked_rows
         
         # Mark the first row
-        await pilot.press("space")
+        await pilot.press("up", "space")
         assert table.marked_rows == {RowKey('1')}
         
         # Unmark with u
-        await pilot.press("u")
+        await pilot.press("up", "u")
         assert not table.marked_rows
         
         # Mark with the mouse
