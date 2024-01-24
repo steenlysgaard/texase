@@ -1,5 +1,7 @@
 import typer
 
+from typing_extensions import Annotated
+
 from textual import work
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input
@@ -466,11 +468,14 @@ class MiddleContainer(Container):
     pass
 
 
-def main(db_path: str):
+typer_app = typer.Typer()
+
+@typer_app.command()
+def main(db_path: Annotated[str, typer.Argument(help="Path to the ASE database")]):
 
     app = TEXASE(path=db_path)
     app.run()
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    typer_app()
