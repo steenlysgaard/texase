@@ -26,7 +26,7 @@ class TexaseTable(DataTable):
         ("e", "edit", "Edit"),
         ("K", "add_key_value_pair", "Add key-value pair"),
         # ("a", "add_configurations", "Add configuration(s)"),
-        ("d", "delete_rows", "Delete row(s)"),
+        ("#", "delete_rows", "Delete row(s)"),
         ("D", "delete_key_value_pairs", "Delete key-value pair(s)"),
         ("v", "view", "View"),
         ("+", "add_column", "Add column"),

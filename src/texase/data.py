@@ -188,7 +188,6 @@ class Data:
         """Delete the row id(s) from the database and self.df"""
         self.df.drop([self.index_from_row_id(row_id) for row_id in row_ids], inplace=True)
         
-        print(f'deleting rows {row_ids=}')
         with connect(self.db_path) as db:
             db.delete(row_ids)
             
