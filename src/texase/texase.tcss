@@ -147,3 +147,14 @@ EditableItem > Label {
     background: $boost;
 }
 
+FilesIOScreen {
+    align: center middle;
+}
+
+FilesIOScreen > Label {
+    text-align: center;
+    width: 50%;
+    height: auto;
+    border: heavy $warning;
+    padding: 2 4;
+}

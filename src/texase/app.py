@@ -27,6 +27,7 @@ from texase.edit import EditBox, AddBox
 from texase.formatting import format_value, convert_value_to_int_or_float
 from texase.keys import KeyBox
 from texase.yesno import YesNoScreen
+from texase.files_io import FilesIOScreen
 
 
 class TEXASE(App):
@@ -104,6 +105,20 @@ class TEXASE(App):
     def remove_filter_from_table(self, filter_tuple: tuple) -> None:
         self.query_one(TexaseTable).remove_filter(*filter_tuple)
 
+    # Import / Export
+    
+    @work
+    async def action_export_rows(self) -> None:
+        """Export the marked rows or selected row of the table to a file"""
+        table = self.query_one(TexaseTable)
+        ids = table.ids_to_act_on()
+        
+        # Show the directory tree with an input box to select a file
+        # name and location
+        output_file = await self.push_screen_wait(FilesIOScreen(False))
+        
+        
+        
     # Sorting
     def action_sort_column(self) -> None:
         # Get the highlighted column
