@@ -9,9 +9,10 @@ from functools import wraps
 
 import numpy as np
 import pandas as pd
+from ase import Atoms
 from ase.db import connect
 from ase.db.table import all_columns
-from ase import Atoms
+from ase.io import write
 from textual.widgets import ListItem, Label
 from textual._cache import LRUCache
 
@@ -191,6 +192,14 @@ class Data:
         with connect(self.db_path) as db:
             db.delete(row_ids)
             
+    def export_rows(self, row_ids: Iterable[int], path: Path) -> None:
+        with connect(self.db_path) as db:
+            append = False
+            if path.is_file():
+                # An existing file, we append to it
+                append = True
+            write(path, [db.get_atoms(idx) for idx in row_ids], append=append)
+        
         
     def index_from_row_id(self, row_id) -> int:
         return self.df.loc[self.df["id"] == row_id].index[0]

@@ -151,10 +151,20 @@ FilesIOScreen {
     align: center middle;
 }
 
-FilesIOScreen > Label {
-    text-align: center;
+FilesIOScreen > Container {
     width: 50%;
+    border: round $warning;
     height: auto;
-    border: heavy $warning;
-    padding: 2 4;
+    
+}
+
+FilesIOScreen > Container > DirectoryTree {
+    height: auto;
+}
+
+FilesIOScreen > Container > Label {
+    text-align: center;
+    width: 1fr;
+    height: auto;
+    padding: 0 2;
 }
