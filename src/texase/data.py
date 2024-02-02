@@ -199,6 +199,13 @@ class Data:
                 # An existing file, we append to it
                 append = True
             write(path, [db.get_atoms(idx) for idx in row_ids], append=append)
+            
+    def import_rows(self, path: Path, index=-1) -> None:
+        """Import atoms from a file and add them to the database.
+
+        Default is to only take the last frame in the file. Change this with the index argument."""
+        with connect(self.db_path) as db:
+            atoms = read(path, index=index)
         
         
     def index_from_row_id(self, row_id) -> int:

@@ -116,7 +116,15 @@ class TEXASE(App):
         # Show the directory tree with an input box to select a file
         # name and location
         output_file = await self.push_screen_wait(FilesIOScreen(False))
-        self.data.export_rows(ids, output_file)
+        if output_file is not None:
+            self.data.export_rows(ids, output_file)
+
+    @work
+    async def action_import_rows(self) -> None:
+        """Export the marked rows or selected row of the table to a file"""
+        input_file = await self.push_screen_wait(FilesIOScreen(True))
+        if input_file is not None:
+            self.data.import_rows(input_file)
         
         
         

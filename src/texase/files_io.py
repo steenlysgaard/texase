@@ -10,7 +10,6 @@ from textual.containers import Container
 
 from ase.io.formats import ioformats
 
-ASE_IO_WRITE_FORMAT_GLOBS = [format.globs for format in ioformats.values() if format.can_write]
 
 def build_write_exts() -> set[str]:
     ext_list = []
@@ -26,7 +25,7 @@ def build_write_exts() -> set[str]:
 
 ASE_IO_WRITE_EXTS = build_write_exts()
 
-def build_read_exts() -> list[str]:
+def build_read_exts() -> set[str]:
     ext_list = []
     for format in ioformats.values():
         if format.can_read:
@@ -34,15 +33,22 @@ def build_read_exts() -> list[str]:
                 ext_list.extend(format.extensions)
             else:
                 ext_list.append(format.name)
-    return ext_list
+    return set([f'.{ext}' for ext in ext_list])
 
-class ASEDirectoryTree(DirectoryTree):
+ASE_IO_READ_EXTS = build_read_exts()
+
+class ASEWriteDirectoryTree(DirectoryTree):
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
         return [path for path in paths
                 if (path.suffix in ASE_IO_WRITE_EXTS or path.is_dir())]
+    
+class ASEReadDirectoryTree(DirectoryTree):
+    def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
+        return [path for path in paths
+                if (path.suffix in ASE_IO_READ_EXTS or path.is_dir())]
 
 
-class FilesIOScreen(ModalScreen[Path]):
+class FilesIOScreen(ModalScreen[Path | None]):
     """Screen with a question that can be answered yes or no."""
     
 #     DEFAULT_CSS = """
@@ -72,17 +78,23 @@ class FilesIOScreen(ModalScreen[Path]):
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield Container(Label('Select a file to read from' if self.read else 'Select a file to write to'),
-                        ASEDirectoryTree(Path(".").resolve()),
-                        FolderLabel("Current folder"),
-                        Input())
+        if self.read:
+            yield Container(Label('Select a file to read from'),
+                            ASEReadDirectoryTree(Path(".").resolve()),
+                            FolderLabel("Current folder"),
+                            Input())
+        else:
+            yield Container(Label('Select a file to write to'),
+                            ASEWriteDirectoryTree(Path(".").resolve()),
+                            FolderLabel("Current folder"),
+                            Input())
         yield Footer()
 
     # def action_yes(self) -> None:
     #     self.dismiss(True)
 
     def action_cancel(self) -> None:
-        self.dismiss(Path("/dev/null"))
+        self.dismiss(None)
         
     def on_input_submitted(self, submitted: Input.Submitted) -> None:
         self.dismiss(Path(submitted.value))
