@@ -81,7 +81,7 @@ class Data:
         self.db_path = Path(self.db_path).resolve()
         self.saved_columns = SavedColumns()
         self.update_chosen_columns()
-        self._sort: np.ndarray = np.arange(len(self.df))
+        # self._sort: np.ndarray = np.arange(len(self.df))
         self.sort_columns: List[str] = ["id"]
         # self._df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
         self._filter_mask_cache: LRUCache[tuple, np.ndarray] = LRUCache(maxsize=128)
@@ -336,6 +336,10 @@ class Data:
         )
         return zip(*mask.nonzero())
 
+    @property
+    def _sort(self) -> np.ndarray:
+        return self.df.sort_values(self.sort_columns, ascending=not self.sort_reverse).index.to_numpy()
+    
     def sort(self, col_name: str) -> np.ndarray:
         """Set the indices to sort self.df in self._sort. Return the sorted ids."""
         
@@ -352,7 +356,6 @@ class Data:
             self.sort_reverse = False
         
         df = self.df
-        self._sort = df.sort_values(self.sort_columns, ascending=not self.sort_reverse).index.to_numpy()
         return self.id_array_with_filter_and_sort()
 
     def id_array_with_filter_and_sort(
