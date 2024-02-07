@@ -12,7 +12,7 @@ import pandas as pd
 from ase import Atoms
 from ase.db import connect
 from ase.db.table import all_columns
-from ase.io import write
+from ase.io import write, read
 from textual.widgets import ListItem, Label
 from textual._cache import LRUCache
 
@@ -135,6 +135,12 @@ class Data:
         # Clear the caches
         self._string_df_cache.clear()
         self._remove_edited_column_from_caches(column)
+        
+    def clear_all_caches(self) -> None:
+        """Clear all caches"""
+        self._filter_mask_cache.clear()
+        self._string_df_cache.clear()
+        self._string_column_cache.clear()
 
     def update_in_db(self, row_ids: int | Iterable[int],
                      key_value_pairs: Dict[str, Any] = {},
@@ -198,14 +204,31 @@ class Data:
             if path.is_file():
                 # An existing file, we append to it
                 append = True
-            write(path, [db.get_atoms(idx) for idx in row_ids], append=append)
+            write(path, [db.get_atoms(idx, add_additional_information=True)
+                         for idx in row_ids], append=append)
             
     def import_rows(self, path: Path, index=-1) -> None:
-        """Import atoms from a file and add them to the database.
+        """Import atoms from a file and add them to the database and the df.
 
         Default is to only take the last frame in the file. Change this with the index argument."""
+        atoms_list = read(path, index=index)
+        if isinstance(atoms_list, Atoms):
+            atoms_list = [atoms_list]
         with connect(self.db_path) as db:
-            atoms = read(path, index=index)
+            new_rows = []
+            for atoms in atoms_list:
+                new_row = db.write(atoms, key_value_pairs=atoms.info.get('key_value_pairs', {}),
+                                    data=atoms.info.get('data', {}))
+                new_rows.append(new_row)
+            
+        # Get the new rows from the database and add them to
+        # self.df. We have to get them from the database to get the id
+        # and ctime correctly.
+        new_df, new_user_keys = db_to_df(connect(self.db_path), sel=f"id>={new_rows[0]}")
+        self.df = pd.concat([self.df, new_df], ignore_index=True)
+        
+        # Clear the caches
+        self.clear_all_caches()
         
         
     def index_from_row_id(self, row_id) -> int:
@@ -358,18 +381,6 @@ class Data:
             df_list.append(self._string_column(column))
         return pd.concat(df_list, axis=1).fillna("", axis=1)
 
-    # def get_df(self, filters: tuple | None = None) -> pd.DataFrame:
-    #     if filters is None:
-    #         return self._df(self._filters)
-    #     return self._df(filters)
-
-    # @cache
-    # def _df(self, filters: tuple = ()) -> pd.DataFrame:
-    #     df = self.df
-    #     for filter_key, op, filter_value in filters:
-    #         df = df[ops[op](df[filter_key], operator_type_conversion[op](filter_value))]
-    #     return df
-
     def get_mask_of_df_with_filter(
         self, filter_tuple: Tuple[str, str, str]
     ) -> np.ndarray:
@@ -447,8 +458,6 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
     # df = pd.DataFrame(cols, index=cols["id"])
     df["id"] = df["id"].astype("int")
     return df, list(user_keys)
-
-
 
 
 def get_value(row, key) -> str:

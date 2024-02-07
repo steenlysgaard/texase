@@ -43,9 +43,38 @@ class ASEWriteDirectoryTree(DirectoryTree):
                 if (path.suffix in ASE_IO_WRITE_EXTS or path.is_dir())]
     
 class ASEReadDirectoryTree(DirectoryTree):
+    
+    BINDINGS = [Binding("left", "set_root_up", "Go up", show=False),
+                Binding("right", "set_root_down", "Go down", show=False)]
+    
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
-        return [path for path in paths
-                if (path.suffix in ASE_IO_READ_EXTS or path.is_dir())]
+        allowed_paths = []
+        for path in paths:
+            if path.name.startswith('.'):
+                # Don't allow hidden files (on Unix defined as starting with a .)
+                continue
+            elif path.suffix in ASE_IO_READ_EXTS or path.is_dir():
+                allowed_paths.append(path)
+        return allowed_paths
+        # return [path for path in paths
+        #         if (path.suffix in ASE_IO_READ_EXTS or path.is_dir())]
+        
+    def action_set_root_up(self) -> None:
+        """If the root node is selected, set a new root node as the
+        parent of the current root node."""
+        if self.cursor_node is not None:
+            if self.cursor_node.is_root:
+                self.path = self.path.parent
+            elif self.cursor_node.data.path.is_dir():
+                self.select_node(self.cursor_node.parent)
+            
+    def action_set_root_down(self) -> None:
+        """If a directory is selected, set it as the new root node."""
+        if self.cursor_node is not None and self.cursor_node.data.path.is_dir():
+            self.path = self.cursor_node.data.path
+            self.select_node(self.root)
+        
+
 
 
 class FilesIOScreen(ModalScreen[Path | None]):

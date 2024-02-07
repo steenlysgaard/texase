@@ -80,12 +80,13 @@ class TEXASE(App):
     def on_mount(self) -> None:
         # Table
         table = self.query_one(TexaseTable)
-        table.loading = True
 
         self.load_data(table)
         
     @work
     async def load_data(self, table: TexaseTable) -> None:
+        table.loading = True
+        
         # db data
         data = instantiate_data(self.path)
         self.data = data
@@ -124,7 +125,17 @@ class TEXASE(App):
         """Export the marked rows or selected row of the table to a file"""
         input_file = await self.push_screen_wait(FilesIOScreen(True))
         if input_file is not None:
+            # Put info in db and data.df
             self.data.import_rows(input_file)
+            
+            # Clear and reoccupy the table
+            table = self.query_one(TexaseTable)
+            table.loading = True
+            table.clear()
+            table.populate_table(self.data, columns_cleared=False)
+            await self.populate_key_box()  # type: ignore
+            table.loading = False
+            table.focus()
         
         
         
