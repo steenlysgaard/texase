@@ -14,6 +14,7 @@ from ase.db import connect
 from ase.db.table import all_columns
 from ase.io import write, read
 from textual.widgets import ListItem, Label
+from textual.widgets._data_table import ColumnKey
 from textual._cache import LRUCache
 
 from texase.saved_columns import SavedColumns
@@ -71,6 +72,7 @@ class Data:
     chosen_columns: list = field(default_factory=get_default_columns)
     saved_columns: Union[SavedColumns, None] = None
     data_filter: Union[List[Tuple[str, str, str]], None] = None
+    sort_reverse: bool = False
 
     def __post_init__(self):
         self._filters = tuple()
@@ -80,6 +82,7 @@ class Data:
         self.saved_columns = SavedColumns()
         self.update_chosen_columns()
         self._sort: np.ndarray = np.arange(len(self.df))
+        self.sort_columns: List[str] = ["id"]
         # self._df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
         self._filter_mask_cache: LRUCache[tuple, np.ndarray] = LRUCache(maxsize=128)
         self._string_df_cache: LRUCache[tuple, pd.DataFrame] = LRUCache(maxsize=128)
@@ -197,6 +200,19 @@ class Data:
         
         with connect(self.db_path) as db:
             db.delete(row_ids)
+            
+    def check_columns_with_no_content(self) -> None:
+        """Check if there are any columns with no content and remove them."""
+        for col in self.df.columns:
+            if self.df[col].isnull().all():
+                # Is this column shown in the table? I.e. is it in self.chosen_columns?
+                if col in self.chosen_columns:
+                    table.remove_column(ColumnKey(col))
+                else:
+                    # Remove from the KeyBox
+                    pass
+                # Remove the column from the df
+                self.df.drop(columns=col, inplace=True)
             
     def export_rows(self, row_ids: Iterable[int], path: Path) -> None:
         with connect(self.db_path) as db:
@@ -320,10 +336,23 @@ class Data:
         )
         return zip(*mask.nonzero())
 
-    def sort(self, columns: list, reverse: bool) -> np.ndarray:
+    def sort(self, col_name: str) -> np.ndarray:
         """Set the indices to sort self.df in self._sort. Return the sorted ids."""
+        
+        # Determine if the sort should be reversed
+        if len(self.sort_columns) > 0 and col_name == self.sort_columns[0]:
+            # If the column is already the first in the sort order, toggle the sort order
+            self.sort_reverse = not self.sort_reverse
+        else:
+            # Otherwise, add/move the column to the sort order at first
+            # position and set the sort order to ascending
+            if col_name in self.sort_columns:
+                self.sort_columns.remove(col_name)
+            self.sort_columns.insert(0, col_name)
+            self.sort_reverse = False
+        
         df = self.df
-        self._sort = df.sort_values(columns, ascending=not reverse).index.to_numpy()
+        self._sort = df.sort_values(self.sort_columns, ascending=not self.sort_reverse).index.to_numpy()
         return self.id_array_with_filter_and_sort()
 
     def id_array_with_filter_and_sort(

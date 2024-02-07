@@ -11,6 +11,7 @@ from textual.containers import Container
 from textual.coordinate import Coordinate
 from textual.reactive import var
 from textual._two_way_dict import TwoWayDict
+from textual.widgets._data_table import ColumnKey
 
 from ase.visualize import view
 from ase.db.core import check
@@ -155,17 +156,7 @@ class TEXASE(App):
         row_key = table.coordinate_to_cell_key(Coordinate(table.cursor_row, 0)).row_key
 
         # Sort the table
-        if len(self.sort_columns) > 0 and col_name == self.sort_columns[0]:
-            # If the column is already the first in the sort order, toggle the sort order
-            self.sort_reverse = not self.sort_reverse
-        else:
-            # Otherwise, add/move the column to the sort order at first
-            # position and set the sort order to ascending
-            if col_name in self.sort_columns:
-                self.sort_columns.remove(col_name)
-            self.sort_columns.insert(0, col_name)
-            self.sort_reverse = False
-        ordered_index = self.data.sort(self.sort_columns, self.sort_reverse)
+        ordered_index = self.data.sort(col_name)
 
         table._row_locations = TwoWayDict(
             {
@@ -353,10 +344,15 @@ class TEXASE(App):
         # Add the column to the KeyBox
         await self.query_one(KeyBox).add_key(column_to_remove)
 
-        # Remove the column from the table in data
-        self.data.remove_from_chosen_columns(column_to_remove)
+        self.remove_column_from_table(column_to_remove)
 
-        col_key = table.ordered_columns[cursor_column_index].key
+    def remove_column_from_table(self, column_name: str) -> None:
+        table = self.query_one(TexaseTable)
+        # Remove the column from the table in data
+        self.data.remove_from_chosen_columns(column_name)
+
+        # col_key = table.ordered_columns[cursor_column_index].key
+        col_key = ColumnKey(column_name)
         table.remove_column(col_key)
 
     def watch_show_add_column_box(self, show_box: bool) -> None:

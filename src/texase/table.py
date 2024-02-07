@@ -92,6 +92,7 @@ class TexaseTable(DataTable):
 
         # Populate rows by fetching data
         for row in data.df_for_print().itertuples(index=False):
+            # print(row)
             if marked_rows is not None and RowKey(str(row[0])) in marked_rows:
                 row_key = self.add_row(*row, key=str(row[0]), label=MARKED_LABEL)
                 marked_row_keys.add(row_key)

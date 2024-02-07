@@ -64,17 +64,18 @@ def test_sort(data):
     # Expected output for sorting by id and age in descending order
     expected = np.array([2, 1])
     # Age is a special case so test for that specifically
-    actual = data.sort(["age"], reverse=True)
+    data.sort("age")
+    actual = data.sort("age")
     assert (actual == expected).all()
     # Actual output for sorting by id in descending order
-    actual = data.sort(["id"], reverse=True)
-    assert (actual == expected).all()
+    actual = data.sort("id")
+    assert (actual == expected[::-1]).all()
     # Sort on strings
-    actual = data.sort(["formula"], reverse=False)
+    actual = data.sort("formula")
     assert (actual == expected).all()
     # Sort on something that's only present in one of the rows,
     # i.e. the row where the key is present should be first
-    actual = data.sort(["float_key"], reverse=False)
+    actual = data.sort("float_key")
     assert (actual == expected[::-1]).all()
 
     # How about mixed type columns?

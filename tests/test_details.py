@@ -34,7 +34,7 @@ async def test_edit(db_path):
         assert not app.show_details
         assert not details.display
         
-        await pilot.press("f")
+        await pilot.press("enter")
         
         assert app.show_details
         assert details.display
@@ -81,7 +81,7 @@ async def test_cancel_edit(db_path):
         details = app.query_one("#details", Details)
         table = app.query_one(TexaseTable)
         
-        await pilot.press("f")
+        await pilot.press("enter")
         
         i, _ = get_key_index_and_item(details)
         
@@ -118,7 +118,7 @@ async def test_delete(app_with_cursor_on_str_key, db_path):
     details = app.query_one("#details", Details)
     table = app.query_one(TexaseTable)
 
-    await pilot.press("f")
+    await pilot.press("enter")
 
     i, _ = get_key_index_and_item(details, 'str_key')
 

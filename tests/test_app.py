@@ -88,28 +88,28 @@ async def test_sort_column(db_path):
     async with app.run_test() as pilot:
         table = app.query_one(TexaseTable)
         # Check status before sorting
-        assert app.sort_columns == ["id"]
-        assert not app.sort_reverse
+        assert app.data.sort_columns == ["id"]
+        assert not app.data.sort_reverse
         check_row_ids(table, [1, 2])
 
         await pilot.press("s")
-        assert app.sort_columns == ["id"]
-        assert app.sort_reverse
+        assert app.data.sort_columns == ["id"]
+        assert app.data.sort_reverse
         check_row_ids(table, [2, 1])
 
         # Sort by formula
         formula_index = get_column_labels(table.columns).index("formula")
         await pilot.press(*(formula_index * ("right",)))
         await pilot.press("s")
-        assert app.sort_columns == ["formula", "id"]
-        assert not app.sort_reverse
+        assert app.data.sort_columns == ["formula", "id"]
+        assert not app.data.sort_reverse
         check_row_ids(table, [2, 1])
 
         # Sort with the mouse by clicking the id column header
         await pilot.click(
             selector=TexaseTable, offset=(5, 0)
         )  # The labels take 3 characters, id is next
-        assert app.sort_columns == ["id", "formula"]
+        assert app.data.sort_columns == ["id", "formula"]
         check_row_ids(table, [1, 2])
 
 @pytest.mark.asyncio
