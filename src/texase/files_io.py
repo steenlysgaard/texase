@@ -73,7 +73,7 @@ class ASEReadDirectoryTree(DirectoryTree):
         if self.cursor_node is not None and self.cursor_node.data.path.is_dir():
             self.path = self.cursor_node.data.path
             self.select_node(self.root)
-        
+            
 
 
 
@@ -127,6 +127,9 @@ class FilesIOScreen(ModalScreen[Path | None]):
         
     def on_input_submitted(self, submitted: Input.Submitted) -> None:
         self.dismiss(Path(submitted.value))
+
+    def on_directory_tree_file_selected(self, selected: DirectoryTree.FileSelected) -> None:
+        self.dismiss(selected.path)
         
     @on(Tree.NodeHighlighted)
     def set_input(self, event: Tree.NodeHighlighted) -> None:
