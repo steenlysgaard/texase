@@ -35,7 +35,16 @@ def build_read_exts() -> set[str]:
                 ext_list.append(format.name)
     return set([f'.{ext}' for ext in ext_list])
 
+def build_read_globs() -> set[str]:
+    glob_list = []
+    for format in ioformats.values():
+        if format.can_read:
+            if format.globs:
+                glob_list.extend(format.globs)
+    return set(glob_list)
+
 ASE_IO_READ_EXTS = build_read_exts()
+ASE_IO_READ_GLOBS = build_read_globs()
 
 class ASEWriteDirectoryTree(DirectoryTree):
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
@@ -55,9 +64,9 @@ class ASEReadDirectoryTree(DirectoryTree):
                 continue
             elif path.suffix in ASE_IO_READ_EXTS or path.is_dir():
                 allowed_paths.append(path)
+        for glob in ASE_IO_READ_GLOBS:
+            allowed_paths.extend(path.parent.glob(glob))
         return allowed_paths
-        # return [path for path in paths
-        #         if (path.suffix in ASE_IO_READ_EXTS or path.is_dir())]
         
     def action_set_root_up(self) -> None:
         """If the root node is selected, set a new root node as the
