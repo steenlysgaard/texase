@@ -15,7 +15,7 @@ from ase.db.table import all_columns
 from ase.io import write, read
 from textual.widgets import ListItem, Label
 from textual.widgets._data_table import ColumnKey
-from textual._cache import LRUCache
+from textual.cache import LRUCache
 
 from texase.saved_columns import SavedColumns
 from texase.formatting import format_column, get_age_string, pbc_str_to_array
