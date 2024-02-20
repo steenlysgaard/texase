@@ -135,9 +135,6 @@ class FilesIOScreen(ModalScreen[Path | None]):
             )
         yield Footer()
 
-    # def action_yes(self) -> None:
-    #     self.dismiss(True)
-
     def action_cancel(self) -> None:
         self.dismiss(None)
 

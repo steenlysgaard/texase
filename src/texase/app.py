@@ -17,7 +17,7 @@ from ase.visualize import view
 from ase.db.core import check
 from ase.db.table import all_columns
 
-from texase.data import instantiate_data
+from texase.data import instantiate_data, ASEReadError
 from texase.table import TexaseTable
 from texase.details import Details
 from texase.help import Help
@@ -127,17 +127,20 @@ class TEXASE(App):
         input_file = await self.push_screen_wait(FilesIOScreen(True))
         if input_file is not None:
             # Put info in db and data.df
-            self.data.import_rows(input_file)
-            
-            # Clear and reoccupy the table
-            table = self.query_one(TexaseTable)
-            table.loading = True
-            table.clear()
-            table.populate_table(self.data, columns_cleared=False)
-            await self.populate_key_box()  # type: ignore
-            table.loading = False
-            table.focus()
-        
+            try:
+                self.data.import_rows(input_file)
+            except ASEReadError as e:
+                self.notify_error(f"ASE cannot read the file {input_file}, it gives:\n {e}", "ASE read error")
+            else:
+                # Clear and reoccupy the table
+                table = self.query_one(TexaseTable)
+                table.loading = True
+                table.clear()
+                table.populate_table(self.data, columns_cleared=False)
+                await self.populate_key_box()  # type: ignore
+                table.loading = False
+                table.focus()
+
         
         
     # Sorting
@@ -453,7 +456,7 @@ class TEXASE(App):
             try:
                 check_pbc_string_validity(value)
             except ValueError as e:
-                self.notify_value_error(str(e))
+                self.notify_error(str(e), "ValueError")
                 return False
             return True
         
@@ -462,15 +465,15 @@ class TEXASE(App):
         except ValueError as e:
             # Notify that the key-value-pair is not valid with the
             # raised ValueError and then return
-            self.notify_value_error(str(e))
+            self.notify_error(str(e), "ValueError")
             return False
         return True
     
-    def notify_value_error(self, e: str) -> None:
+    def notify_error(self, e: str, error_title: str) -> None:
         self.notify(
             e,
             severity="error",
-            title="ValueError",
+            title=error_title,
         )
 
     def action_quit(self) -> None:

@@ -63,6 +63,9 @@ def cache(f):
 
     return wrapper
 
+class ASEReadError(Exception):
+    """Error when ASE tries to read a file."""
+
 
 @dataclass
 class Data:
@@ -227,7 +230,11 @@ class Data:
         """Import atoms from a file and add them to the database and the df.
 
         Default is to only take the last frame in the file. Change this with the index argument."""
-        atoms_list = read(path, index=index)
+        try:
+            atoms_list = read(path, index=index)
+        except Exception as e:
+            raise ASEReadError(repr(e))
+        
         if isinstance(atoms_list, Atoms):
             atoms_list = [atoms_list]
         with connect(self.db_path) as db:
