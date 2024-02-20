@@ -34,6 +34,7 @@ from texase.files_io import FilesIOScreen
 class TEXASE(App):
     BINDINGS = [
         Binding("ctrl+g", "hide_all", "Hide all boxes", show=False),
+        Binding("ctrl+z", "suspend_process", "Suspend the app", show=False),
     ]
 
     CSS_PATH = "texase.tcss"
