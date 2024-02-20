@@ -66,6 +66,9 @@ def cache(f):
 class ASEReadError(Exception):
     """Error when ASE tries to read a file."""
 
+class ASEWriteError(Exception):
+    """Error when ASE tries to write to a file."""
+    
 
 @dataclass
 class Data:
@@ -223,8 +226,11 @@ class Data:
             if path.is_file():
                 # An existing file, we append to it
                 append = True
-            write(path, [db.get_atoms(idx, add_additional_information=True)
-                         for idx in row_ids], append=append)
+            try:
+                write(path, [db.get_atoms(idx, add_additional_information=True)
+                             for idx in row_ids], append=append)
+            except Exception as e:
+                raise ASEWriteError(repr(e))
             
     def import_rows(self, path: Path, index=-1) -> None:
         """Import atoms from a file and add them to the database and the df.

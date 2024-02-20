@@ -17,7 +17,7 @@ from ase.visualize import view
 from ase.db.core import check
 from ase.db.table import all_columns
 
-from texase.data import instantiate_data, ASEReadError
+from texase.data import instantiate_data, ASEReadError, ASEWriteError
 from texase.table import TexaseTable
 from texase.details import Details
 from texase.help import Help
@@ -73,7 +73,6 @@ class TEXASE(App):
             # Other boxes
             Details(id="details"),
             Help(id="help"),
-            
             TexaseTable(id="table"),
             KeyBox(id="key-box"),
         )
@@ -83,11 +82,11 @@ class TEXASE(App):
         table = self.query_one(TexaseTable)
 
         self.load_data(table)
-        
+
     @work
     async def load_data(self, table: TexaseTable) -> None:
         table.loading = True
-        
+
         # db data
         data = instantiate_data(self.path)
         self.data = data
@@ -95,31 +94,37 @@ class TEXASE(App):
         # Populate table with data using an external function
         table.populate_table(data)
         await self.populate_key_box()  # type: ignore
-        
+
         table.loading = False
         table.focus()
-        
 
     async def populate_key_box(self) -> None:
         key_box = self.query_one(KeyBox)
         await key_box.populate_keys(self.data.unused_columns())
-        
+
     def remove_filter_from_table(self, filter_tuple: tuple) -> None:
         self.query_one(TexaseTable).remove_filter(*filter_tuple)
 
     # Import / Export
-    
+
     @work
     async def action_export_rows(self) -> None:
         """Export the marked rows or selected row of the table to a file"""
         table = self.query_one(TexaseTable)
         ids = table.ids_to_act_on()
-        
+
         # Show the directory tree with an input box to select a file
         # name and location
         output_file = await self.push_screen_wait(FilesIOScreen(False))
         if output_file is not None:
-            self.data.export_rows(ids, output_file)
+            try:
+                self.data.export_rows(ids, output_file)
+            except ASEWriteError as e:
+                self.notify_error(
+                    f"ASE cannot write to the file {output_file}, it gives:\n {e}",
+                    "ASE write error",
+                    timeout=5,
+                )
 
     @work
     async def action_import_rows(self) -> None:
@@ -130,7 +135,11 @@ class TEXASE(App):
             try:
                 self.data.import_rows(input_file)
             except ASEReadError as e:
-                self.notify_error(f"ASE cannot read the file {input_file}, it gives:\n {e}", "ASE read error")
+                self.notify_error(
+                    f"ASE cannot read the file {input_file}, it gives:\n {e}",
+                    "ASE read error",
+                    timeout=5,
+                )
             else:
                 # Clear and reoccupy the table
                 table = self.query_one(TexaseTable)
@@ -141,15 +150,15 @@ class TEXASE(App):
                 table.loading = False
                 table.focus()
 
-        
-        
     # Sorting
     def action_sort_column(self) -> None:
         # Get the highlighted column
         table = self.query_one(TexaseTable)
         self.sort_table(table.column_at_cursor(), table)
 
-    def on_data_table_header_selected(self, selected: TexaseTable.HeaderSelected) -> None:
+    def on_data_table_header_selected(
+        self, selected: TexaseTable.HeaderSelected
+    ) -> None:
         table = selected.data_table
         col_name = str(selected.label)
         self.sort_table(col_name, table)
@@ -210,20 +219,22 @@ class TEXASE(App):
         else:
             # Set focus back on the table
             table.focus()
-            
-    def save_details(self, key_value_pairs: dict, data: dict, deleted_keys: set) -> None:
+
+    def save_details(
+        self, key_value_pairs: dict, data: dict, deleted_keys: set
+    ) -> None:
         """Called when the user calls save in the details sidebar."""
-        
+
         # Add deleted keys to key_value_pairs with None values
         for key in deleted_keys:
             key_value_pairs[key] = None
-        
+
         table = self.query_one(TexaseTable)
         table.update_row_editable_cells(key_value_pairs)
 
         row_id = table.row_id_at_cursor()
         self.data.update_row(row_id, key_value_pairs, data)
-        
+
     def watch_show_details(self, show_details: bool) -> None:
         """Called when show_details is modified."""
         dv = self.query_one(Details)
@@ -259,7 +270,7 @@ class TEXASE(App):
     def watch_show_add_kvp(self, show_add_kvp: bool) -> None:
         box = self.query_one("#add-kvp-box")
         box.display = show_add_kvp
-        
+
     @work
     async def action_delete_key_value_pairs(self) -> None:
         table = self.query_one(TexaseTable)
@@ -270,9 +281,9 @@ class TEXASE(App):
             table.delete_selected_key_value_pairs()
 
             # Remove in db and df
-            self.data.update_value(table.ids_to_act_on(),
-                                   column=table.column_at_cursor(),
-                                   value=None)
+            self.data.update_value(
+                table.ids_to_act_on(), column=table.column_at_cursor(), value=None
+            )
 
     # Delete rows
     @work
@@ -282,12 +293,10 @@ class TEXASE(App):
         if await self.push_screen_wait(YesNoScreen(table.delete_row_question())):
             # Remove in db and df
             self.data.delete_rows(table.ids_to_act_on())
-            
+
             # Then remove in table
             table.delete_selected_rows()
 
-
-            
     # Edit
     def action_edit(self) -> None:
         table = self.query_one(TexaseTable)
@@ -343,7 +352,7 @@ class TEXASE(App):
         # Save the name of the column to remove
         cursor_column_index = table.cursor_column
         column_to_remove = str(table.ordered_columns[cursor_column_index].label)
-        
+
         # Add the column to the KeyBox
         await self.query_one(KeyBox).add_key(column_to_remove)
 
@@ -378,7 +387,7 @@ class TEXASE(App):
         self.data.add_to_chosen_columns(column)
         table.add_column_and_values(column)
         self.query_one(KeyBox).remove_key(column)
-        
+
     def on_input_submitted(self, submitted):
         table = self.query_one(TexaseTable)
         if submitted.control.id == "add-column-input":
@@ -390,14 +399,14 @@ class TEXASE(App):
             table.focus()
         elif submitted.control.id == "edit-input":
             column = table.column_at_cursor()
-            if column == 'pbc':
+            if column == "pbc":
                 value = submitted.value.upper()
             else:
                 value = convert_value_to_int_or_float(submitted.value)
-                
+
             if not self.is_kvp_valid(column, value):
                 return
-            
+
             # Update table
             table.update_cell_from_edit_box(format_value(value))
 
@@ -446,20 +455,20 @@ class TEXASE(App):
             # Go back to original view
             self.show_add_kvp = False
             table.focus()
-            
+
     def is_kvp_valid(self, key, value):
         """Check that key-value-pair is valid for ase.db
 
         It is ok to edit pbc, we make this check first."""
 
-        if key == 'pbc':
+        if key == "pbc":
             try:
                 check_pbc_string_validity(value)
             except ValueError as e:
                 self.notify_error(str(e), "ValueError")
                 return False
             return True
-        
+
         try:
             check({key: value})
         except ValueError as e:
@@ -468,17 +477,19 @@ class TEXASE(App):
             self.notify_error(str(e), "ValueError")
             return False
         return True
-    
-    def notify_error(self, e: str, error_title: str) -> None:
+
+    def notify_error(self, e: str, error_title: str, timeout: float = 3) -> None:
         self.notify(
             e,
             severity="error",
             title=error_title,
+            timeout=timeout,
         )
 
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
+
 
 def check_pbc_string_validity(string):
     # check if the string has exactly three characters
@@ -496,13 +507,14 @@ def check_pbc_string_validity(string):
     else:
         # raise a ValueError with a descriptive message
         raise ValueError(f"{string} does not have exactly three characters!")
-        
+
 
 class MiddleContainer(Container):
     pass
 
 
 typer_app = typer.Typer()
+
 
 @typer_app.command()
 def main(db_path: Annotated[str, typer.Argument(help="Path to the ASE database")]):
