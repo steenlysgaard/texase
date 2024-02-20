@@ -490,6 +490,11 @@ class TEXASE(App):
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
+        
+    def action_suspend_process(self) -> None:
+        self.data.save_chosen_columns()
+        super().action_suspend_process()
+        
 
 
 def check_pbc_string_validity(string):
