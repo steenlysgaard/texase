@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, List, Tuple, Union, overload, Iterable, Dict
 from functools import wraps
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -34,8 +35,10 @@ ops = {
 def nothing(x):
     return x
 
-
+ALL_COLUMNS = all_columns[:] + ['modified']
 def get_default_columns():
+    """Return default columns used in ASE db and here, i.e. don't show
+    modified by default."""
     return all_columns[:]
 
 
@@ -103,7 +106,7 @@ class Data:
         """
         return [
             col
-            for col in all_columns + self.user_keys
+            for col in ALL_COLUMNS + self.user_keys
             if col not in self.chosen_columns
         ]
 
@@ -437,7 +440,7 @@ class Data:
         DataFrame without filters or sorting."""
         df = self.df
         column_data = df[column]
-        if column == "age":
+        if column in ["age", "modified"]:
             column_data = format_column(column_data, format_function=get_age_string)
         return format_column(column_data)
 
@@ -489,7 +492,7 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
     """
     cols = defaultdict(list)
     user_keys = set()
-    keys = all_columns
+    keys = ALL_COLUMNS
     i = 0
     for row in db.select(selection=sel):
         # default keys are always present
@@ -508,8 +511,9 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
 def get_value(row, key) -> str:
     """Get the value from the row to the dataframe."""
     if key == "age":
-        # value = float_to_time_string(now() - row.ctime)
         value = row.ctime
+    elif key == 'modified':
+        value = row.mtime
     elif key == "pbc":
         # Convert pbc to a string of F and T because we don't want
         # to save arrays in the df

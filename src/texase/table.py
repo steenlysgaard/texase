@@ -9,13 +9,11 @@ from textual.coordinate import Coordinate
 from textual.widgets import DataTable, Input, Label
 from textual.widgets._data_table import RowKey, ColumnKey
 
-from ase.db.table import all_columns
-
-from texase.data import Data
+from texase.data import Data, ALL_COLUMNS
 from texase.edit import EditBox, AddBox
 from texase.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
 
-UNEDITABLE_COLUMNS = [c for c in all_columns if c not in ["pbc"]]
+UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]
 
 class TexaseTable(DataTable):
     BINDINGS = [
@@ -25,7 +23,6 @@ class TexaseTable(DataTable):
         ("enter", "toggle_details", "Show details"),
         ("e", "edit", "Edit"),
         ("K", "add_key_value_pair", "Add key-value pair"),
-        # ("a", "add_configurations", "Add configuration(s)"),
         ("#", "delete_rows", "Delete row(s)"),
         ("D", "delete_key_value_pairs", "Delete key-value pair(s)"),
         ("x", "export_rows", "Export row(s)"),

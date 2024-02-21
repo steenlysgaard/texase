@@ -12,12 +12,12 @@ from textual.coordinate import Coordinate
 from textual.reactive import var
 from textual._two_way_dict import TwoWayDict
 from textual.widgets._data_table import ColumnKey
+from textual.driver import Driver
 
 from ase.visualize import view
 from ase.db.core import check
-from ase.db.table import all_columns
 
-from texase.data import instantiate_data, ASEReadError, ASEWriteError
+from texase.data import instantiate_data, ASEReadError, ASEWriteError, ALL_COLUMNS
 from texase.table import TexaseTable
 from texase.details import Details
 from texase.help import Help
@@ -275,7 +275,7 @@ class TEXASE(App):
     @work
     async def action_delete_key_value_pairs(self) -> None:
         table = self.query_one(TexaseTable)
-        if not table.is_cell_editable(uneditable_columns=all_columns):
+        if not table.is_cell_editable(uneditable_columns=ALL_COLUMNS):
             return
         question = table.delete_kvp_question()
         if await self.push_screen_wait(YesNoScreen(question)):
