@@ -1,38 +1,27 @@
 from pathlib import Path
 import pytest
 
-from textual.coordinate import Coordinate
-
 from texase.app import TEXASE
 from texase.table import TexaseTable
 
 from ase.io import write, read
-from ase import Atoms
 
-from .shared_info import test_atoms
+from .shared_info import test_atoms, water_to_add, check_that_water_were_added_to_small_db
 
 
 @pytest.mark.asyncio
 async def test_read_traj_file(db_path, tmp_path):
     app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(TexaseTable)
-
         # Create a trajectory file
-        atoms = Atoms('H2O')
-        atoms.info['key_value_pairs'] = {'number1': 58}
+        atoms = water_to_add()
         fname = str(tmp_path / 'test.traj')
         write(fname, atoms)
         
         # Import the trajectory file
         await pilot.press("i", "tab", "ctrl+u", *list(fname), "enter")
-
-        assert len(table.rows) == 3
         
-        # Check that the table is populated with the correct data
-        assert app.data.df['formula'].tolist()[-1] == 'H2O'
-        # Check the third row (2) and formula column (3)
-        assert table.get_cell_at(Coordinate(2, 3)) == 'H2O'
+        check_that_water_were_added_to_small_db(app)
 
 
 @pytest.mark.asyncio

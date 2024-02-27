@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Union, Tuple, Set
+from typing import Iterable, List, Union, Tuple, Set
 
 from rich.text import Text
 from textual import work
@@ -35,6 +35,7 @@ class TexaseTable(DataTable):
         Binding("U", "unmark_all", "Unmark all", show=False),
         Binding("ctrl+s", "search", "Search", show=False),
         Binding("/", "filter", "Filter rows"),
+        Binding("g", "update_view", "Update from database", show=False),
         Binding("<", "move_to_top", "Move the cursor to the top", show=False),
         Binding(">", "move_to_bottom", "Move the cursor to the bottom", show=False),
         Binding("k", "cursor_up", "Cursor Up", show=False),
@@ -89,13 +90,32 @@ class TexaseTable(DataTable):
 
         # Populate rows by fetching data
         for row in data.df_for_print().itertuples(index=False):
-            # print(row)
             if marked_rows is not None and RowKey(str(row[0])) in marked_rows:
                 row_key = self.add_row(*row, key=str(row[0]), label=MARKED_LABEL)
                 marked_row_keys.add(row_key)
             else:
                 row_key = self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
         self.marked_rows = marked_row_keys
+        
+    def add_table_rows(self, data: Data, indices: Iterable[int]) -> None:
+        for index in indices:
+            row = data.df_for_print().iloc[index]
+            self.add_row(*row, key=str(row.id), label=UNMARKED_LABEL)
+            
+    def update_table_rows(self, data: Data, indices: Iterable[int]) -> None:
+        for index in indices:
+            row = data.df_for_print().iloc[index]
+            # Iterate through the columns of row
+            for col in data.chosen_columns:
+                self.update_cell(RowKey(str(row.id)), ColumnKey(col), row[col])
+
+    def check_columns(self, data: Data) -> None:
+        """Check if the columns shown in the table are up-to-date with
+        data.chosen_columns, if not remove from the table."""
+        for col in list(self.columns.keys()):
+            if col not in data.chosen_columns:
+                self.remove_column(col)
+        
 
     def add_column_and_values(self, column_name: str) -> None:
         """Add a column and its values to the table.
@@ -261,16 +281,18 @@ class TexaseTable(DataTable):
         return Text.from_markup(q)
     
     def delete_selected_rows(self) -> None:
-        for row_key in self.row_keys_to_act_on():
+        """Delete the currently selected rows from the table view."""
+        self.delete_rows(self.row_keys_to_act_on())
+        
+    def delete_rows(self, row_keys: Iterable[RowKey]) -> None:
+        for row_key in row_keys:
             self.remove_row(row_key)
-        self.marked_rows = set()
+            self.marked_rows.discard(row_key)
         
         
     # Selecting/marking rows
     def action_mark_row(self) -> None:
-        row_index = self.cursor_row
-        row_key = self.coordinate_to_cell_key(Coordinate(row_index, 0)).row_key
-        # row_key = list(self.rows.keys())[row_index]
+        row_key = self.row_index_to_row_key(self.cursor_row)
         self.toggle_mark_row(row_key)
         
         # Go to the next row after marking

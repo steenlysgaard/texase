@@ -19,6 +19,14 @@ class KeyBox(Horizontal):
         yield Label("Other keys:")
         
     async def populate_keys(self, keys: list[str]) -> None:
+        """Populate KeyBox with the given keys.
+
+        Also remove superfluous keys."""
+        for key_node in self.query(Key).nodes:
+            key_name = str(key_node.id).replace("key-", "")
+            if key_name not in keys:
+                key_node.remove()
+                # self.remove_key(key_name)
         for key in keys:
             # Only add the key if it doesn't already exist
             try:

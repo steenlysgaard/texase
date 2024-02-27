@@ -2,7 +2,7 @@ import typer
 
 from typing_extensions import Annotated
 
-from textual import work
+from textual import work, on
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input
 from textual.widgets._data_table import StringKey, DataTable
@@ -134,7 +134,7 @@ class TEXASE(App):
         if input_file is not None:
             # Put info in db and data.df
             try:
-                self.data.import_rows(input_file)
+                added_indices = self.data.import_rows(input_file)
             except ASEReadError as e:
                 self.notify_error(
                     f"ASE cannot read the file {input_file}, it gives:\n {e}",
@@ -145,9 +145,11 @@ class TEXASE(App):
                 # Clear and reoccupy the table
                 table = self.query_one(TexaseTable)
                 table.loading = True
-                table.clear()
-                table.populate_table(self.data, columns_cleared=False)
-                await self.populate_key_box()  # type: ignore
+                table.add_table_rows(self.data, indices=added_indices)
+                
+                # Update KeyBox
+                await self.populate_key_box()
+                
                 table.loading = False
                 table.focus()
 
@@ -293,7 +295,7 @@ class TEXASE(App):
         table = self.query_one(TexaseTable)
         if await self.push_screen_wait(YesNoScreen(table.delete_row_question())):
             # Remove in db and df
-            self.data.delete_rows(table.ids_to_act_on())
+            self.data.delete_rows_from_df_and_db(table.ids_to_act_on())
 
             # Then remove in table
             table.delete_selected_rows()
@@ -494,6 +496,26 @@ class TEXASE(App):
     def action_suspend_process(self) -> None:
         self.data.save_chosen_columns()
         super().action_suspend_process()
+
+    @on(Driver.SignalResume)
+    @work
+    async def action_update_view(self) -> None:
+        """Check if the db has been updated since it was last read.
+
+        If so update the table."""
+        # if not self.data.is_df_up_to_date():
+        remove_idx, update_idx, add_idx = self.data.updates_from_db()
+        
+        table = self.query_one(TexaseTable)
+        table.delete_rows([table.row_index_to_row_key(idx) for idx in remove_idx])
+        
+        table.add_table_rows(self.data, add_idx)
+        table.update_table_rows(self.data, update_idx)
+        
+        table.check_columns(self.data)
+        
+        # Update the KeyBox
+        await self.populate_key_box()
         
 
 

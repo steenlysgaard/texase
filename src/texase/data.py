@@ -90,12 +90,11 @@ class Data:
         self.db_path = Path(self.db_path).resolve()
         self.saved_columns = SavedColumns()
         self.update_chosen_columns()
-        # self._sort: np.ndarray = np.arange(len(self.df))
         self.sort_columns: List[str] = ["id"]
-        # self._df_cache: LRUCache[int, pd.DataFrame] = LRUCache(maxsize=128)
         self._filter_mask_cache: LRUCache[tuple, np.ndarray] = LRUCache(maxsize=128)
         self._string_df_cache: LRUCache[tuple, pd.DataFrame] = LRUCache(maxsize=128)
         self._string_column_cache: LRUCache[tuple, pd.Series] = LRUCache(maxsize=128)
+        self.last_update_time = datetime.now()
 
     def unused_columns(self) -> List[str]:
         """Returns a list of columns that are not used in the table.
@@ -203,26 +202,6 @@ class Data:
             value = pd.NaT
         self.df.loc[self.index_from_row_id(row_id), column] = value
                 
-    def delete_rows(self, row_ids: Iterable[int]) -> None:
-        """Delete the row id(s) from the database and self.df"""
-        self.df.drop([self.index_from_row_id(row_id) for row_id in row_ids], inplace=True)
-        
-        with connect(self.db_path) as db:
-            db.delete(row_ids)
-            
-    def check_columns_with_no_content(self) -> None:
-        """Check if there are any columns with no content and remove them."""
-        for col in self.df.columns:
-            if self.df[col].isnull().all():
-                # Is this column shown in the table? I.e. is it in self.chosen_columns?
-                if col in self.chosen_columns:
-                    table.remove_column(ColumnKey(col))
-                else:
-                    # Remove from the KeyBox
-                    pass
-                # Remove the column from the df
-                self.df.drop(columns=col, inplace=True)
-            
     def export_rows(self, row_ids: Iterable[int], path: Path) -> None:
         with connect(self.db_path) as db:
             append = False
@@ -235,7 +214,7 @@ class Data:
             except Exception as e:
                 raise ASEWriteError(repr(e))
             
-    def import_rows(self, path: Path, index=-1) -> None:
+    def import_rows(self, path: Path, index=-1) -> Iterable[int]:
         """Import atoms from a file and add them to the database and the df.
 
         Default is to only take the last frame in the file. Change this with the index argument."""
@@ -252,15 +231,30 @@ class Data:
                 new_row = db.write(atoms, key_value_pairs=atoms.info.get('key_value_pairs', {}),
                                     data=atoms.info.get('data', {}))
                 new_rows.append(new_row)
+                
+        return self.add_rows_to_df(sel=f"id>={new_rows[0]}")
             
-        # Get the new rows from the database and add them to
-        # self.df. We have to get them from the database to get the id
-        # and ctime correctly.
-        new_df, new_user_keys = db_to_df(connect(self.db_path), sel=f"id>={new_rows[0]}")
+    def add_rows_to_df(self, sel="") -> np.ndarray:
+        """Get the new rows from the database and add them to
+        self.df. We have to get them from the database to get the id
+        and ctime correctly.
+
+        Returns the indices of the added rows in the df.
+        """
+        new_df, new_user_keys = db_to_df(connect(self.db_path), sel=sel)
+        original_last_index = self.df.index[-1]
         self.df = pd.concat([self.df, new_df], ignore_index=True)
+        new_last_index = self.df.index[-1]
+        added_indices = np.arange(original_last_index+1, new_last_index+1)
         
-        # Clear the caches
+        # Add the new user keys to the KeyBox and the unused columns
+        self.user_keys = list(set(self.user_keys) | set(new_user_keys))
+        
+        # Clear the caches, this is simpler than updating them with
+        # the new rows.
         self.clear_all_caches()
+
+        return added_indices
         
         
     def index_from_row_id(self, row_id) -> int:
@@ -443,7 +437,130 @@ class Data:
         if column in ["age", "modified"]:
             column_data = format_column(column_data, format_function=get_age_string)
         return format_column(column_data)
+    
+    def db_last_modified(self) -> datetime:
+        file_stat = self.db_path.stat()
+        # Get the modification time as a datetime object
+        return datetime.fromtimestamp(file_stat.st_mtime)
+    
+    def is_df_up_to_date(self) -> bool:
+        return self.db_last_modified() <= self.last_update_time
+    
+    def updates_from_db(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Update df and table from the db.
 
+        Only do anything if the db has been modified since last time
+        df and table were updated.
+        
+        This is called from the app so it should return
+        information about which rows to delete in the table, which
+        rows to update in the table and which rows to insert in the
+        table.
+        """
+        if not self.is_df_up_to_date():
+            self.last_update_time = datetime.now()
+
+            # Read the columns id and mtime from the db to see which
+            # rows have been modified compared to the current df
+            with connect(self.db_path) as db:
+                update_cache = True
+                ids, mtimes = ids_and_mtimes(db)
+                
+                # First get the rows to delete. This will influence
+                # the indices in the df the rows to add or update.
+                # Get the df index of the rows that have been deleted in the db
+                indices_to_remove = np.nonzero(~self.df.id.isin(ids))[0]
+                self.delete_rows_from_df(indices_to_remove, update_cache=update_cache)
+                
+                # Read rows from db with id larger than self.df.id[-1]
+                # and add them to self.df
+                if np.any(ids > self.df.id.iloc[-1]):
+                    indices_to_add = self.add_rows_to_df(f"id>{self.df.id.iloc[-1]}")
+                    # All caches are cleared now no need to update the
+                    # cache manually in any of the following functions
+                    update_cache = False
+                else:
+                    indices_to_add = np.array([])
+                
+                # Get the df index of the rows that have been modified in the db
+                # mtimes and self.df.modified should have the same length now.
+                indices_to_update = np.nonzero(self.df.modified < mtimes)[0]
+                if indices_to_update.size > 0:
+                    # Update the rows in self.df with the rows from the db
+                    self.update_df_rows_from_db(db, ids[indices_to_update], update_cache=update_cache)
+
+            return indices_to_remove, indices_to_update, indices_to_add
+        else:
+            return np.array([]), np.array([]), np.array([])
+
+    def update_df_rows_from_db(self, db, indices: np.ndarray, update_cache=True) -> None:
+        for idx in indices:
+            # If some keys from self.user_keys have been removed we
+            # have to remove them from self.df before adding new
+            # information, since the new information only contains the
+            # user_keys that are currently present in the db
+            self.df.loc[(self.df.id == idx).to_numpy(), self.user_keys] = pd.NaT
+            
+            # Then get new information
+            df, user_keys = db_to_df(db, sel=f"id={idx}")
+            self.df.loc[(self.df.id == idx).to_numpy(), ALL_COLUMNS + user_keys] = df.loc[0].to_numpy()
+
+        self.clean_user_keys()
+        
+        if update_cache:
+            self.clear_all_caches()
+
+    def delete_rows_from_df_and_db(self, row_ids: Iterable[int]) -> None:
+        """Delete the row id(s) from the database and self.df"""
+        self.delete_rows_from_df([self.index_from_row_id(row_id) for row_id in row_ids])
+        
+        with connect(self.db_path) as db:
+            db.delete(row_ids)
+            
+    def clean_user_keys(self) -> None:
+        """Go through df, if a column is pd.NaT in all rows,
+        then remove it from user_keys and df."""
+        # Cannot remove directly from df since we have some columns we
+        # don't want to remove, e.g. calculator, energy, ... that
+        # could be empty
+        remaining_user_keys = set(self.df[self.user_keys].dropna(axis=1, how='all').columns)
+        columns_to_drop = list(set(self.user_keys) - remaining_user_keys)
+        
+        # Drop from df
+        self.df.drop(labels=columns_to_drop, axis=1, inplace=True)
+        
+        # Drop from chosen_columns
+        for drop_column in set(columns_to_drop) & set(self.chosen_columns):
+            self.remove_from_chosen_columns(drop_column)
+        
+        # Drop from user_keys
+        self.user_keys = list(remaining_user_keys)
+        
+    def delete_rows_from_df(self, indices: Iterable[int], update_cache: bool = True) -> None:
+        """Delete the row id(s) from self.df.
+
+        Remove keys from user_keys if no remaining rows have the key.
+
+        Also take care of the cache."""
+        self.df.drop(indices, inplace=True)
+        self.df.reset_index(inplace=True)
+        self.clean_user_keys()
+
+        if update_cache:
+            # _string_df_cache can be rebuilt quickly from
+            # _string_column_cache and _filter_mask_cache. In the latter
+            # two we can just remove the indices corresponding to the rows
+            # that are deleted.
+            self._string_df_cache.clear()
+            for key in self._filter_mask_cache.keys():
+                self._filter_mask_cache[key] = np.delete(self._filter_mask_cache[key], indices)
+            for key in self._string_column_cache.keys():
+                self._string_column_cache[key] = self._string_column_cache[key].drop(indices)
+            
+
+def ids_and_mtimes(db) -> tuple[np.ndarray, np.ndarray]:
+    ids, mtimes = zip(*[(row.id, row.mtime) for row in db.select(columns=['id', 'mtime'])])
+    return np.asarray(ids), np.asarray(mtimes)
 
 def apply_filter_and_sort_on_df(
     df: pd.DataFrame, filter_mask: np.ndarray, sort: np.ndarray
