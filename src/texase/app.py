@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typer
 
 from typing_extensions import Annotated
@@ -5,7 +7,7 @@ from typing_extensions import Annotated
 from textual import work, on
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input
-from textual.widgets._data_table import StringKey, DataTable
+from textual.widgets._data_table import StringKey
 from textual.binding import Binding
 from textual.containers import Container
 from textual.coordinate import Coordinate
@@ -147,10 +149,10 @@ class TEXASE(App):
                 table = self.query_one(TexaseTable)
                 table.loading = True
                 table.add_table_rows(self.data, indices=added_indices)
-                
+
                 # Update KeyBox
                 await self.populate_key_box()
-                
+
                 table.loading = False
                 table.focus()
 
@@ -493,7 +495,7 @@ class TEXASE(App):
     def action_quit(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
-        
+
     def action_suspend_process(self) -> None:
         self.data.save_chosen_columns()
         super().action_suspend_process()
@@ -506,18 +508,17 @@ class TEXASE(App):
         If so update the table."""
         # if not self.data.is_df_up_to_date():
         remove_idx, update_idx, add_idx = self.data.updates_from_db()
-        
+
         table = self.query_one(TexaseTable)
         table.delete_rows([table.row_index_to_row_key(idx) for idx in remove_idx])
-        
+
         table.add_table_rows(self.data, add_idx)
         table.update_table_rows(self.data, update_idx)
-        
+
         table.check_columns(self.data)
-        
+
         # Update the KeyBox
         await self.populate_key_box()
-        
 
 
 def check_pbc_string_validity(string):

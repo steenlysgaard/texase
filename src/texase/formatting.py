@@ -50,6 +50,7 @@ def convert_value_to_int_or_float(value):
             break
     return value
 
+
 def pbc_str_to_array(pbc_str: str) -> np.ndarray:
     """Convert e.g. the string TFT to [True, False, True]"""
     return np.array([c == "T" for c in pbc_str.upper()])

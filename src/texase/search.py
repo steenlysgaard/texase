@@ -26,7 +26,7 @@ class Search(Container):
             coordinates = self._data.search_for_string(input.value)
 
             self._coordinates = list(coordinates)
-            
+
             if len(self._coordinates) > 0:
                 self.move_cursor(self._coordinates[0])
 
@@ -38,28 +38,26 @@ class Search(Container):
         the input field."""
         self.app.show_search_box = False
         self._table.focus()
-        
+
     def action_next(self) -> None:
         """Move the cursor to the next match."""
         self.move_to_match()
-        
+
     def action_previous(self) -> None:
         """Move the cursor to the previous match."""
         self.move_to_match(previous=True)
-        
+
     def move_to_match(self, previous=False) -> None:
         """Move the cursor to the next or previous match."""
         direction = 1
         if previous:
             direction = -1
-            
+
         if len(self._coordinates) == 0:
             return
-            
+
         try:
-            current_index = self._coordinates.index(
-                self._table.cursor_coordinate
-            )
+            current_index = self._coordinates.index(self._table.cursor_coordinate)
         except ValueError:
             current_index = -1
 

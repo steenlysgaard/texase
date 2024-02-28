@@ -19,10 +19,10 @@ class Details(Container):
         ("ctrl+s", "save", "Save changes"),
         ("ctrl+d", "delete", "Delete"),
     ]
-    
+
     modified_keys: set = set()
     deleted_keys: set = set()
-    
+
     def compose(self) -> ComposeResult:
         yield Title(
             "Key value pairs ([@click=\"app.open_link('https://wiki.fysik.dtu.dk/ase/ase/units.html')\"]Units[/])"
@@ -41,7 +41,7 @@ class Details(Container):
         # Static (non-editable) key value pairs
         static_str = ""
         for key, value in static_kvps.items():
-            if key == 'age':
+            if key == "age":
                 value = get_age_string(value)
             static_str += f"[bold]{key}: [/bold]{value}\n"
         self.query_one(KVPStatic).update(Text.from_markup(static_str))
@@ -51,7 +51,7 @@ class Details(Container):
         kvp_widget.clear()
         for key, value in dynamic_kvps.items():
             kvp_widget.append(ListItem(EditableItem(key, value)))
-            
+
     def update_data(self, dynamic_data: list) -> None:
         data_widget = self.query_one(DataList)
         data_widget.clear()
@@ -64,7 +64,7 @@ class Details(Container):
     def clear_modified_and_deleted_keys(self) -> None:
         self.modified_keys = set()
         self.deleted_keys = set()
-            
+
     def on_list_view_selected(self, sender):
         """When a row is selected in the KVPList, focus on the input
         field and remember that this key value pair was potentially
@@ -72,7 +72,7 @@ class Details(Container):
         item = sender.item.get_child_by_type(EditableItem)
         item.focus()
         self.modified_keys.add(item.key)
-        
+
     def action_save(self) -> None:
         """Save the changes to the table, dataframe and database."""
 
@@ -85,7 +85,7 @@ class Details(Container):
                 key_value_pairs[key] = item.value
         self.app.save_details(key_value_pairs, None, self.deleted_keys)
         self.clear_modified_and_deleted_keys()
-        
+
     def action_delete(self) -> None:
         """Delete the current key value pair or data."""
         kvplist = self.query_one(KVPList)
@@ -94,36 +94,37 @@ class Details(Container):
             self.deleted_keys.add(selected_key)
         kvplist.delete_selected()
 
+
 class EditableItem(Horizontal):
     def __init__(self, key, value):
         super().__init__()
         self.key = key
         self.value = value
-    
+
     def compose(self) -> ComposeResult:
         yield Label(f"[bold]{self.key} = [/bold]")
         yield Input(value=f"{self.value}", classes="editable-input")
-        
+
     def focus(self) -> None:
         self.query_one(Input).focus()
-        
+
     def on_input_submitted(self, submitted: Input.Submitted):
         """When the user presses enter in the input field, update the value.
 
         Then the KVPList takes back focus.
         """
         # TODO: Exactly the same code as in app.py. Refactor?
-        if self.key == 'pbc':
+        if self.key == "pbc":
             value = submitted.value.upper()
         else:
             value = convert_value_to_int_or_float(submitted.value)
         if not self.app.is_kvp_valid(self.key, value):
             submitted.stop()  # stop bubbling further
             return
-        
+
         self.value = value
-        
-        
+
+
 class Title(Label):
     pass
 
@@ -137,14 +138,14 @@ class KVPList(ListView):
     def take_back_focus(self, _):
         """When the user presses enter in the input field, take back focus."""
         self.focus()
-        
+
     def delete_selected(self) -> None:
         """Delete the current key value pair."""
         current_index = self.index
         if self.highlighted_child is not None:
             self.highlighted_child.remove()
         self.index = current_index
-        
+
     def selected_key(self) -> str | None:
         """Return the key of the currently selected key value pair."""
         if self.highlighted_child is not None:

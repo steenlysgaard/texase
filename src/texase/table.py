@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Iterable, List, Union, Tuple, Set
 
 from rich.text import Text
-from textual import work
 from textual.binding import Binding
 from textual.coordinate import Coordinate
 from textual.widgets import DataTable, Input, Label
@@ -14,6 +13,7 @@ from texase.edit import EditBox, AddBox
 from texase.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
 
 UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]
+
 
 class TexaseTable(DataTable):
     BINDINGS = [
@@ -96,12 +96,12 @@ class TexaseTable(DataTable):
             else:
                 row_key = self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
         self.marked_rows = marked_row_keys
-        
+
     def add_table_rows(self, data: Data, indices: Iterable[int]) -> None:
         for index in indices:
             row = data.df_for_print().iloc[index]
             self.add_row(*row, key=str(row.id), label=UNMARKED_LABEL)
-            
+
     def update_table_rows(self, data: Data, indices: Iterable[int]) -> None:
         for index in indices:
             row = data.df_for_print().iloc[index]
@@ -115,7 +115,6 @@ class TexaseTable(DataTable):
         for col in list(self.columns.keys()):
             if col not in data.chosen_columns:
                 self.remove_column(col)
-        
 
     def add_column_and_values(self, column_name: str) -> None:
         """Add a column and its values to the table.
@@ -141,8 +140,10 @@ class TexaseTable(DataTable):
             values.iloc[-1],
             update_width=True,
         )
-        
-    def is_cell_editable(self, uneditable_columns: List[str] = UNEDITABLE_COLUMNS) -> bool:
+
+    def is_cell_editable(
+        self, uneditable_columns: List[str] = UNEDITABLE_COLUMNS
+    ) -> bool:
         # Check if current cell is editable
         coordinate = self.cursor_coordinate
 
@@ -157,7 +158,7 @@ class TexaseTable(DataTable):
             return False
         else:
             return True
-        
+
     def update_row_editable_cells(self, key_value_pairs: dict) -> None:
         """Update the editable cells of a row.
 
@@ -177,12 +178,16 @@ class TexaseTable(DataTable):
             # Check that the column is actually shown
             if key not in self.columns:
                 continue
-            
+
             # Get the column index
             col_index = self.get_column_index(key)
 
             # Update the cell
-            self.update_cell_at(Coordinate(self.cursor_row, col_index), format_value(value), update_width=True)
+            self.update_cell_at(
+                Coordinate(self.cursor_row, col_index),
+                format_value(value),
+                update_width=True,
+            )
 
     def update_edit_box(self, editbox: EditBox) -> None:
         # Check if current cell is editable
@@ -237,7 +242,7 @@ class TexaseTable(DataTable):
         # If not, add the column. The values is already set in the data.
         else:
             self.add_column_and_values(column)
-            
+
     def delete_kvp_question(self) -> Text:
         """Return the question to ask when deleting a key value pair."""
         # Get the ids of the marked or currently selected rows
@@ -246,7 +251,7 @@ class TexaseTable(DataTable):
 
         # Get the column name
         column_name = self.column_at_cursor()
-        
+
         # Create the question
         ids_str = ", ".join([str(id) for id in ids])
         plural = [" ", "s "][no_rows > 1]
@@ -254,47 +259,47 @@ class TexaseTable(DataTable):
         q += f"[bold]{column_name}[/bold] in row" + plural
         q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
         return Text.from_markup(q)
-    
-            
+
     def delete_selected_key_value_pairs(self) -> None:
         """Delete key value pairs of the currently hightlighted
         column. If some rows are marked then delete the key value
         pairs of all marked rows, else delete the key value pair of
         the current row."""
-        
+
         rows = self.row_keys_to_act_on()
-        
+
         for row_key in rows:
-            self.update_cell(row_key, self.column_index_to_column_key(self.cursor_column), "")
+            self.update_cell(
+                row_key, self.column_index_to_column_key(self.cursor_column), ""
+            )
 
     def delete_row_question(self) -> Text:
         """Return the question to ask when deleting a key value pair."""
         # Get the ids of the marked or currently selected rows
         ids = self.ids_to_act_on()
         no_rows = len(ids)
-        
+
         # Create the question
         ids_str = ", ".join([str(id) for id in ids])
         plural = [" ", "s "][no_rows > 1]
         q = "Do you want to delete the row" + plural
         q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
         return Text.from_markup(q)
-    
+
     def delete_selected_rows(self) -> None:
         """Delete the currently selected rows from the table view."""
         self.delete_rows(self.row_keys_to_act_on())
-        
+
     def delete_rows(self, row_keys: Iterable[RowKey]) -> None:
         for row_key in row_keys:
             self.remove_row(row_key)
             self.marked_rows.discard(row_key)
-        
-        
+
     # Selecting/marking rows
     def action_mark_row(self) -> None:
         row_key = self.row_index_to_row_key(self.cursor_row)
         self.toggle_mark_row(row_key)
-        
+
         # Go to the next row after marking
         self.action_cursor_down()
 
@@ -378,9 +383,13 @@ class TexaseTable(DataTable):
     def ids_to_act_on(self) -> List[int]:
         """Get the ids of the rows to act on using the same logic as
         row_keys_to_act_on."""
-        return sorted([get_id_from_row(self.get_row(row_key))
-                       for row_key in self.row_keys_to_act_on()])
-    
+        return sorted(
+            [
+                get_id_from_row(self.get_row(row_key))
+                for row_key in self.row_keys_to_act_on()
+            ]
+        )
+
     def row_keys_to_act_on(self) -> List[RowKey]:
         """Get the row keys of the rows to act on. If some rows are marked,
         then return the row keys of those rows, otherwise return a list of the RowKey of
@@ -390,17 +399,15 @@ class TexaseTable(DataTable):
         else:
             rows = [self.row_index_to_row_key(self.cursor_row)]
         return rows
-    
+
     def row_index_to_row_key(self, row_index) -> RowKey:
         """Return the row key of the row at the given row index"""
         return self.coordinate_to_cell_key(Coordinate(row_index, 0)).row_key
-    
+
     def column_index_to_column_key(self, column_index) -> ColumnKey:
         """Return the column key of the column at the given column index"""
         return self.coordinate_to_cell_key(Coordinate(0, column_index)).column_key
-        
-        
-            
+
 
 def get_id_from_row(row) -> int:
     # This assumes that the first index of the row is the id

@@ -39,7 +39,9 @@ class AddBox(EditBox):
             validate_on=["submitted"],
             validators=[
                 Function(contains_equals_sign, "Must contain '='"),
-                Function(not_only_whitespace, "The key or value can't be only whitespace!"),
+                Function(
+                    not_only_whitespace, "The key or value can't be only whitespace!"
+                ),
                 Function(
                     no_comma,
                     "The key or value can't contain a comma! Only one key-value pair can be added at a time.",
@@ -53,13 +55,12 @@ class AddBox(EditBox):
         if not event.validation_result.is_valid:
             self.query_one(f"#{self.label_id}").add_class("-invalid")
             self.notify(
-                '\n'.join(event.validation_result.failure_descriptions),
+                "\n".join(event.validation_result.failure_descriptions),
                 title="Invalid input",
                 severity="error",
             )
         else:
             self.query_one(f"#{self.label_id}").remove_class("-invalid")
-
 
 
 def contains_equals_sign(value: str) -> bool:

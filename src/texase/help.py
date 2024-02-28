@@ -46,6 +46,8 @@ HELP_MARKDOWN = """\
 - `q`: Quit
 
 """
+
+
 class Help(Container):
     def compose(self) -> ComposeResult:
         yield Markdown(HELP_MARKDOWN, id="help")

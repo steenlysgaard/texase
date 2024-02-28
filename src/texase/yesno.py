@@ -7,7 +7,7 @@ from textual.app import ComposeResult
 
 class YesNoScreen(ModalScreen[bool]):
     """Screen with a question that can be answered yes or no."""
-    
+
     DEFAULT_CSS = """
         YesNoScreen {
             align: center middle;
@@ -21,7 +21,7 @@ class YesNoScreen(ModalScreen[bool]):
             padding: 2 4;
         }
 """
-    
+
     BINDINGS = [
         ("y", "yes", "Yes"),
         ("n", "no", "No"),
@@ -43,7 +43,3 @@ class YesNoScreen(ModalScreen[bool]):
 
     def action_no(self) -> None:
         self.dismiss(False)
-    
-
-    
-    

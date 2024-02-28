@@ -8,6 +8,7 @@ from textual.validation import Validator, ValidationResult
 from texase.edit import EditBox
 from texase.filter import FilterSuggester
 
+
 class AddColumnBox(EditBox):
     input_widget_id = "add-column-input"
     label_id = "add-column-label"
@@ -30,7 +31,7 @@ class AddColumnBox(EditBox):
         if not event.validation_result.is_valid:
             self.query_one(f"#{self.label_id}").add_class("-invalid")
             self.notify(
-                '\n'.join(event.validation_result.failure_descriptions),
+                "\n".join(event.validation_result.failure_descriptions),
                 title="Invalid input",
                 severity="error",
             )
@@ -42,13 +43,14 @@ class ValidColumn(Validator):
     def __init__(self, *args, **kwargs) -> None:
         self._app = kwargs.pop("app", None)
         super().__init__(*args, **kwargs)
-    
+
     def validate(self, value: str) -> ValidationResult:
         """Check if the value is an unused column."""
         if self._app.data.can_column_be_added(value):
             return self.success()
         else:
             return self.failure(f"{value} is not a valid column!")
+
 
 class ColumnSuggester(FilterSuggester):
     async def get_suggestion(self, value: str) -> str | None:
@@ -65,4 +67,3 @@ class ColumnSuggester(FilterSuggester):
             if suggestion.startswith(value):
                 return possible_suggestions[idx]
         return None
-        
