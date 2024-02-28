@@ -14,7 +14,7 @@ from textual._two_way_dict import TwoWayDict
 from textual.widgets._data_table import ColumnKey
 from textual.driver import Driver
 
-from ase.visualize import view
+from ase.gui.gui import GUI, Images
 from ase.db.core import check
 
 from texase.data import instantiate_data, ASEReadError, ASEWriteError, ALL_COLUMNS
@@ -51,8 +51,9 @@ class TEXASE(App):
 
     def __init__(self, path: str = "test/test.db") -> None:
         self.path = path
-        self.sort_columns = ["id"]
-        self.sort_reverse = False
+        self.sort_columns: list[str] = ["id"]
+        self.sort_reverse: bool = False
+        self.gui: GUI | None = None
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -382,7 +383,7 @@ class TEXASE(App):
             images = [self.data.get_atoms(id) for id in table.get_marked_row_ids()]
         else:
             images = [self.data.get_atoms(table.row_id_at_cursor())]
-        view(images)
+        self.gui = GUI(Images(images))
 
     def add_column_to_table_and_remove_from_keybox(self, column: str) -> None:
         """Add a column to the table and remove it from the KeyBox."""
