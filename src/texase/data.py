@@ -35,13 +35,13 @@ def nothing(x):
     return x
 
 
-ALL_COLUMNS = all_columns[:] + ["modified"]
+ALL_COLUMNS = list(all_columns) + ["modified"]
 
 
 def get_default_columns():
     """Return default columns used in ASE db and here, i.e. don't show
     modified by default."""
-    return all_columns[:]
+    return list(all_columns)
 
 
 operator_type_conversion = {
