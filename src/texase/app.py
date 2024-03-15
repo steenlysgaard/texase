@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import typer
 
 from typing_extensions import Annotated
@@ -386,6 +388,9 @@ class TEXASE(App):
         else:
             images = [self.data.get_atoms(table.row_id_at_cursor())]
         self.gui = GUI(Images(images))
+        # Only run if we are not doing a pytest
+        if "PYTEST_CURRENT_TEST" not in os.environ:
+            self.gui.run()
 
     def add_column_to_table_and_remove_from_keybox(self, column: str) -> None:
         """Add a column to the table and remove it from the KeyBox."""
