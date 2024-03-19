@@ -80,7 +80,7 @@ async def test_add_kvp(loaded_app, db_path):
     assert not app.show_add_kvp
     assert not addbox.display
 
-    await pilot.press("K")
+    await pilot.press("k")
 
     assert app.show_add_kvp
     assert addbox.display
@@ -94,7 +94,7 @@ async def test_add_kvp(loaded_app, db_path):
     assert connect(db_path).get(id=1)["str_key"] == new_str
 
     # Mark both rows and add a new kvp
-    await pilot.press("space", "down", "space", "K", *list(f"new_key={new_str}"), "enter")
+    await pilot.press("space", "down", "space", "k", *list(f"new_key={new_str}"), "enter")
     for i in range(2):
         assert app.data.df["new_key"].iloc[i] == new_str
         assert table.get_cell(RowKey(str(i+1)), ColumnKey("new_key")) == new_str
@@ -102,7 +102,7 @@ async def test_add_kvp(loaded_app, db_path):
 
     # Check that converting values is handled correctly
     new_float = 6.6
-    await pilot.press("K", *list(f"float_key  ={new_float}"), "enter")
+    await pilot.press("k", *list(f"float_key  ={new_float}"), "enter")
     assert app.data.df["float_key"].iloc[1] == new_float
     assert str(table.get_cell(RowKey("2"), ColumnKey("float_key"))) == "6.60"
     assert connect(db_path).get(id=2)["float_key"] == new_float
@@ -114,14 +114,14 @@ async def test_invalid_kvps(loaded_app):
     addbox = app.query_one("#add-kvp-box")
 
     # Try a reserved key
-    await pilot.press("K", *list("id=42"), "enter")
+    await pilot.press("k", *list("id=42"), "enter")
     # The add box is still present, i.e nothing has changed
     assert app.show_add_kvp
     assert addbox.display
 
     # Try some other nonsense
     for crap in ["=43", "str_key=  ", "no equals sign", "A=3,B=5"]:
-        await pilot.press("ctrl+g", "K", *list(crap), "enter")
+        await pilot.press("ctrl+g", "k", *list(crap), "enter")
         assert app.show_add_kvp
         assert addbox.display
         
@@ -132,13 +132,13 @@ async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
     table = app.query_one(TexaseTable)
         
     # Press D and then n to cancel
-    await pilot.press("D")
+    await pilot.press("d")
     assert isinstance(app.screen, YesNoScreen)
     await pilot.press("n")
     assert table.get_cell_at(table.cursor_coordinate) == user_dct["str_key"]
 
     # Press D and then y to delete
-    await pilot.press("D", "y")
+    await pilot.press("d", "y")
     assert table.get_cell_at(table.cursor_coordinate) == ""
 
     # Check that the value removed in the dataframe
@@ -154,7 +154,7 @@ async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
     table = app.query_one(TexaseTable)
     
     # Mark both rows and delete
-    await pilot.press("space", "down", "space", "D", "y")
+    await pilot.press("space", "down", "space", "d", "y")
     for i in range(2):
         assert app.data.df["str_key"].iloc[i] is pd.NaT
         assert table.get_cell(RowKey(str(i+1)), ColumnKey("str_key")) == ""

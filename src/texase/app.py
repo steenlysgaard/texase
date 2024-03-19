@@ -25,7 +25,7 @@ from ase.db.core import check
 from texase.data import instantiate_data, ASEReadError, ASEWriteError, ALL_COLUMNS
 from texase.table import TexaseTable
 from texase.details import Details
-from texase.help import Help
+from texase.help import HelpScreen
 from texase.search import Search
 from texase.addcolumn import AddColumnBox
 from texase.filter import FilterBox
@@ -47,7 +47,6 @@ class TEXASE(App):
     # variables that are watched. Remember also to add them to the
     # action_hide_all function
     show_details = var(False)
-    show_help = var(False)
     show_add_column_box = var(False)
     show_search_box = var(False)
     show_filter = var(False)
@@ -79,7 +78,6 @@ class TEXASE(App):
             AddColumnBox(id="add-column-box", classes="bottombox"),
             # Other boxes
             Details(id="details"),
-            Help(id="help"),
             TexaseTable(id="table"),
             KeyBox(id="key-box"),
         )
@@ -127,13 +125,6 @@ class TEXASE(App):
         indices = self.data.add_remaining_rows_to_df()
         if len(indices) > 0:
             self.call_from_thread(table.add_table_rows, self.data, indices)
-
-        
-    # async def load_data(self, table: TexaseTable) -> None:
-
-    #     # Populate table with data using an external function
-    #     self.call_from_thread(table.populate_table, data)
-
 
     async def populate_key_box(self) -> None:
         key_box = self.query_one(KeyBox)
@@ -231,15 +222,6 @@ class TEXASE(App):
         # self.refresh()
         # table.sort(*self.sort_columns, reverse=self.sort_reverse)
 
-    # Movement
-    def action_move_to_top(self) -> None:
-        table = self.query_one(TexaseTable)
-        table.cursor_coordinate = Coordinate(0, table.cursor_column)
-
-    def action_move_to_bottom(self) -> None:
-        table = self.query_one(TexaseTable)
-        table.cursor_coordinate = Coordinate(len(table.rows) - 1, table.cursor_column)
-
     # Details sidebar
     def action_toggle_details(self) -> None:
         self.show_details = not self.show_details
@@ -281,7 +263,6 @@ class TEXASE(App):
 
     def action_hide_all(self) -> None:
         self.show_details = False
-        self.show_help = False
         self.show_add_column_box = False
         self.show_search_box = False
         self.show_filter = False
@@ -289,14 +270,9 @@ class TEXASE(App):
         self.show_add_kvp = False
         self.query_one(TexaseTable).focus()
 
-    # Help sidebar
+    # Help screen
     def action_toggle_help(self) -> None:
-        self.show_help = not self.show_help
-
-    def watch_show_help(self, show_help: bool) -> None:
-        """Called when show_help is modified."""
-        help_view = self.query_one(Help)
-        help_view.display = show_help
+        self.push_screen(HelpScreen())
 
     # Add/Delete key-value-pairs
     def action_add_key_value_pair(self) -> None:
