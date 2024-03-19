@@ -31,18 +31,32 @@ def big_db_path(tmp_path_factory):
     return fn
 
 @pytest_asyncio.fixture
-async def app_with_cursor_on_str_key(db_path):
+async def loaded_app(db_path):
     app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(TexaseTable)
-        
-        # Add an editable column, i.e. a user key
-        await pilot.press("+", *list("str_key"), "enter")
-        
-        column_labels = get_column_labels(table.columns)
-        idx = column_labels.index("str_key")
-        # Move to the new column
-        await pilot.press(*(idx * ("right", )))
+        await app.workers.wait_for_complete()
         
         yield app, pilot
 
+@pytest_asyncio.fixture
+async def app_with_cursor_on_str_key(loaded_app):
+    app, pilot = loaded_app
+    table = app.query_one(TexaseTable)
+
+    # Add an editable column, i.e. a user key
+    await pilot.press("+", *list("str_key"), "enter")
+
+    column_labels = get_column_labels(table.columns)
+    idx = column_labels.index("str_key")
+    # Move to the new column
+    await pilot.press(*(idx * ("right", )))
+
+    yield app, pilot
+
+@pytest_asyncio.fixture
+async def loaded_app_with_big_db(big_db_path):
+    app = TEXASE(path=big_db_path)
+    async with app.run_test() as pilot:
+        await app.workers.wait_for_complete()
+        
+        yield app, pilot

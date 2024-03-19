@@ -13,44 +13,42 @@ from .shared_info import check_that_water_were_added_to_small_db, water_to_add, 
 
 
 @pytest.mark.asyncio
-async def test_update_of_db_add_row(db_path):
-    app = TEXASE(path=db_path)
-    async with app.run_test(size=(200, 50)) as pilot:
-        # Import a structure
-        atoms = water_to_add()
-        db = connect(db_path)
-        db.write(atoms, key_value_pairs=atoms.info['key_value_pairs'])
-        
-        # Update
-        await pilot.press("g")
-        
-        check_that_water_were_added_to_small_db(app)
+async def test_update_of_db_add_row(loaded_app, db_path):
+    app, pilot = loaded_app
+    # Import a structure
+    atoms = water_to_add()
+    db = connect(db_path)
+    db.write(atoms, key_value_pairs=atoms.info['key_value_pairs'])
+
+    # Update
+    await pilot.press("g")
+
+    check_that_water_were_added_to_small_db(app)
 
 @pytest.mark.asyncio
-async def test_update_of_db_remove_row(db_path):
-    app = TEXASE(path=db_path)
-    async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(TexaseTable)
-        # Get the db row id
-        assert str(table.get_cell_at(Coordinate(0, 0))) == '1'
-        
-        # Delete a row
-        db = connect(db_path)
-        db.delete([1])
-        
-        # Update
-        await pilot.press("g")
+async def test_update_of_db_remove_row(loaded_app, db_path):
+    app, pilot = loaded_app
+    table = app.query_one(TexaseTable)
+    # Get the db row id
+    assert str(table.get_cell_at(Coordinate(0, 0))) == '1'
 
-        assert len(table.rows) == 1
-        assert str(table.get_cell_at(Coordinate(0, 0))) == '2'
-        
-        # Check that user keys exclusive to row 1 are removed
-        keybox = app.query_one(KeyBox)
-        for key in user_dct:
-            assert key not in app.data.unused_columns()
-            
-            with pytest.raises(NoMatches):
-                keybox.query_one(f"#key-{key}", Key)  # Will fail if not found
+    # Delete a row
+    db = connect(db_path)
+    db.delete([1])
+
+    # Update
+    await pilot.press("g")
+
+    assert len(table.rows) == 1
+    assert str(table.get_cell_at(Coordinate(0, 0))) == '2'
+
+    # Check that user keys exclusive to row 1 are removed
+    keybox = app.query_one(KeyBox)
+    for key in user_dct:
+        assert key not in app.data.unused_columns()
+
+        with pytest.raises(NoMatches):
+            keybox.query_one(f"#key-{key}", Key)  # Will fail if not found
         
         
 @pytest.mark.asyncio
@@ -73,7 +71,6 @@ async def test_update_of_db_update_row(app_with_cursor_on_str_key, db_path):
 @pytest.mark.asyncio
 async def test_update_of_db_update_row_and_delete_kvp(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
-    table = app.query_one(TexaseTable)
 
     # Update a kvp
     db = connect(db_path)

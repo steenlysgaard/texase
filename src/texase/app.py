@@ -17,6 +17,7 @@ from textual.reactive import var
 from textual._two_way_dict import TwoWayDict
 from textual.widgets._data_table import ColumnKey
 from textual.driver import Driver
+from textual.worker import Worker, WorkerState
 
 from ase.gui.gui import GUI, Images
 from ase.db.core import check
@@ -83,26 +84,56 @@ class TEXASE(App):
             KeyBox(id="key-box"),
         )
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         # Table
         table = self.query_one(TexaseTable)
 
-        self.load_data(table)
-
-    @work
-    async def load_data(self, table: TexaseTable) -> None:
-        table.loading = True
-
-        # db data
-        data = instantiate_data(self.path)
-        self.data = data
-
-        # Populate table with data using an external function
-        table.populate_table(data)
-        await self.populate_key_box()  # type: ignore
-
-        table.loading = False
+        self.load_initial_data(table)
+        
         table.focus()
+        
+        self.finish_mounting()
+        
+    @work
+    async def finish_mounting(self) -> None:
+        # Load the rest of the data
+        table = self.query_one(TexaseTable)
+        
+        key_box = self.query_one(KeyBox)
+        key_box.loading = True
+        
+        self.load_remaining_data(table)
+        
+    async def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        """If load remaining data is done, stop loading, notify and populate key box."""
+        if event.worker.name == "load_remaining_data" and event.worker.state == WorkerState.SUCCESS:
+            key_box = self.query_one(KeyBox)
+            key_box.loading = False
+            
+            # TODO: check that additional keys are added after initial load
+            await self.populate_key_box()  # type: ignore
+            
+            self.notify('Loading Done!', severity='information', timeout=1.5)
+        
+    def load_initial_data(self, table: TexaseTable) -> None:
+        # db data
+        data = instantiate_data(self.path, limit=100)
+        self.data = data
+        
+        table.populate_table(data)
+
+    @work(thread=True)
+    def load_remaining_data(self, table: TexaseTable) -> None:
+        indices = self.data.add_remaining_rows_to_df()
+        if len(indices) > 0:
+            self.call_from_thread(table.add_table_rows, self.data, indices)
+
+        
+    # async def load_data(self, table: TexaseTable) -> None:
+
+    #     # Populate table with data using an external function
+    #     self.call_from_thread(table.populate_table, data)
+
 
     async def populate_key_box(self) -> None:
         key_box = self.query_one(KeyBox)
@@ -351,6 +382,10 @@ class TEXASE(App):
         self.show_add_column_box = True
         self.query_one("#add-column-box").focus()
 
+    def watch_show_add_column_box(self, show_box: bool) -> None:
+        addcolumnbox = self.query_one(AddColumnBox)
+        addcolumnbox.display = show_box
+
     async def action_remove_column(self) -> None:
         """Remove the column that the cursor is on.
 
@@ -374,10 +409,6 @@ class TEXASE(App):
         # col_key = table.ordered_columns[cursor_column_index].key
         col_key = ColumnKey(column_name)
         table.remove_column(col_key)
-
-    def watch_show_add_column_box(self, show_box: bool) -> None:
-        addcolumnbox = self.query_one(AddColumnBox)
-        addcolumnbox.display = show_box
 
     def action_view(self) -> None:
         """View the currently selected images, if no images are

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Iterable, List, Union, Tuple, Set
 
 from rich.text import Text
+from textual import work
 from textual.binding import Binding
 from textual.coordinate import Coordinate
 from textual.widgets import DataTable, Input, Label
@@ -98,8 +99,7 @@ class TexaseTable(DataTable):
         self.marked_rows = marked_row_keys
 
     def add_table_rows(self, data: Data, indices: Iterable[int]) -> None:
-        for index in indices:
-            row = data.df_for_print().iloc[index]
+        for row in data.df_for_print().iloc[indices].itertuples(index=False):
             self.add_row(*row, key=str(row.id), label=UNMARKED_LABEL)
 
     def update_table_rows(self, data: Data, indices: Iterable[int]) -> None:

@@ -24,93 +24,91 @@ def get_key_index_and_item(details: Details, key: str = 'pbc') -> tuple[int, Edi
     return i, item  # type: ignore
         
 @pytest.mark.asyncio
-async def test_edit(db_path):
-    app = TEXASE(path=db_path)
-    async with app.run_test(size=(200, 50)) as pilot:
-        table = app.query_one(TexaseTable)
-        details = app.query_one("#details", Details)
-        
-        # Check status
-        assert not app.show_details
-        assert not details.display
-        
-        await pilot.press("enter")
-        
-        assert app.show_details
-        assert details.display
-        
-        i, item = get_key_index_and_item(details)
-        
-        # Press down arrow to select the pbc row
-        await pilot.press(*(i * ("down", )))
+async def test_edit(loaded_app, db_path):
+    app, pilot = loaded_app
+    table = app.query_one(TexaseTable)
+    details = app.query_one("#details", Details)
 
-        # Modify pbc
-        await pilot.press("enter")
-        # Focus should go to the input widget
-        input_widget = item.query_one(Input)
-        assert input_widget.has_focus
-        assert input_widget.value == "".join(['FT'[i] for i in pbc])
+    # Check status
+    assert not app.show_details
+    assert not details.display
 
-        # Delete the current value
-        await pilot.press(*(3 * ("backspace", )))
-        
-        # Change the value
-        inv_pbc = "".join(['FT'[int(not i)] for i in pbc])
-        await pilot.press(*list(inv_pbc), "enter")
-        
-        assert details.modified_keys == {"pbc"}
-        
-        # Save the changes and hide the details
-        await pilot.press("ctrl+s", "ctrl+g")
-        
-        assert not app.show_details
-        assert not details.display
-        
-        # Check that the value was changed
-        column_labels = get_column_labels(table.columns)
-        idx = column_labels.index("pbc")
-        assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == inv_pbc
-        assert app.data.df.iloc[0]["pbc"] == inv_pbc
-        assert all(connect(db_path).get(1).pbc == pbc_str_to_array(inv_pbc))
+    await pilot.press("enter")
+
+    assert app.show_details
+    assert details.display
+
+    i, item = get_key_index_and_item(details)
+
+    # Press down arrow to select the pbc row
+    await pilot.press(*(i * ("down", )))
+
+    # Modify pbc
+    await pilot.press("enter")
+    # Focus should go to the input widget
+    input_widget = item.query_one(Input)
+    assert input_widget.has_focus
+    assert input_widget.value == "".join(['FT'[i] for i in pbc])
+
+    # Delete the current value
+    await pilot.press(*(3 * ("backspace", )))
+
+    # Change the value
+    inv_pbc = "".join(['FT'[int(not i)] for i in pbc])
+    await pilot.press(*list(inv_pbc), "enter")
+
+    assert details.modified_keys == {"pbc"}
+
+    # Save the changes and hide the details
+    await pilot.press("ctrl+s", "ctrl+g")
+
+    assert not app.show_details
+    assert not details.display
+
+    # Check that the value was changed
+    column_labels = get_column_labels(table.columns)
+    idx = column_labels.index("pbc")
+    assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == inv_pbc
+    assert app.data.df.iloc[0]["pbc"] == inv_pbc
+    assert all(connect(db_path).get(1).pbc == pbc_str_to_array(inv_pbc))
 
         
 @pytest.mark.asyncio
-async def test_cancel_edit(db_path):
-    app = TEXASE(path=db_path)
-    async with app.run_test(size=(200, 50)) as pilot:
-        details = app.query_one("#details", Details)
-        table = app.query_one(TexaseTable)
-        
-        await pilot.press("enter")
-        
-        i, _ = get_key_index_and_item(details)
-        
-        # Press down arrow to select the pbc row
-        await pilot.press(*(i * ("down", )), "enter")
-        
-        # Modify pbc
-        await pilot.press("enter", *(3 * ("backspace", )))
+async def test_cancel_edit(loaded_app, db_path):
+    app, pilot = loaded_app
+    details = app.query_one("#details", Details)
+    table = app.query_one(TexaseTable)
 
-        # Change the value
-        inv_pbc = "".join(['FT'[int(not i)] for i in pbc])
-        await pilot.press(*list(inv_pbc), "enter")
-        
-        # Cancel the changes and hide the details
-        await pilot.press("ctrl+g")
-        
-        assert details.modified_keys == set()
+    await pilot.press("enter")
 
-        # Check that the value was not changed
-        column_labels = get_column_labels(table.columns)
-        idx = column_labels.index("pbc")
-        assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == "".join(['FT'[i] for i in pbc])
-        assert app.data.df.iloc[0]["pbc"] == "".join(['FT'[i] for i in pbc])
-        assert all(connect(db_path).get(1).pbc == pbc)
-        
-        await pilot.press("f")
-        _, item = get_key_index_and_item(details)
-        input_widget = item.query_one(Input)
-        assert input_widget.value == "".join(['FT'[i] for i in pbc])
+    i, _ = get_key_index_and_item(details)
+
+    # Press down arrow to select the pbc row
+    await pilot.press(*(i * ("down", )), "enter")
+
+    # Modify pbc
+    await pilot.press("enter", *(3 * ("backspace", )))
+
+    # Change the value
+    inv_pbc = "".join(['FT'[int(not i)] for i in pbc])
+    await pilot.press(*list(inv_pbc), "enter")
+
+    # Cancel the changes and hide the details
+    await pilot.press("ctrl+g")
+
+    assert details.modified_keys == set()
+
+    # Check that the value was not changed
+    column_labels = get_column_labels(table.columns)
+    idx = column_labels.index("pbc")
+    assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == "".join(['FT'[i] for i in pbc])
+    assert app.data.df.iloc[0]["pbc"] == "".join(['FT'[i] for i in pbc])
+    assert all(connect(db_path).get(1).pbc == pbc)
+
+    await pilot.press("f")
+    _, item = get_key_index_and_item(details)
+    input_widget = item.query_one(Input)
+    assert input_widget.value == "".join(['FT'[i] for i in pbc])
 
 @pytest.mark.asyncio
 async def test_delete(app_with_cursor_on_str_key, db_path):

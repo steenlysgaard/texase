@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -276,6 +277,20 @@ class Data:
         self.clear_all_caches()
 
         return added_indices
+    
+    def add_remaining_rows_to_df(self) -> Iterable[int]:
+        """After the initial load of rows from the db (with a
+        limit). This function checks if there are more rows in the db
+        and adds them to the dataframe."""
+        
+        # Get the number of rows in the db
+        with connect(self.db_path) as db:
+            n_rows = db.count()
+        
+        # If there are more rows than the initial load, we add them
+        if n_rows > len(self.df):
+            return self.add_rows_to_df(sel=f"id>{self.df.id.iloc[-1]}")
+        return []
 
     def index_from_row_id(self, row_id) -> int:
         return self.df.loc[self.df["id"] == row_id].index[0]
@@ -633,13 +648,13 @@ def apply_filter_and_sort_on_df(
     return df.iloc[sort].iloc[filter_mask[sort]]
 
 
-def instantiate_data(db_path: str, sel: str = "") -> Data:
+def instantiate_data(db_path: str, sel: str = "", limit: int | None = None) -> Data:
     db = connect(db_path)
-    df, user_keys = db_to_df(db, sel)
+    df, user_keys = db_to_df(db, sel, limit)
     return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 
 
-def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
+def db_to_df(db, sel="", limit: int | None = None) -> tuple[pd.DataFrame, List[str]]:
     """Convert a db into a pandas.DataFrame.
 
     The columns are built using defaultdicts, and put into a
@@ -650,7 +665,7 @@ def db_to_df(db, sel="") -> tuple[pd.DataFrame, List[str]]:
     user_keys = set()
     keys = ALL_COLUMNS
     i = 0
-    for row in db.select(selection=sel):
+    for row in db.select(selection=sel, limit=limit):
         # default keys are always present
         for k in keys:
             cols[k].append(get_value(row, k))
@@ -682,3 +697,26 @@ def get_value(row, key) -> str:
 def get_data(db_path, row_id):
     db = connect(db_path)
     return db.get(id=row_id).data
+
+
+# # Function to query the ASE database, to be run in a separate thread
+# def query_ase_database(queue, initial=False):
+#     with connect(DATABASE_PATH) as conn:
+#         if initial:
+#             # Fetch initial set of data
+#             rows = list(conn.select(limit=10))  # Adjust limit as needed for initial data
+#         else:
+#             # Fetch all data
+#             rows = list(conn.select())
+        
+#         # Convert rows to a format suitable for your application, e.g., a DataFrame
+#         data = pd.DataFrame([{'ID': row.id, 'Formula': row.formula, 'Energy': row.energy} for row in rows])
+#         queue.put(data)  # Put the fetched data into the queue
+
+# class AsynchronousDataTableApp(App):
+
+#     async def on_mount(self) -> None:
+#         ...
+        
+#         # Continuously check the queue for new data
+#         self.set_interval(0.5, self.check_data_queue)
