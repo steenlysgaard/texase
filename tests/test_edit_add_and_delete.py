@@ -6,7 +6,6 @@ from textual.widgets._data_table import ColumnKey, RowKey
 
 from ase.db import connect
 
-from texase.app import TEXASE
 from texase.table import TexaseTable, get_column_labels
 from texase.yesno import YesNoScreen
 
