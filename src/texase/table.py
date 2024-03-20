@@ -129,6 +129,11 @@ class TexaseTable(DataTable):
         values = self.app.data.column_for_print(column_name)
         for i, val in enumerate(values[:-1]):
             self.update_cell_at(Coordinate(i, col_index), val)
+
+        # Clear _updated_cells to avoid a forced update for each cell
+        # in the function _update_column_widths
+        self._updated_cells.clear()
+
         self.update_cell_at(
             Coordinate(len(values) - 1, col_index),
             values.iloc[-1],

@@ -87,37 +87,40 @@ class TEXASE(App):
         table = self.query_one(TexaseTable)
 
         self.load_initial_data(table)
-        
+
         table.focus()
-        
+
         self.finish_mounting()
-        
+
     @work
     async def finish_mounting(self) -> None:
         # Load the rest of the data
         table = self.query_one(TexaseTable)
-        
+
         key_box = self.query_one(KeyBox)
         key_box.loading = True
-        
+
         self.load_remaining_data(table)
-        
+
     async def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """If load remaining data is done, stop loading, notify and populate key box."""
-        if event.worker.name == "load_remaining_data" and event.worker.state == WorkerState.SUCCESS:
+        if (
+            event.worker.name == "load_remaining_data"
+            and event.worker.state == WorkerState.SUCCESS
+        ):
             key_box = self.query_one(KeyBox)
             key_box.loading = False
-            
+
             # TODO: check that additional keys are added after initial load
             await self.populate_key_box()  # type: ignore
-            
-            self.notify('Loading Done!', severity='information', timeout=1.5)
-        
+
+            self.notify("Loading Done!", severity="information", timeout=1.5)
+
     def load_initial_data(self, table: TexaseTable) -> None:
         # db data
         data = instantiate_data(self.path, limit=100)
         self.data = data
-        
+
         table.populate_table(data)
 
     @work(thread=True)

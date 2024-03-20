@@ -1,6 +1,5 @@
 import pytest
 
-from texase.app import TEXASE
 from texase.keys import KeyBox, Key
 from texase.table import get_column_labels, TexaseTable
 
