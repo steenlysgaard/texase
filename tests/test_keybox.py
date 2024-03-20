@@ -6,6 +6,10 @@ from texase.table import get_column_labels, TexaseTable
 @pytest.mark.asyncio
 async def test_add_column_from_keybox(loaded_app):
     app, pilot = loaded_app
+    
+    # Extra pause required since the KeyBox is added last
+    await pilot.pause()
+    
     table = app.query_one(TexaseTable)
     keybox = app.query_one(KeyBox)
     key_button = keybox.query_one("#key-str_key", Key)
