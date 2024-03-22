@@ -1,10 +1,41 @@
 from typing import Tuple
+import re
+
 from textual.containers import Container
 from textual.binding import Binding
 
 
 class ColumnAdd(Container):
     pass
+
+
+def valid_regex(input_string: str) -> bool:
+    """Check if the input string is a valid regex pattern"""
+    try:
+        re.compile(input_string)
+        is_valid = True
+    except re.error:
+        is_valid = False
+    return is_valid
+
+
+def check_escape_character(input_string: str) -> bool:
+    """Check if the final character is an escape character."""
+    char = input_string[-1]
+    if char == "\\":
+        return True
+    return False
+
+
+def ready_for_regex_search(input_string: str) -> bool:
+    """Check if the input string is ready for a regex search."""
+    # If the final character is an escape character, return False
+    if check_escape_character(input_string):
+        return False
+    # If the input string is not a valid regex, return False
+    if not valid_regex(input_string):
+        return False
+    return True
 
 
 class Search(Container):
@@ -23,7 +54,9 @@ class Search(Container):
 
     def on_input_changed(self, input):
         if input.value != "":
-            coordinates = self._data.search_for_string(input.value)
+            coordinates = self._data.search_for_string(
+                input.value, regex=ready_for_regex_search(input.value)
+            )
 
             self._coordinates = list(coordinates)
 

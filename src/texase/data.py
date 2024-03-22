@@ -369,13 +369,13 @@ class Data:
     def save_chosen_columns(self) -> None:
         self.saved_columns[str(self.db_path)] = self.chosen_columns
 
-    def search_for_string(self, search_string: str):
+    def search_for_string(self, search_string: str, regex: bool = True):
         # Use the string representation of the dataframe, i.e. what is
         # currently visible
         df = self.df_for_print()
         mask = np.column_stack(
             [
-                df[col].astype(str).str.contains(search_string, na=False)
+                df[col].astype(str).str.contains(search_string, na=False, regex=regex)
                 for col in self.chosen_columns
             ]
         )
