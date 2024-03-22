@@ -14,13 +14,6 @@ Details {
     dock: left;
 }
 
-Help {
-    max-width: 30%;
-    min-width: 20%;
-    layer: details;
-    dock: right;
-}
-
 #kvp {
     height: 2fr;
 }

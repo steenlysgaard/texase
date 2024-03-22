@@ -27,14 +27,14 @@ class Details(Container):
         yield Title(
             "Key value pairs ([@click=\"app.open_link('https://wiki.fysik.dtu.dk/ase/ase/units.html')\"]Units[/])"
         )
-        yield Container(KVPStatic(), KVPList(), id="kvp")
+        yield Container(KVPStatic(), KVPList(id="dynamic_kvp_list"), id="kvp")
         yield Title("Data")
         yield DataList(id="datalist")
 
     def set_focus(self) -> None:
         # Remember where old focus was and start from this. If this
         # row hasn't been focused before then focus on the KVPList.
-        self.query_one(KVPList).focus()
+        self.query_one("#dynamic_kvp_list", KVPList).focus()
 
     def update_kvplist(self, static_kvps: dict, dynamic_kvps: dict) -> None:
         """Update the kvp widgets."""
@@ -47,16 +47,16 @@ class Details(Container):
         self.query_one(KVPStatic).update(Text.from_markup(static_str))
 
         # Dynamic (editable) key value pairs
-        kvp_widget = self.query_one(KVPList)
+        kvp_widget = self.query_one("#dynamic_kvp_list", KVPList)
         kvp_widget.clear()
         for key, value in dynamic_kvps.items():
             kvp_widget.append(ListItem(EditableItem(key, value)))
 
-    def update_data(self, dynamic_data: list) -> None:
+    def update_data(self, dynamic_data: dict) -> None:
         data_widget = self.query_one(DataList)
         data_widget.clear()
-        for kvp in dynamic_data:
-            data_widget.append(kvp)
+        for key, value in dynamic_data.items():
+            data_widget.append(ListItem(EditableItem(key, value)))
 
     def on_hide(self) -> None:
         self.clear_modified_and_deleted_keys()
@@ -78,17 +78,26 @@ class Details(Container):
 
         # Get the key value pairs from the KVPList
         key_value_pairs = {}
-        for h in self.query_one(KVPList).children:
+        for h in self.query_one("#dynamic_kvp_list", KVPList).children:
             item = h.get_child_by_type(EditableItem)
             key = item.key
             if key in self.modified_keys:
                 key_value_pairs[key] = item.value
-        self.app.save_details(key_value_pairs, None, self.deleted_keys)
+                
+        # Do the same for updated data
+        updated_data = {}
+        for h in self.query_one("#datalist", DataList).children:
+            item = h.get_child_by_type(EditableItem)
+            key = item.key
+            if key in self.modified_keys:
+                updated_data[key] = item.value
+        
+        self.app.save_details(key_value_pairs, updated_data, self.deleted_keys)
         self.clear_modified_and_deleted_keys()
 
     def action_delete(self) -> None:
         """Delete the current key value pair or data."""
-        kvplist = self.query_one(KVPList)
+        kvplist = self.query_one("#dynamic_kvp_list", KVPList)
         selected_key = kvplist.selected_key()
         if selected_key is not None:
             self.deleted_keys.add(selected_key)
@@ -152,5 +161,5 @@ class KVPList(ListView):
             return self.highlighted_child.get_child_by_type(EditableItem).key
 
 
-class DataList(ListView):
+class DataList(KVPList):
     pass

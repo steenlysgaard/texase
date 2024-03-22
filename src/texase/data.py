@@ -277,16 +277,16 @@ class Data:
         self.clear_all_caches()
 
         return added_indices
-    
+
     def add_remaining_rows_to_df(self) -> np.ndarray:
         """After the initial load of rows from the db (with a
         limit). This function checks if there are more rows in the db
         and adds them to the dataframe."""
-        
+
         # Get the number of rows in the db
         with connect(self.db_path) as db:
             n_rows = db.count()
-        
+
         # If there are more rows than the initial load, we add them
         if n_rows > len(self.df):
             return self.add_rows_to_df(sel=f"id>{self.df.id.iloc[-1]}")
@@ -330,11 +330,8 @@ class Data:
                 static_kvps[key] = value
         return static_kvps, dynamic_kvps
 
-    def row_data(self, row_id: int) -> list:
-        dynamic_data = []
-        for key, value in get_data(self.db_path, row_id).items():
-            dynamic_data.append(ListItem(Label(f"[bold]{key}: [/bold]{value}")))
-        return dynamic_data
+    def row_data(self, row_id: int) -> dict:
+        return get_data(self.db_path, row_id)
 
     def get_atoms(self, row) -> Atoms:
         db = connect(self.db_path)
@@ -697,4 +694,3 @@ def get_value(row, key) -> str:
 def get_data(db_path, row_id):
     db = connect(db_path)
     return db.get(id=row_id).data
-
