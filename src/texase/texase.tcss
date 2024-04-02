@@ -14,6 +14,19 @@ Details {
     dock: left;
 }
 
+#unsaved_changes {
+    color: $warning;
+    padding: 1 4;
+    text-align: center;
+    text-style: bold;
+    width: 1fr;
+    dock: bottom
+}
+
+#unsaved_changes.-hidden {
+    display: none;
+}
+
 #kvp {
     height: 2fr;
 }
@@ -24,9 +37,8 @@ Details {
 
 Title {
     background: $boost;
-    color: $secondary;
-    padding: 2 4;
-    /* border-right: vkey $background; */
+    color: $primary-lighten-3;
+    padding: 1 4;
     text-align: center;
     text-style: bold;
     width: 1fr;

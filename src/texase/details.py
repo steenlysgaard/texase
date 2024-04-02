@@ -5,6 +5,7 @@ from textual import on
 from textual.widgets import Label, Input
 from textual.widgets import ListView, ListItem
 from textual.containers import Container, Horizontal
+from textual.reactive import reactive
 from rich.text import Text
 
 from texase.formatting import convert_value_to_int_or_float, get_age_string
@@ -20,8 +21,10 @@ class Details(Container):
         ("ctrl+d", "delete", "Delete"),
     ]
 
-    modified_keys: set = set()
-    deleted_keys: set = set()
+    modified_keys = set()
+    deleted_keys = set()
+    # Watch if anything is modified. If so, show a label that says unsaved changes.
+    anything_modified = reactive(False)
 
     def compose(self) -> ComposeResult:
         yield Title(
@@ -30,6 +33,13 @@ class Details(Container):
         yield Container(KVPStatic(), KVPList(id="dynamic_kvp_list"), id="kvp")
         yield Title("Data")
         yield DataList(id="datalist")
+        yield Label("Unsaved changes!", id="unsaved_changes")
+        
+    def watch_anything_modified(self, modified):
+        if modified:
+            self.query_one("#unsaved_changes", Label).remove_class("-hidden")
+        else:
+            self.query_one("#unsaved_changes", Label).add_class("-hidden")
 
     def set_focus(self) -> None:
         # Remember where old focus was and start from this. If this
@@ -62,8 +72,9 @@ class Details(Container):
         self.clear_modified_and_deleted_keys()
 
     def clear_modified_and_deleted_keys(self) -> None:
-        self.modified_keys = set()
-        self.deleted_keys = set()
+        self.modified_keys.clear()
+        self.deleted_keys.clear()
+        self.anything_modified = False
 
     def on_list_view_selected(self, sender):
         """When a row is selected in the KVPList, focus on the input
@@ -72,6 +83,7 @@ class Details(Container):
         item = sender.item.get_child_by_type(EditableItem)
         item.focus()
         self.modified_keys.add(item.key)
+        self.anything_modified = True
 
     def action_save(self) -> None:
         """Save the changes to the table, dataframe and database."""
@@ -101,6 +113,7 @@ class Details(Container):
         selected_key = kvplist.selected_key()
         if selected_key is not None:
             self.deleted_keys.add(selected_key)
+            self.anything_modified = True
         kvplist.delete_selected()
 
 
