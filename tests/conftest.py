@@ -8,7 +8,7 @@ from ase.data import chemical_symbols
 from texase.app import TEXASE
 from texase.table import TexaseTable, get_column_labels
 
-from .shared_info import user_dct, cell, pbc, test_atoms
+from .shared_info import user_dct, cell, pbc, test_atoms, user_data
 
 # Define a fixture that returns a dictionary object
 @pytest.fixture
@@ -16,7 +16,7 @@ def db_path(tmp_path_factory):
     fn = tmp_path_factory.mktemp("test_db") / "test.db"
     db = connect(fn)
     db.write(Atoms(test_atoms[0], cell=cell, pbc=pbc),
-             key_value_pairs=user_dct)
+             key_value_pairs=user_dct, data=user_data)
     db.write(Atoms(test_atoms[1]))
     return fn
 

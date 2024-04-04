@@ -7,22 +7,25 @@ from textual.widgets import Input
 
 from ase.db import connect
 
-from texase.app import TEXASE
 from texase.table import TexaseTable, get_column_labels
 from texase.details import Details, KVPList, EditableItem
 from texase.formatting import pbc_str_to_array
 
-from .shared_info import pbc
+from .shared_info import pbc, user_data
 
-def get_key_index_and_item(details: Details, key: str = 'pbc') -> tuple[int, EditableItem]:
-    kvp_list = details.query_one(KVPList)
+
+def get_key_index_and_item(
+    details: Details, key: str = "pbc", id: str = "#dynamic_kvp_list"
+) -> tuple[int, EditableItem]:
+    kvp_list = details.query_one(id, KVPList)
     # pbc will always be present in the kvp list as it comes from the Atoms object
     for i, listitem in enumerate(kvp_list.children):
         item = listitem.get_child_by_type(EditableItem)
         if item.key == key:
             break
     return i, item  # type: ignore
-        
+
+
 @pytest.mark.asyncio
 async def test_edit(loaded_app, db_path):
     app, pilot = loaded_app
@@ -41,20 +44,20 @@ async def test_edit(loaded_app, db_path):
     i, item = get_key_index_and_item(details)
 
     # Press down arrow to select the pbc row
-    await pilot.press(*(i * ("down", )))
+    await pilot.press(*(i * ("down",)))
 
     # Modify pbc
     await pilot.press("enter")
     # Focus should go to the input widget
     input_widget = item.query_one(Input)
     assert input_widget.has_focus
-    assert input_widget.value == "".join(['FT'[i] for i in pbc])
+    assert input_widget.value == "".join(["FT"[i] for i in pbc])
 
     # Delete the current value
-    await pilot.press(*(3 * ("backspace", )))
+    await pilot.press(*(3 * ("backspace",)))
 
     # Change the value
-    inv_pbc = "".join(['FT'[int(not i)] for i in pbc])
+    inv_pbc = "".join(["FT"[int(not i)] for i in pbc])
     await pilot.press(*list(inv_pbc), "enter")
 
     assert details.modified_keys == {"pbc"}
@@ -72,7 +75,7 @@ async def test_edit(loaded_app, db_path):
     assert app.data.df.iloc[0]["pbc"] == inv_pbc
     assert all(connect(db_path).get(1).pbc == pbc_str_to_array(inv_pbc))
 
-        
+
 @pytest.mark.asyncio
 async def test_cancel_edit(loaded_app, db_path):
     app, pilot = loaded_app
@@ -84,13 +87,13 @@ async def test_cancel_edit(loaded_app, db_path):
     i, _ = get_key_index_and_item(details)
 
     # Press down arrow to select the pbc row
-    await pilot.press(*(i * ("down", )), "enter")
+    await pilot.press(*(i * ("down",)), "enter")
 
     # Modify pbc
-    await pilot.press("enter", *(3 * ("backspace", )))
+    await pilot.press("enter", *(3 * ("backspace",)))
 
     # Change the value
-    inv_pbc = "".join(['FT'[int(not i)] for i in pbc])
+    inv_pbc = "".join(["FT"[int(not i)] for i in pbc])
     await pilot.press(*list(inv_pbc), "enter")
 
     # Cancel the changes and hide the details
@@ -101,14 +104,17 @@ async def test_cancel_edit(loaded_app, db_path):
     # Check that the value was not changed
     column_labels = get_column_labels(table.columns)
     idx = column_labels.index("pbc")
-    assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == "".join(['FT'[i] for i in pbc])
-    assert app.data.df.iloc[0]["pbc"] == "".join(['FT'[i] for i in pbc])
+    assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == "".join(
+        ["FT"[i] for i in pbc]
+    )
+    assert app.data.df.iloc[0]["pbc"] == "".join(["FT"[i] for i in pbc])
     assert all(connect(db_path).get(1).pbc == pbc)
 
     await pilot.press("f")
     _, item = get_key_index_and_item(details)
     input_widget = item.query_one(Input)
-    assert input_widget.value == "".join(['FT'[i] for i in pbc])
+    assert input_widget.value == "".join(["FT"[i] for i in pbc])
+
 
 @pytest.mark.asyncio
 async def test_delete(app_with_cursor_on_str_key, db_path):
@@ -118,10 +124,10 @@ async def test_delete(app_with_cursor_on_str_key, db_path):
 
     await pilot.press("enter")
 
-    i, _ = get_key_index_and_item(details, 'str_key')
+    i, _ = get_key_index_and_item(details, "str_key")
 
-    # Press down arrow to select the pbc row
-    await pilot.press(*(i * ("down", )))
+    # Press down arrow to select the str_key row
+    await pilot.press(*(i * ("down",)))
 
     # Delete the key
     await pilot.press("ctrl+d")
@@ -138,3 +144,22 @@ async def test_delete(app_with_cursor_on_str_key, db_path):
     assert app.data.df.iloc[0]["str_key"] is pd.NaT
     with pytest.raises(AttributeError):
         connect(db_path).get(1).str_key
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "key, value",
+    list(user_data.items()))
+async def test_presence_of_data(loaded_app, key, value):
+    app, pilot = loaded_app
+    details = app.query_one("#details", Details)
+
+    await pilot.press("enter", "tab")  # Tab to the data part of the details
+
+    _, item = get_key_index_and_item(details, key=key, id="#datalist")
+    
+    input_widget = item.query_one(Input)
+
+    assert input_widget.value == str(value)
+    
+    
+        

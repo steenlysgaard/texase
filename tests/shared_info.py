@@ -1,3 +1,5 @@
+import numpy as np
+
 from textual.coordinate import Coordinate
 
 from ase import Atoms
@@ -8,6 +10,16 @@ from texase.keys import KeyBox, Key
 user_dct = {"str_key": "hav", "float_key": 4.2, "int_key": 42}
 cell = [2, 2, 2]
 pbc = [1, 1, 0]
+user_data = {'string': 'hello',
+             'number': 42,
+             'float': 3.14,
+             'bool': True,
+             'list': [1, 2, 3],
+             'dict': {'a': 1, 'b': 2},
+             'nparray': np.array([1, 2, 3]),
+             'mixed_list': [1, 'a', 3.14],
+             'nested_dict': {'a': {'b': 1}},
+             }
 
 test_atoms = ["Au", "Ag"]
 
