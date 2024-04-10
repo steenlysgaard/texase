@@ -11,6 +11,7 @@ from texase.yesno import YesNoScreen
 
 from .shared_info import user_dct
 
+
 @pytest.mark.asyncio
 async def test_edit(loaded_app, db_path):
     app, pilot = loaded_app
@@ -33,7 +34,7 @@ async def test_edit(loaded_app, db_path):
     column_labels = get_column_labels(table.columns)
     idx = column_labels.index("str_key")
     # Move to the new column
-    await pilot.press(*(idx * ("right", )))
+    await pilot.press(*(idx * ("right",)))
     assert table.cursor_column == idx
 
     await pilot.press("e")
@@ -47,7 +48,9 @@ async def test_edit(loaded_app, db_path):
     await pilot.press("a", "b", "c", "ctrl+g", "e")
     assert editbox.query_one("#edit-input").value == user_dct["str_key"]
     # Also in the cache
-    assert app.data._string_column_cache.get(("str_key", )).iloc[0] == user_dct["str_key"]
+    assert (
+        app.data._string_column_cache.get(("str_key",)).iloc[0] == user_dct["str_key"]
+    )
 
     # Change the value and accept
     await pilot.press("backspace", "a", "b", "c", "enter")
@@ -66,9 +69,9 @@ async def test_edit(loaded_app, db_path):
     assert connect(db_path).get(id=1)["str_key"] == new_str
 
     # Also check that the respective column is discarded in the caches
-    assert app.data._string_column_cache.get(("str_key", )) is None
+    assert app.data._string_column_cache.get(("str_key",)) is None
 
-        
+
 @pytest.mark.asyncio
 async def test_add_kvp(loaded_app, db_path):
     app, pilot = loaded_app
@@ -93,11 +96,13 @@ async def test_add_kvp(loaded_app, db_path):
     assert connect(db_path).get(id=1)["str_key"] == new_str
 
     # Mark both rows and add a new kvp
-    await pilot.press("space", "down", "space", "k", *list(f"new_key={new_str}"), "enter")
+    await pilot.press(
+        "space", "down", "space", "k", *list(f"new_key={new_str}"), "enter"
+    )
     for i in range(2):
         assert app.data.df["new_key"].iloc[i] == new_str
-        assert table.get_cell(RowKey(str(i+1)), ColumnKey("new_key")) == new_str
-        assert connect(db_path).get(id=i+1)["new_key"] == new_str
+        assert table.get_cell(RowKey(str(i + 1)), ColumnKey("new_key")) == new_str
+        assert connect(db_path).get(id=i + 1)["new_key"] == new_str
 
     # Check that converting values is handled correctly
     new_float = 6.6
@@ -106,30 +111,34 @@ async def test_add_kvp(loaded_app, db_path):
     assert str(table.get_cell(RowKey("2"), ColumnKey("float_key"))) == "6.60"
     assert connect(db_path).get(id=2)["float_key"] == new_float
 
-        
+
 @pytest.mark.asyncio
-async def test_invalid_kvps(loaded_app):
+@pytest.mark.parametrize(
+    "kvp",
+    [
+        "id=42",  # id is a reserved key
+        # other invalid kvps
+        "=43",
+        "str_key=  ",
+        "no equals sign",
+        "A=3,B=5",
+        "dict_key={'a': 3}",
+    ],
+)
+async def test_invalid_kvps(loaded_app, kvp):
     app, pilot = loaded_app
     addbox = app.query_one("#add-kvp-box")
 
-    # Try a reserved key
-    await pilot.press("k", *list("id=42"), "enter")
+    await pilot.press("k", *list(kvp), "enter")
     # The add box is still present, i.e nothing has changed
     assert app.show_add_kvp
     assert addbox.display
 
-    # Try some other nonsense
-    for crap in ["=43", "str_key=  ", "no equals sign", "A=3,B=5"]:
-        await pilot.press("ctrl+g", "k", *list(crap), "enter")
-        assert app.show_add_kvp
-        assert addbox.display
-        
-        
 @pytest.mark.asyncio
 async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
     table = app.query_one(TexaseTable)
-        
+
     # Press D and then n to cancel
     await pilot.press("d")
     assert isinstance(app.screen, YesNoScreen)
@@ -145,16 +154,17 @@ async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
 
     # And also removed in the db itself
     assert connect(db_path).get(id=1).get("str_key", None) is None
-        
+
+
 @pytest.mark.asyncio
 async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
-    
+
     table = app.query_one(TexaseTable)
-    
+
     # Mark both rows and delete
     await pilot.press("space", "down", "space", "d", "y")
     for i in range(2):
         assert app.data.df["str_key"].iloc[i] is pd.NaT
-        assert table.get_cell(RowKey(str(i+1)), ColumnKey("str_key")) == ""
-        assert connect(db_path).get(id=i+1).get("str_key", None) is None
+        assert table.get_cell(RowKey(str(i + 1)), ColumnKey("str_key")) == ""
+        assert connect(db_path).get(id=i + 1).get("str_key", None) is None

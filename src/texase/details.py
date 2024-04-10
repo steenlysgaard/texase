@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual import on
+from textual import on, work
 from textual.widgets import Label, Input
 from textual.widgets import ListView, ListItem
 from textual.message import Message
@@ -10,6 +10,7 @@ from textual.reactive import reactive
 from rich.text import Text
 
 from texase.formatting import convert_str_to_other_type, convert_value_to_int_float_or_bool, get_age_string
+from texase.input_screens import KVPScreen
 
 
 class Details(Container):
@@ -20,6 +21,8 @@ class Details(Container):
         ("ctrl+g", "hide_edit", "Undo/Hide"),
         ("ctrl+s", "save", "Save changes"),
         ("ctrl+d", "delete", "Delete"),
+        ("k", "add_kvp", "Add key value pair"),
+        ("d", "add_data", "Add data"),
     ]
 
     modified_keys = set()
@@ -111,6 +114,13 @@ class Details(Container):
             self.deleted_keys.add(selected_key)
             self.anything_modified = True
         kvplist.delete_selected()
+
+    
+    @work
+    async def action_add_data(self) -> None:
+        """Add a new data item."""
+        key, value = await self.app.push_screen_wait(DataScreen("Add data"))
+        self.query_one(DataList).append(ListItem(DataItem("new_key", "new_value")))
 
 class Item(Horizontal):
     def __init__(self, key, value):

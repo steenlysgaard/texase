@@ -411,9 +411,9 @@ class TEXASE(App):
 
     def on_input_submitted(self, submitted):
         table = self.query_one(TexaseTable)
+        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
+            return
         if submitted.control.id == "add-column-input":
-            if not submitted.validation_result.is_valid:
-                return
             self.add_column_to_table_and_remove_from_keybox(submitted.value)
 
             self.show_add_column_box = False
@@ -443,8 +443,6 @@ class TEXASE(App):
             table.focus()
 
         elif submitted.control.id == "add-input":
-            if not submitted.validation_result.is_valid:
-                return
             # At this point the input should be validated, i.e. the
             # value contains a = and the key/column is editable
             # Split input value in key and value on =
