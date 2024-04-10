@@ -30,7 +30,7 @@ from texase.search import Search
 from texase.addcolumn import AddColumnBox
 from texase.filter import FilterBox
 from texase.edit import EditBox, AddBox
-from texase.formatting import format_value, convert_value_to_int_or_float
+from texase.formatting import format_value, convert_value_to_int_float_or_bool
 from texase.keys import KeyBox
 from texase.yesno import YesNoScreen
 from texase.files_io import FilesIOScreen
@@ -423,7 +423,7 @@ class TEXASE(App):
             if column == "pbc":
                 value = submitted.value.upper()
             else:
-                value = convert_value_to_int_or_float(submitted.value)
+                value = convert_value_to_int_float_or_bool(submitted.value)
 
             if not self.is_kvp_valid(column, value):
                 return
@@ -451,7 +451,7 @@ class TEXASE(App):
             key, value = submitted.value.split("=")
             # Remove whitespace
             key = key.strip()
-            value = convert_value_to_int_or_float(value.strip())
+            value = convert_value_to_int_float_or_bool(value.strip())
 
             if not self.is_kvp_valid(key, value):
                 return

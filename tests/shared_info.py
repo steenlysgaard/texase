@@ -13,7 +13,7 @@ pbc = [1, 1, 0]
 user_data = {'string': 'hello',
              'number': 42,
              'float': 3.14,
-             'bool': True,
+             'boolean': True,
              'list': [1, 2, 3],
              'dict': {'a': 1, 'b': 2},
              'nparray': np.array([1, 2, 3]),

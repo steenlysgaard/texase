@@ -4,11 +4,12 @@ from textual.app import ComposeResult
 from textual import on
 from textual.widgets import Label, Input
 from textual.widgets import ListView, ListItem
+from textual.message import Message
 from textual.containers import Container, Horizontal
 from textual.reactive import reactive
 from rich.text import Text
 
-from texase.formatting import convert_value_to_int_or_float, get_age_string
+from texase.formatting import convert_str_to_other_type, convert_value_to_int_float_or_bool, get_age_string
 
 
 class Details(Container):
@@ -34,7 +35,7 @@ class Details(Container):
         yield Title("Data")
         yield DataList(id="datalist")
         yield Label("Unsaved changes!", id="unsaved_changes")
-        
+
     def watch_anything_modified(self, modified):
         if modified:
             self.query_one("#unsaved_changes", Label).remove_class("-hidden")
@@ -66,7 +67,7 @@ class Details(Container):
         data_widget = self.query_one(DataList)
         data_widget.clear()
         for key, value in dynamic_data.items():
-            data_widget.append(ListItem(EditableItem(key, value)))
+            data_widget.append(ListItem(DataItem(key, value)))
 
     def on_hide(self) -> None:
         self.clear_modified_and_deleted_keys()
@@ -76,13 +77,8 @@ class Details(Container):
         self.deleted_keys.clear()
         self.anything_modified = False
 
-    def on_list_view_selected(self, sender):
-        """When a row is selected in the KVPList, focus on the input
-        field and remember that this key value pair was potentially
-        modifed."""
-        item = sender.item.get_child_by_type(EditableItem)
-        item.focus()
-        self.modified_keys.add(item.key)
+    def on_details_list_item_selected(self, sender: DetailsList.ItemSelected):
+        self.modified_keys.add(sender.item.key)
         self.anything_modified = True
 
     def action_save(self) -> None:
@@ -95,15 +91,15 @@ class Details(Container):
             key = item.key
             if key in self.modified_keys:
                 key_value_pairs[key] = item.value
-                
+
         # Do the same for updated data
         updated_data = {}
         for h in self.query_one("#datalist", DataList).children:
-            item = h.get_child_by_type(EditableItem)
+            item = h.get_child_by_type(DataItem)
             key = item.key
             if key in self.modified_keys:
                 updated_data[key] = item.value
-        
+
         self.app.save_details(key_value_pairs, updated_data, self.deleted_keys)
         self.clear_modified_and_deleted_keys()
 
@@ -116,11 +112,11 @@ class Details(Container):
             self.anything_modified = True
         kvplist.delete_selected()
 
-
-class EditableItem(Horizontal):
+class Item(Horizontal):
     def __init__(self, key, value):
         super().__init__()
         self.key = key
+        # TODO: Check if value changes type when editing, if so ask if it's ok.
         self.value = value
 
     def compose(self) -> ComposeResult:
@@ -130,23 +126,35 @@ class EditableItem(Horizontal):
     def focus(self) -> None:
         self.query_one(Input).focus()
 
+class EditableItem(Item):
     def on_input_submitted(self, submitted: Input.Submitted):
         """When the user presses enter in the input field, update the value.
 
         Then the KVPList takes back focus.
         """
         # TODO: Exactly the same code as in app.py. Refactor?
+
         if self.key == "pbc":
             value = submitted.value.upper()
         else:
-            value = convert_value_to_int_or_float(submitted.value)
+            value = convert_value_to_int_float_or_bool(submitted.value)
+
         if not self.app.is_kvp_valid(self.key, value):
             submitted.stop()  # stop bubbling further
             return
-
+            
         self.value = value
 
+class DataItem(Item):
+    def on_input_submitted(self, submitted: Input.Submitted):
+        """When the user presses enter in the input field, update the value.
 
+        Then the DataList takes back focus.
+        """
+    
+        value = convert_str_to_other_type(submitted.value)
+        self.value = value
+        
 class Title(Label):
     pass
 
@@ -154,8 +162,23 @@ class Title(Label):
 class KVPStatic(Label):
     pass
 
+class DetailsList(ListView):
+    class ItemSelected(Message):
+        """Color selected message."""
 
-class KVPList(ListView):
+        def __init__(self, item: Item) -> None:
+            self.item = item
+            super().__init__()    
+            
+    def on_list_view_selected(self, sender):
+        """When a row is selected in the KVPList, focus on the input
+        field and remember that this key value pair was potentially
+        modifed."""
+        item = sender.item.children[0]
+        item.focus()
+        self.post_message(self.ItemSelected(item))
+
+class KVPList(DetailsList):
     @on(Input.Submitted)
     def take_back_focus(self, _):
         """When the user presses enter in the input field, take back focus."""
@@ -174,5 +197,18 @@ class KVPList(ListView):
             return self.highlighted_child.get_child_by_type(EditableItem).key
 
 
-class DataList(KVPList):
-    pass
+        
+class DataList(DetailsList):
+    # def on_list_view_selected(self, sender):
+    #     """When a row is selected in the KVPList, focus on the input
+    #     field and remember that this key value pair was potentially
+    #     modifed."""
+    #     item = sender.item.get_child_by_type(DataItem)
+    #     item.focus()
+    #     self.post_message(self.ItemSelected(item))
+    #     sender.stop()
+
+    def selected_key(self) -> str | None:
+        """Return the key of the currently selected key value pair."""
+        if self.highlighted_child is not None:
+            return self.highlighted_child.get_child_by_type(DataItem).key

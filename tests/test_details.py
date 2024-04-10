@@ -1,5 +1,6 @@
 import pytest
 
+import numpy as np
 import pandas as pd
 
 from textual.coordinate import Coordinate
@@ -8,22 +9,31 @@ from textual.widgets import Input
 from ase.db import connect
 
 from texase.table import TexaseTable, get_column_labels
-from texase.details import Details, KVPList, EditableItem
+from texase.details import Details, KVPList, EditableItem, DataItem
 from texase.formatting import pbc_str_to_array
 
 from .shared_info import pbc, user_data
 
 
 def get_key_index_and_item(
-    details: Details, key: str = "pbc", id: str = "#dynamic_kvp_list"
-) -> tuple[int, EditableItem]:
-    kvp_list = details.query_one(id, KVPList)
+    details: Details,
+    key: str = "pbc",
+    id: str = "#dynamic_kvp_list",
+    itemtype: EditableItem | DataItem = EditableItem,
+) -> tuple[int, EditableItem | DataItem]:
+    kvp_list = details.query_one(id)
     # pbc will always be present in the kvp list as it comes from the Atoms object
     for i, listitem in enumerate(kvp_list.children):
-        item = listitem.get_child_by_type(EditableItem)
+        item = listitem.get_child_by_type(itemtype)
         if item.key == key:
             break
     return i, item  # type: ignore
+
+
+def get_data_index_and_item(
+        details: Details, key: str = "pbc", id: str = "#datalist", itemtype=DataItem,
+) -> tuple[int, DataItem]:
+    return get_key_index_and_item(details, key, id, itemtype)
 
 
 @pytest.mark.asyncio
@@ -145,21 +155,73 @@ async def test_delete(app_with_cursor_on_str_key, db_path):
     with pytest.raises(AttributeError):
         connect(db_path).get(1).str_key
 
+
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "key, value",
-    list(user_data.items()))
+@pytest.mark.parametrize("key, value", list(user_data.items()))
 async def test_presence_of_data(loaded_app, key, value):
     app, pilot = loaded_app
     details = app.query_one("#details", Details)
 
     await pilot.press("enter", "tab")  # Tab to the data part of the details
 
-    _, item = get_key_index_and_item(details, key=key, id="#datalist")
-    
+    _, item = get_data_index_and_item(details, key=key)
+
     input_widget = item.query_one(Input)
 
     assert input_widget.value == str(value)
-    
-    
-        
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        ("string", "bye"),
+        ("number", 2),
+        ("float", 2.0),
+        ("boolean", False),
+        ("list", [10, 20, 30]),
+        ("dict", {"a": 10, "b": 20}),
+        ("mixed_list", [10, "hello", 2.0, False]),
+        ("nested_dict", {"a": {"b": 10, "c": 20}, "d": 30}),
+    ],
+)
+async def test_edit_data(loaded_app, db_path, key, value):
+    app, pilot = loaded_app
+    details = app.query_one("#details", Details)
+
+    await pilot.press("enter", "tab")  # Tab to the data part of the details
+
+    i, _ = get_data_index_and_item(details, key=key)
+    # Press down arrow to select correct row
+    await pilot.press(
+        *(i * ("down",)), "enter", "ctrl+u", *list(str(value)), "enter", "ctrl+s"
+    )
+
+    data = connect(db_path).get(1).data
+    assert data[key] == value
+    assert isinstance(data[key], type(value))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "key, input, value",
+    [
+        ("nparray", "np.array([10, 20, 30])", np.array([10, 20, 30])),
+        ("nparray", "[10 20 30]", np.array([10, 20, 30])),
+    ],
+)
+async def test_edit_array_data(loaded_app, db_path, key, input, value):
+    app, pilot = loaded_app
+    details = app.query_one("#details", Details)
+
+    await pilot.press("enter", "tab")  # Tab to the data part of the details
+
+    i, _ = get_data_index_and_item(details, key=key)
+    # Press down arrow to select correct row
+    await pilot.press(
+        *(i * ("down",)), "enter", "ctrl+u", *list(input), "enter", "ctrl+s"
+    )
+
+    data = connect(db_path).get(1).data
+    assert np.all(data[key] == value)
+    assert isinstance(data[key], type(value))
