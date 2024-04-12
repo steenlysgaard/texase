@@ -9,8 +9,13 @@ from textual.containers import Container, Horizontal
 from textual.reactive import reactive
 from rich.text import Text
 
-from texase.formatting import convert_str_to_other_type, convert_value_to_int_float_or_bool, get_age_string
-from texase.input_screens import KVPScreen
+from texase.formatting import (
+    convert_str_to_other_type,
+    convert_value_to_int_float_or_bool,
+    get_age_string,
+)
+from texase.validators import kvp_validators_edit
+from texase.input_screens import KVPScreen, DataScreen
 
 
 class Details(Container):
@@ -81,7 +86,10 @@ class Details(Container):
         self.anything_modified = False
 
     def on_details_list_item_selected(self, sender: DetailsList.ItemSelected):
-        self.modified_keys.add(sender.item.key)
+        self.add_key_to_modified(sender.item.key)
+        
+    def add_key_to_modified(self, key: str) -> None:
+        self.modified_keys.add(key)
         self.anything_modified = True
 
     def action_save(self) -> None:
@@ -107,22 +115,41 @@ class Details(Container):
         self.clear_modified_and_deleted_keys()
 
     def action_delete(self) -> None:
-        """Delete the current key value pair or data."""
-        kvplist = self.query_one("#dynamic_kvp_list", KVPList)
-        selected_key = kvplist.selected_key()
+        """Delete the current key value pair. If the selection is on
+        the DataList then notify that ASE can't delete data items in a
+        row."""
+        focused_list: DetailsList = self.app.focused
+        if isinstance(focused_list, DataList):
+            self.notify("ASE can't delete data items in a row.", severity="information")
+            return
+        selected_key = focused_list.selected_key()
         if selected_key is not None:
             self.deleted_keys.add(selected_key)
             self.anything_modified = True
-        kvplist.delete_selected()
+        focused_list.delete_selected()
 
-    
     @work
     async def action_add_data(self) -> None:
         """Add a new data item."""
-        key, value = await self.app.push_screen_wait(DataScreen("Add data"))
-        self.query_one(DataList).append(ListItem(DataItem("new_key", "new_value")))
+        new_data = await self.app.push_screen_wait(DataScreen("Add data"))
+        if new_data is not None:
+            key, value = new_data
+            self.query_one(DataList).append(ListItem(DataItem(key, value)))
+            self.add_key_to_modified(key)
+
+    @work
+    async def action_add_kvp(self) -> None:
+        """Add a new key value pair item."""
+        new_kvp = await self.app.push_screen_wait(KVPScreen("Add key value pair"))
+        if new_kvp is not None:
+            key, value = new_kvp
+            self.query_one(KVPList).append(ListItem(EditableItem(key, value)))
+            self.add_key_to_modified(key)
+
 
 class Item(Horizontal):
+    validators = []
+
     def __init__(self, key, value):
         super().__init__()
         self.key = key
@@ -131,18 +158,32 @@ class Item(Horizontal):
 
     def compose(self) -> ComposeResult:
         yield Label(f"[bold]{self.key} = [/bold]")
-        yield Input(value=f"{self.value}", classes="editable-input")
+        yield Input(
+            value=f"{self.value}",
+            classes="editable-input",
+            validators=self.validators,
+            validate_on=["submitted"],
+        )
 
     def focus(self) -> None:
         self.query_one(Input).focus()
 
+
 class EditableItem(Item):
+    validators = kvp_validators_edit
+
     def on_input_submitted(self, submitted: Input.Submitted):
         """When the user presses enter in the input field, update the value.
 
         Then the KVPList takes back focus.
         """
         # TODO: Exactly the same code as in app.py. Refactor?
+        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
+            self.app.notify_error("\n".join(submitted.validation_result.failure_descriptions),
+                                  error_title="Invalid input",)
+            # If not valid input stop bubbling further
+            submitted.stop()
+            return
 
         if self.key == "pbc":
             value = submitted.value.upper()
@@ -152,8 +193,9 @@ class EditableItem(Item):
         if not self.app.is_kvp_valid(self.key, value):
             submitted.stop()  # stop bubbling further
             return
-            
+
         self.value = value
+
 
 class DataItem(Item):
     def on_input_submitted(self, submitted: Input.Submitted):
@@ -161,10 +203,17 @@ class DataItem(Item):
 
         Then the DataList takes back focus.
         """
-    
+        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
+            self.app.notify_error("\n".join(submitted.validation_result.failure_descriptions),
+                                  error_title="Invalid input",)
+            # If not valid input stop bubbling further
+            submitted.stop()
+            return
+
         value = convert_str_to_other_type(submitted.value)
         self.value = value
-        
+
+
 class Title(Label):
     pass
 
@@ -172,14 +221,15 @@ class Title(Label):
 class KVPStatic(Label):
     pass
 
+
 class DetailsList(ListView):
     class ItemSelected(Message):
         """Color selected message."""
 
         def __init__(self, item: Item) -> None:
             self.item = item
-            super().__init__()    
-            
+            super().__init__()
+
     def on_list_view_selected(self, sender):
         """When a row is selected in the KVPList, focus on the input
         field and remember that this key value pair was potentially
@@ -188,10 +238,10 @@ class DetailsList(ListView):
         item.focus()
         self.post_message(self.ItemSelected(item))
 
-class KVPList(DetailsList):
     @on(Input.Submitted)
-    def take_back_focus(self, _):
-        """When the user presses enter in the input field, take back focus."""
+    def take_back_focus(self, submitted: Input.Submitted):
+        """When the user presses enter in the input field, take back
+        focus. It is assumed that the input value is valid."""
         self.focus()
 
     def delete_selected(self) -> None:
@@ -202,23 +252,20 @@ class KVPList(DetailsList):
         self.index = current_index
 
     def selected_key(self) -> str | None:
+        raise NotImplementedError("selected_key must be implemented in subclass.")
+
+
+class KVPList(DetailsList):
+    def selected_key(self) -> str | None:
         """Return the key of the currently selected key value pair."""
         if self.highlighted_child is not None:
             return self.highlighted_child.get_child_by_type(EditableItem).key
 
-
-        
 class DataList(DetailsList):
-    # def on_list_view_selected(self, sender):
-    #     """When a row is selected in the KVPList, focus on the input
-    #     field and remember that this key value pair was potentially
-    #     modifed."""
-    #     item = sender.item.get_child_by_type(DataItem)
-    #     item.focus()
-    #     self.post_message(self.ItemSelected(item))
-    #     sender.stop()
-
     def selected_key(self) -> str | None:
         """Return the key of the currently selected key value pair."""
         if self.highlighted_child is not None:
             return self.highlighted_child.get_child_by_type(DataItem).key
+        
+    def delete_selected(self) -> None:
+        raise NotImplementedError("ASE can't delete data items in a row.")

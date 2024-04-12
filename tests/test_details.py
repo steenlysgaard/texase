@@ -127,7 +127,7 @@ async def test_cancel_edit(loaded_app, db_path):
 
 
 @pytest.mark.asyncio
-async def test_delete(app_with_cursor_on_str_key, db_path):
+async def test_delete_kvp(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
     details = app.query_one("#details", Details)
     table = app.query_one(TexaseTable)
@@ -155,6 +155,28 @@ async def test_delete(app_with_cursor_on_str_key, db_path):
     with pytest.raises(AttributeError):
         connect(db_path).get(1).str_key
 
+@pytest.mark.asyncio
+async def test_delete_data(app_with_cursor_on_str_key, db_path):
+    app, pilot = app_with_cursor_on_str_key
+    details = app.query_one("#details", Details)
+
+    await pilot.press("enter", "tab")
+
+    i, _ = get_data_index_and_item(details, key="number")
+
+    # Press down arrow to select the str_key row
+    await pilot.press(*(i * ("down",)))
+
+    # Delete the key
+    await pilot.press("ctrl+d")
+
+    # Check that the error message is displayed
+    await pilot.pause()
+    assert len(app._notifications) == 1
+    
+    # Check that the value is still present
+    assert connect(db_path).get(1).data['number'] == user_data['number']
+        
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("key, value", list(user_data.items()))

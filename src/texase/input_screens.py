@@ -9,10 +9,11 @@ from textual.binding import Binding
 from textual.app import ComposeResult
 
 from texase.validators import kvp_validators_add, kvp_validators_edit
+from texase.formatting import convert_str_to_other_type, correctly_typed_kvp, kvp_exception
 
 
-class InputScreen(ModalScreen[Tuple[str, Any] | None]):
-    """Screen with a question that can be answered yes or no."""
+class InputScreen(ModalScreen[Any]):
+    """Screen with an Input widget."""
 
     DEFAULT_CSS = """
         InputScreen {
@@ -34,7 +35,7 @@ class InputScreen(ModalScreen[Tuple[str, Any] | None]):
 
     validators = []
 
-    def __init__(self, text: Text, prefilled_input: str | None = None) -> None:
+    def __init__(self, text: str, prefilled_input: str | None = None) -> None:
         self.text = text
         self.prefilled_input = prefilled_input
         super().__init__()
@@ -43,7 +44,7 @@ class InputScreen(ModalScreen[Tuple[str, Any] | None]):
         yield Label(self.text)
         yield Input(
             value=self.prefilled_input,
-            id="input-kvpscreen",
+            id="input-inputscreen",
             validators=self.validators,
             validate_on=["submitted"],
         )
@@ -52,21 +53,38 @@ class InputScreen(ModalScreen[Tuple[str, Any] | None]):
     def action_cancel(self) -> None:
         self.dismiss(None)
 
-    def on_input_submitted(self, value: str) -> None:
-        self.dismiss(value)
-
 class KVPScreen(InputScreen):
     """Screen for adding a key value pair."""
 
     validators = kvp_validators_add
 
-    def on_input_submitted(self, value: str) -> None:
-        self.dismiss(("key", value))
+    def on_input_submitted(self, submitted: Input.Submitted) -> None:
+        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
+            self.app.notify_error("\n".join(submitted.validation_result.failure_descriptions),
+                                  error_title="Invalid input",)
+            # If not valid input stop bubbling further
+            submitted.stop()
+            return
+        
+        key, value = correctly_typed_kvp(submitted.value)
+
+        exception_from_kvp = kvp_exception(key, value)
+        if exception_from_kvp is not None:
+            self.app.notify_error(exception_from_kvp, "ValueError")
+            return
+        
+        self.dismiss((key, value))
         
 class DataScreen(InputScreen):
     """Screen for adding or editing data."""
 
-    def on_input_submitted(self, value: str) -> None:
-        value = value.strip()
-        value.split("=")
-        self.dismiss(("data", value))
+    def on_input_submitted(self, submitted: Input.Submitted) -> None:
+        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
+            self.app.notify_error("\n".join(submitted.validation_result.failure_descriptions),
+                                  error_title="Invalid input",)
+            # If not valid input stop bubbling further
+            submitted.stop()
+            return
+        value = submitted.value.strip()
+        key, data = value.split("=")
+        self.dismiss((key, convert_str_to_other_type(data)))
