@@ -30,7 +30,7 @@ from texase.search import Search
 from texase.addcolumn import AddColumnBox
 from texase.filter import FilterBox
 from texase.edit import EditBox, AddBox
-from texase.formatting import format_value, convert_value_to_int_float_or_bool
+from texase.formatting import format_value, convert_value_to_int_float_or_bool, correctly_typed_kvp, kvp_exception
 from texase.keys import KeyBox
 from texase.yesno import YesNoScreen
 from texase.files_io import FilesIOScreen
@@ -409,7 +409,7 @@ class TEXASE(App):
         table.add_column_and_values(column)
         self.query_one(KeyBox).remove_key(column)
 
-    def on_input_submitted(self, submitted):
+    def on_input_submitted(self, submitted: Input.Submitted):
         table = self.query_one(TexaseTable)
         if submitted.validation_result is not None and not submitted.validation_result.is_valid:
             return
@@ -425,7 +425,9 @@ class TEXASE(App):
             else:
                 value = convert_value_to_int_float_or_bool(submitted.value)
 
-            if not self.is_kvp_valid(column, value):
+            exception_from_kvp = kvp_exception(column, value)
+            if exception_from_kvp is not None:
+                self.notify_error(exception_from_kvp, "ValueError")
                 return
 
             # Update table
@@ -443,17 +445,13 @@ class TEXASE(App):
             table.focus()
 
         elif submitted.control.id == "add-input":
-            # At this point the input should be validated, i.e. the
-            # value contains a = and the key/column is editable
-            # Split input value in key and value on =
-            key, value = submitted.value.split("=")
-            # Remove whitespace
-            key = key.strip()
-            value = convert_value_to_int_float_or_bool(value.strip())
+            key, value = correctly_typed_kvp(submitted.value)
 
-            if not self.is_kvp_valid(key, value):
+            exception_from_kvp = kvp_exception(key, value)
+            if exception_from_kvp is not None:
+                self.notify_error(exception_from_kvp, "ValueError")
                 return
-
+                
             # Update data
             if table.marked_rows:
                 # If there are marked rows, add the key value pair to

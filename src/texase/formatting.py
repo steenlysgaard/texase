@@ -8,6 +8,7 @@ import pandas as pd
 from rich.text import Text
 
 from ase.db.core import float_to_time_string, now
+from ase.db.core import check
 
 # The labels showing marked and unmarked rows
 MARKED_LABEL = Text("\u25cf", style="bright_yellow")
@@ -109,3 +110,56 @@ def is_numpy_array(s):
 def pbc_str_to_array(pbc_str: str) -> np.ndarray:
     """Convert e.g. the string TFT to [True, False, True]"""
     return np.array([c == "T" for c in pbc_str.upper()])
+
+def kvp_exception(key, value) -> str | None:
+    """Check that key-value-pair is valid for ase.db
+
+    It is ok to edit pbc, we make this check first."""
+
+    if key == "pbc":
+        try:
+            check_pbc_string_validity(value)
+        except ValueError as e:
+            return str(e)
+        return None
+
+    try:
+        check({key: value})
+    except ValueError as e:
+        # Notify that the key-value-pair is not valid with the
+        # raised ValueError and then return
+        return str(e)
+    return None
+
+def check_pbc_string_validity(string):
+    # check if the string has exactly three characters
+    if len(string) == 3:
+        # convert the string to upper case
+        string = string.upper()
+        # loop through each character in the string
+        for char in string:
+            # check if the character is either t or f
+            if char not in ["T", "F"]:
+                # raise a ValueError with a descriptive message
+                raise ValueError(f"{string} contains characters that are not T or F!")
+        # return True if all characters are t or f
+        return True
+    else:
+        # raise a ValueError with a descriptive message
+        raise ValueError(f"{string} does not have exactly three characters!")
+
+def correctly_typed_kvp(input_str: str) -> Tuple[str, Any]:
+    """Convert the input string of the form 'key=value' to the correct
+    type if possible. At this point the input should be validated,
+    i.e. the value contains a = and the key/column is editable
+
+    """
+    # Split the input string into a key and a value
+    key, value = input_str.split("=", 1)
+    # Remove leading and trailing whitespace
+    key = key.strip()
+    value = value.strip()
+    # Convert the value to the correct type if possible
+    value = convert_value_to_int_float_or_bool(value)
+
+    return key, value

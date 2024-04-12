@@ -92,25 +92,7 @@ class ASEReadDirectoryTree(DirectoryTree):
 class FilesIOScreen(ModalScreen[Path | None]):
     """Screen with a question that can be answered yes or no."""
 
-    #     DEFAULT_CSS = """
-    # FilesIOScreen {
-    #     align: center middle;
-    # }
-
-    # YesNoScreen > Label {
-    #     text-align: center;
-    #     width: 50%;
-    #     height: auto;
-    #     border: heavy $warning;
-    #     padding: 2 4;
-    # }
-    # """
-
     BINDINGS = [
-        # ("y", "yes", "Yes"),
-        # ("n", "no", "No"),
-        # Binding("Y", "yes", "Yes", show=False),
-        # Binding("N", "no", "No", show=False),
         Binding("ctrl+g", "cancel", "Cancel", show=False),
     ]
 
