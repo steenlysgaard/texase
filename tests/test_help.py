@@ -1,6 +1,6 @@
 import pytest
-
 from texase.help import HelpScreen
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("hide_help_key", ["?", "q", "ctrl+g"])

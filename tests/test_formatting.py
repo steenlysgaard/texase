@@ -1,13 +1,13 @@
-import pytest
-
 import numpy as np
-
+import pytest
 from texase.formatting import (
-    pbc_str_to_array,
-    is_numpy_array,
-    string_to_list,
+    check_pbc_string_validity,
     convert_str_to_other_type,
-    convert_value_to_int_float_or_bool, check_pbc_string_validity, correctly_typed_kvp
+    convert_value_to_int_float_or_bool,
+    correctly_typed_kvp,
+    is_numpy_array,
+    pbc_str_to_array,
+    string_to_list,
 )
 
 

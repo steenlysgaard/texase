@@ -1,15 +1,12 @@
 import pytest
-
+from ase.db import connect
+from texase.app import TEXASE
+from texase.keys import Key, KeyBox
+from texase.table import TexaseTable
 from textual.coordinate import Coordinate
 from textual.css.query import NoMatches
 
-from texase.app import TEXASE
-from texase.table import TexaseTable
-from texase.keys import KeyBox, Key
-
-from ase.db import connect
-
-from .shared_info import check_that_water_were_added_to_small_db, water_to_add, user_dct
+from .shared_info import check_that_water_were_added_to_small_db, user_dct, water_to_add
 
 
 @pytest.mark.asyncio

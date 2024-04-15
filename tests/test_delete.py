@@ -1,7 +1,5 @@
 import pytest
-
 from ase.db import connect
-
 from texase.app import TEXASE
 from texase.table import TexaseTable
 

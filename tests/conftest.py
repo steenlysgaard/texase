@@ -1,14 +1,13 @@
 import pytest
 import pytest_asyncio
-
-from ase.db import connect
 from ase import Atoms
 from ase.data import chemical_symbols
-
+from ase.db import connect
 from texase.app import TEXASE
 from texase.table import TexaseTable, get_column_labels
 
-from .shared_info import user_dct, cell, pbc, test_atoms, user_data
+from .shared_info import cell, pbc, test_atoms, user_data, user_dct
+
 
 # Define a fixture that returns a dictionary object
 @pytest.fixture

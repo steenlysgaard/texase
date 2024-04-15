@@ -1,12 +1,15 @@
 from pathlib import Path
-import pytest
 
+import pytest
+from ase.io import read, write
 from texase.app import TEXASE
 from texase.table import TexaseTable
 
-from ase.io import write, read
-
-from .shared_info import test_atoms, water_to_add, check_that_water_were_added_to_small_db
+from .shared_info import (
+    check_that_water_were_added_to_small_db,
+    test_atoms,
+    water_to_add,
+)
 
 
 @pytest.mark.asyncio

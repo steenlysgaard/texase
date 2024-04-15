@@ -1,10 +1,8 @@
 import pytest
-
-from textual.coordinate import Coordinate
-
 from texase.app import TEXASE
 from texase.data import Data
 from texase.table import TexaseTable, get_column_labels
+from textual.coordinate import Coordinate
 
 from .shared_info import test_atoms, user_dct
 

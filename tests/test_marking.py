@@ -1,9 +1,8 @@
 import pytest
-
-from textual.widgets._data_table import RowKey
-
 from texase.app import TEXASE
 from texase.table import TexaseTable
+from textual.widgets._data_table import RowKey
+
 
 @pytest.mark.asyncio
 async def test_mark_row(loaded_app):

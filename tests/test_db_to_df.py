@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
-
 from ase.db import connect
 from texase.data import db_to_df
 
-from .shared_info import user_dct, cell, pbc
+from .shared_info import cell, pbc, user_dct
+
 
 def test_df_creation(db_path):
     df, user_keys = db_to_df(connect(db_path))

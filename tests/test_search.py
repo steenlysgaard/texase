@@ -1,16 +1,13 @@
 import pytest
 import pytest_asyncio
-
-from textual.coordinate import Coordinate
-
 from ase.data import atomic_numbers
-
-from texase.table import TexaseTable, get_column_labels
 from texase.search import (
-    valid_regex,
     check_escape_character,
     ready_for_regex_search,
+    valid_regex,
 )
+from texase.table import TexaseTable, get_column_labels
+from textual.coordinate import Coordinate
 
 
 async def check_element_search(table, pilot, element):

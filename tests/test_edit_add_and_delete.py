@@ -1,13 +1,9 @@
-import pytest
-
 import pandas as pd
-
-from textual.widgets._data_table import ColumnKey, RowKey
-
+import pytest
 from ase.db import connect
-
 from texase.table import TexaseTable, get_column_labels
 from texase.yesno import YesNoScreen
+from textual.widgets._data_table import ColumnKey, RowKey
 
 from .shared_info import assert_notifications_increased_by_one, user_dct
 

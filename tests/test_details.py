@@ -1,18 +1,15 @@
-import pytest
 import numpy as np
 import pandas as pd
-
+import pytest
+from ase.db import connect
+from texase.details import DataItem, Details, EditableItem, KVPList
+from texase.formatting import pbc_str_to_array
+from texase.table import TexaseTable, get_column_labels
 from textual.coordinate import Coordinate
 from textual.widgets import Input
 from textual.widgets._data_table import ColumnKey, RowKey
 
-from ase.db import connect
-
-from texase.table import TexaseTable, get_column_labels
-from texase.details import Details, KVPList, EditableItem, DataItem
-from texase.formatting import pbc_str_to_array
-
-from .shared_info import pbc, user_data, assert_notifications_increased_by_one
+from .shared_info import assert_notifications_increased_by_one, pbc, user_data
 
 
 def get_key_index_and_item(

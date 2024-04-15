@@ -1,9 +1,13 @@
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 from rich.text import Text
-
-from texase.data import Data, instantiate_data, format_column, apply_filter_and_sort_on_df
+from texase.data import (
+    Data,
+    apply_filter_and_sort_on_df,
+    format_column,
+    instantiate_data,
+)
 from texase.formatting import format_value
 
 from .shared_info import user_dct

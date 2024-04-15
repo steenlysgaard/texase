@@ -1,7 +1,7 @@
 import pytest
+from texase.keys import Key, KeyBox
+from texase.table import TexaseTable, get_column_labels
 
-from texase.keys import KeyBox, Key
-from texase.table import get_column_labels, TexaseTable
 
 @pytest.mark.asyncio
 async def test_add_column_from_keybox(loaded_app):

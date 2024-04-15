@@ -1,6 +1,8 @@
-import os
 import json
+import os
+
 from texase.saved_columns import SavedColumns
+
 
 def test_saved_columns(tmp_path):
     # create a temporary file for testing
