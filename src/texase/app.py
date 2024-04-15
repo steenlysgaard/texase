@@ -429,7 +429,10 @@ class TEXASE(App):
             if exception_from_kvp is not None:
                 self.notify_error(exception_from_kvp, "ValueError")
                 return
-
+            
+            # kvp is ok, but give a warning if type changed
+            self.notify_if_kvp_type_changed(column, value, table.get_cell_at(table.cursor_coordinate))
+            
             # Update table
             table.update_cell_from_edit_box(format_value(value))
 
@@ -473,6 +476,16 @@ class TEXASE(App):
             self.show_add_kvp = False
             table.focus()
 
+    def notify_if_kvp_type_changed(self, key: str, new_value: Any, old_value: Any) -> None:
+        if not isinstance(new_value, type(old_value)):
+            self.notify(
+                f"The type of [bold]{key} = {new_value}[/bold] has changed from "
+                + f"[bold]{type(old_value).__name__}[/bold] to [bold]{type(new_value).__name__}[/bold].",
+                severity="warning",
+            )
+        
+            
+    # Shouldn't this be deleted??
     def is_kvp_valid(self, key, value):
         """Check that key-value-pair is valid for ase.db
 

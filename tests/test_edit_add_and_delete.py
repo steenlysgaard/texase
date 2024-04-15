@@ -134,6 +134,7 @@ async def test_invalid_kvps(loaded_app, kvp):
     assert app.show_add_kvp
     assert addbox.display
 
+
 @pytest.mark.asyncio
 async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
@@ -168,3 +169,21 @@ async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
         assert app.data.df["str_key"].iloc[i] is pd.NaT
         assert table.get_cell(RowKey(str(i + 1)), ColumnKey("str_key")) == ""
         assert connect(db_path).get(id=i + 1).get("str_key", None) is None
+
+
+@pytest.mark.asyncio
+async def test_edit_changing_type(app_with_cursor_on_str_key, db_path):
+    app, pilot = app_with_cursor_on_str_key
+    table = app.query_one(TexaseTable)
+
+    await pilot.press("e", "ctrl+u", "0", "enter")
+    # Changing str_key value type to int should produce a notification
+
+    # Check that the message is displayed
+    await pilot.pause()
+    assert len(app._notifications) == 1
+
+    # Check that the value is updated in the dataframe
+    assert app.data.df["str_key"].iloc[0] == 0
+    assert str(table.get_cell(RowKey(str(1)), ColumnKey("str_key"))) == "0"
+    assert connect(db_path).get(id=1).get("str_key") == 0
