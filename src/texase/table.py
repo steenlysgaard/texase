@@ -189,7 +189,7 @@ class TexaseTable(DataTable):
             )
 
     def update_edit_box(self, editbox: EditBox) -> None:
-        # Check if current cell is editable
+        # Current cell should be editable
         coordinate = self.cursor_coordinate
 
         # Get current column name

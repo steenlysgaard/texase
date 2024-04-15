@@ -9,7 +9,7 @@ from ase.db import connect
 from texase.table import TexaseTable, get_column_labels
 from texase.yesno import YesNoScreen
 
-from .shared_info import user_dct
+from .shared_info import assert_notifications_increased_by_one, user_dct
 
 
 @pytest.mark.asyncio
@@ -176,12 +176,10 @@ async def test_edit_changing_type(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
     table = app.query_one(TexaseTable)
 
-    await pilot.press("e", "ctrl+u", "0", "enter")
     # Changing str_key value type to int should produce a notification
-
-    # Check that the message is displayed
-    await pilot.pause()
-    assert len(app._notifications) == 1
+    with assert_notifications_increased_by_one(app):
+        await pilot.press("e", "ctrl+u", "0", "enter")
+        await pilot.pause()
 
     # Check that the value is updated in the dataframe
     assert app.data.df["str_key"].iloc[0] == 0

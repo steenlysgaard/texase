@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 import numpy as np
 
 from textual.coordinate import Coordinate
@@ -45,4 +47,9 @@ def check_that_water_were_added_to_small_db(app):
     # Check the third row (2) and formula column (3)
     assert table.get_cell_at(Coordinate(2, 3)) == 'H2O'
 
-    
+        
+@contextmanager
+def assert_notifications_increased_by_one(app):
+    notifications_t0 = len(app._notifications)
+    yield
+    assert len(app._notifications) == notifications_t0 + 1

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from typing import Any
+
 from textual.app import ComposeResult
 from textual import on, work
 from textual.widgets import Label, Input
 from textual.widgets import ListView, ListItem
 from textual.message import Message
 from textual.containers import Container, Horizontal
-from textual.reactive import reactive
+from textual.reactive import reactive, var
 from rich.text import Text
 
 from texase.formatting import (
@@ -15,7 +17,7 @@ from texase.formatting import (
     get_age_string,
 )
 from texase.validators import kvp_validators_edit
-from texase.input_screens import KVPScreen, DataScreen
+from texase.input_screens import KVPScreen, DataScreen, KVPEditScreen, DataEditScreen
 
 
 class Details(Container):
@@ -33,7 +35,7 @@ class Details(Container):
     modified_keys = set()
     deleted_keys = set()
     # Watch if anything is modified. If so, show a label that says unsaved changes.
-    anything_modified = reactive(False)
+    anything_modified = reactive(False)  # TODO: Can this be changed to var??
 
     def compose(self) -> ComposeResult:
         yield Title(
@@ -87,7 +89,7 @@ class Details(Container):
 
     def on_details_list_item_selected(self, sender: DetailsList.ItemSelected):
         self.add_key_to_modified(sender.item.key)
-        
+
     def add_key_to_modified(self, key: str) -> None:
         self.modified_keys.add(key)
         self.anything_modified = True
@@ -146,15 +148,42 @@ class Details(Container):
             self.query_one(KVPList).append(ListItem(EditableItem(key, value)))
             self.add_key_to_modified(key)
 
+    @work
+    async def on_details_list_open_input_screen_with_item(
+        self, sender: DetailsList.OpenInputScreenWithItem
+    ):
+        item = sender.item
+        EditScreen = KVPEditScreen if isinstance(item, EditableItem) else DataEditScreen
+        new_value = await self.app.push_screen_wait(
+            EditScreen("Edit key value pair", key=item.key, prefilled_input=str(item.value))
+        )
+        if new_value is not None:
+            item.value = new_value
+            self.add_key_to_modified(item.key)
+
 
 class Item(Horizontal):
     validators = []
+    
+    _value: Any = None
 
     def __init__(self, key, value):
         super().__init__()
         self.key = key
-        # TODO: Check if value changes type when editing, if so ask if it's ok.
         self.value = value
+
+    @property
+    def value(self: Any) -> None:
+        return self._value
+    
+    @value.setter
+    def value(self, value: Any) -> None:
+        # After changing from None only set the value
+        if self._value is not None:
+            self.app.notify_if_kvp_type_changed(self.key, value, self._value)
+            self.query_one(Input).value = str(value)
+        self._value = value
+        
 
     def compose(self) -> ComposeResult:
         yield Label(f"[bold]{self.key} = [/bold]")
@@ -169,6 +198,7 @@ class Item(Horizontal):
         self.query_one(Input).focus()
 
 
+
 class EditableItem(Item):
     validators = kvp_validators_edit
 
@@ -178,9 +208,14 @@ class EditableItem(Item):
         Then the KVPList takes back focus.
         """
         # TODO: Exactly the same code as in app.py. Refactor?
-        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
-            self.app.notify_error("\n".join(submitted.validation_result.failure_descriptions),
-                                  error_title="Invalid input",)
+        if (
+            submitted.validation_result is not None
+            and not submitted.validation_result.is_valid
+        ):
+            self.app.notify_error(
+                "\n".join(submitted.validation_result.failure_descriptions),
+                error_title="Invalid input",
+            )
             # If not valid input stop bubbling further
             submitted.stop()
             return
@@ -203,9 +238,14 @@ class DataItem(Item):
 
         Then the DataList takes back focus.
         """
-        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
-            self.app.notify_error("\n".join(submitted.validation_result.failure_descriptions),
-                                  error_title="Invalid input",)
+        if (
+            submitted.validation_result is not None
+            and not submitted.validation_result.is_valid
+        ):
+            self.app.notify_error(
+                "\n".join(submitted.validation_result.failure_descriptions),
+                error_title="Invalid input",
+            )
             # If not valid input stop bubbling further
             submitted.stop()
             return
@@ -224,7 +264,14 @@ class KVPStatic(Label):
 
 class DetailsList(ListView):
     class ItemSelected(Message):
-        """Color selected message."""
+        """Message that this item was selected."""
+
+        def __init__(self, item: Item) -> None:
+            self.item = item
+            super().__init__()
+
+    class OpenInputScreenWithItem(Message):
+        """An input screen should be opened with this item as prefilled input."""
 
         def __init__(self, item: Item) -> None:
             self.item = item
@@ -233,9 +280,17 @@ class DetailsList(ListView):
     def on_list_view_selected(self, sender):
         """When a row is selected in the KVPList, focus on the input
         field and remember that this key value pair was potentially
-        modifed."""
+        modifed. If the width of the details list is less than the
+        width of the kvp, so it can't show fully, use an InputScreen
+        instead
+
+        """
         item = sender.item.children[0]
+        if sender.item.container_size.width < len(item.key) + len(str(item.value)) + 3:
+            self.post_message(self.OpenInputScreenWithItem(item))
+            return
         item.focus()
+
         self.post_message(self.ItemSelected(item))
 
     @on(Input.Submitted)
@@ -261,11 +316,12 @@ class KVPList(DetailsList):
         if self.highlighted_child is not None:
             return self.highlighted_child.get_child_by_type(EditableItem).key
 
+
 class DataList(DetailsList):
     def selected_key(self) -> str | None:
         """Return the key of the currently selected key value pair."""
         if self.highlighted_child is not None:
             return self.highlighted_child.get_child_by_type(DataItem).key
-        
+
     def delete_selected(self) -> None:
         raise NotImplementedError("ASE can't delete data items in a row.")

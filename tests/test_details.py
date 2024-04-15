@@ -1,10 +1,10 @@
 import pytest
-
 import numpy as np
 import pandas as pd
 
 from textual.coordinate import Coordinate
 from textual.widgets import Input
+from textual.widgets._data_table import ColumnKey, RowKey
 
 from ase.db import connect
 
@@ -12,7 +12,7 @@ from texase.table import TexaseTable, get_column_labels
 from texase.details import Details, KVPList, EditableItem, DataItem
 from texase.formatting import pbc_str_to_array
 
-from .shared_info import pbc, user_data
+from .shared_info import pbc, user_data, assert_notifications_increased_by_one
 
 
 def get_key_index_and_item(
@@ -85,6 +85,30 @@ async def test_edit(loaded_app, db_path):
     assert app.data.df.iloc[0]["pbc"] == inv_pbc
     assert all(connect(db_path).get(1).pbc == pbc_str_to_array(inv_pbc))
 
+@pytest.mark.asyncio
+async def test_edit_changing_type(loaded_app, db_path):
+    app, pilot = loaded_app
+    details = app.query_one("#details", Details)
+
+    await pilot.press("enter")
+
+    i, _ = get_key_index_and_item(details, key="str_key")
+
+    # Press down arrow to select the pbc row
+    await pilot.press(*(i * ("down",)))
+    
+    # Changing str_key value type to int should produce a notification
+    with assert_notifications_increased_by_one(app):
+        await pilot.press("enter", "ctrl+u", "0", "enter")
+        await pilot.pause()
+    
+    # Save the changes
+    await pilot.press("ctrl+s")
+
+    # Check that the value is updated in the dataframe
+    assert app.data.df["str_key"].iloc[0] == 0
+    assert connect(db_path).get(id=1).get("str_key") == 0
+    
 
 @pytest.mark.asyncio
 async def test_cancel_edit(loaded_app, db_path):
