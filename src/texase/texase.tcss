@@ -54,12 +54,6 @@ Title {
     layer: boxontop;
 }
 
-.bottombox {
-    layer: table;
-}
-
-/* Search { */
-/* } */
 #filterkey {
     max-width: 40%;
     min-width: 20%;
@@ -93,22 +87,13 @@ Title {
     height: 50%;
 }
 
-/* #search-box { */
-/*     dock: bottom; */
-/*     height: 3; */
-/* } */
-
 Filter {
     align: center middle;
     layout: horizontal;
 }
 
-/* EditBox { */
-/*     height: 3; */
-/*     dock: bottom; */
-/* } */
-
 .bottombox {
+    layer: table;
     height: 3;
     dock: bottom;
 }
