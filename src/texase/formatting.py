@@ -1,14 +1,13 @@
 from __future__ import annotations
-import re
+
 import ast
+import re
 from typing import Callable
 
 import numpy as np
 import pandas as pd
+from ase.db.core import check, float_to_time_string, now
 from rich.text import Text
-
-from ase.db.core import float_to_time_string, now
-from ase.db.core import check
 
 # The labels showing marked and unmarked rows
 MARKED_LABEL = Text("\u25cf", style="bright_yellow")

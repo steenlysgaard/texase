@@ -1,8 +1,8 @@
 from rich.text import Text
+from textual.app import ComposeResult
+from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Footer, Label
-from textual.binding import Binding
-from textual.app import ComposeResult
 
 
 class YesNoScreen(ModalScreen[bool]):

@@ -3,37 +3,38 @@ from __future__ import annotations
 import os
 
 import typer
-
-from typing_extensions import Annotated
-
-from textual import work, on
+from ase.db.core import check
+from ase.gui.gui import GUI, Images
+from textual import on, work
+from textual._two_way_dict import TwoWayDict
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, Input
-from textual.widgets._data_table import StringKey
 from textual.binding import Binding
 from textual.containers import Container
 from textual.coordinate import Coordinate
-from textual.reactive import var
-from textual._two_way_dict import TwoWayDict
-from textual.widgets._data_table import ColumnKey
 from textual.driver import Driver
+from textual.reactive import var
+from textual.widgets import Footer, Header, Input
+from textual.widgets._data_table import ColumnKey, StringKey
 from textual.worker import Worker, WorkerState
+from typing_extensions import Annotated
 
-from ase.gui.gui import GUI, Images
-from ase.db.core import check
-
-from texase.data import instantiate_data, ASEReadError, ASEWriteError, ALL_COLUMNS
-from texase.table import TexaseTable
-from texase.details import Details
-from texase.help import HelpScreen
-from texase.search import Search
 from texase.addcolumn import AddColumnBox
-from texase.filter import FilterBox
-from texase.edit import EditBox, AddBox
-from texase.formatting import format_value, convert_value_to_int_float_or_bool, correctly_typed_kvp, kvp_exception
-from texase.keys import KeyBox
-from texase.yesno import YesNoScreen
+from texase.data import ALL_COLUMNS, ASEReadError, ASEWriteError, instantiate_data
+from texase.details import Details
+from texase.edit import AddBox, EditBox
 from texase.files_io import FilesIOScreen
+from texase.filter import FilterBox
+from texase.formatting import (
+    convert_value_to_int_float_or_bool,
+    correctly_typed_kvp,
+    format_value,
+    kvp_exception,
+)
+from texase.help import HelpScreen
+from texase.keys import KeyBox
+from texase.search import Search
+from texase.table import TexaseTable
+from texase.yesno import YesNoScreen
 
 
 class TEXASE(App):

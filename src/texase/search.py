@@ -1,8 +1,8 @@
-from typing import Tuple
 import re
+from typing import Tuple
 
-from textual.containers import Container
 from textual.binding import Binding
+from textual.containers import Container
 
 
 class ColumnAdd(Container):

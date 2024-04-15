@@ -2,22 +2,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from textual.app import ComposeResult
-from textual import on, work
-from textual.widgets import Label, Input
-from textual.widgets import ListView, ListItem
-from textual.message import Message
-from textual.containers import Container, Horizontal
-from textual.reactive import reactive, var
 from rich.text import Text
+from textual import on, work
+from textual.app import ComposeResult
+from textual.containers import Container, Horizontal
+from textual.message import Message
+from textual.reactive import reactive
+from textual.widgets import Input, Label, ListItem, ListView
 
 from texase.formatting import (
     convert_str_to_other_type,
     convert_value_to_int_float_or_bool,
     get_age_string,
 )
+from texase.input_screens import DataEditScreen, DataScreen, KVPEditScreen, KVPScreen
 from texase.validators import kvp_validators_edit
-from texase.input_screens import KVPScreen, DataScreen, KVPEditScreen, DataEditScreen
 
 
 class Details(Container):
@@ -155,7 +154,9 @@ class Details(Container):
         item = sender.item
         EditScreen = KVPEditScreen if isinstance(item, EditableItem) else DataEditScreen
         new_value = await self.app.push_screen_wait(
-            EditScreen("Edit key value pair", key=item.key, prefilled_input=str(item.value))
+            EditScreen(
+                "Edit key value pair", key=item.key, prefilled_input=str(item.value)
+            )
         )
         if new_value is not None:
             item.value = new_value
@@ -164,7 +165,7 @@ class Details(Container):
 
 class Item(Horizontal):
     validators = []
-    
+
     _value: Any = None
 
     def __init__(self, key, value):
@@ -175,7 +176,7 @@ class Item(Horizontal):
     @property
     def value(self: Any) -> None:
         return self._value
-    
+
     @value.setter
     def value(self, value: Any) -> None:
         # After changing from None only set the value
@@ -183,7 +184,6 @@ class Item(Horizontal):
             self.app.notify_if_kvp_type_changed(self.key, value, self._value)
             self.query_one(Input).value = str(value)
         self._value = value
-        
 
     def compose(self) -> ComposeResult:
         yield Label(f"[bold]{self.key} = [/bold]")
@@ -196,7 +196,6 @@ class Item(Horizontal):
 
     def focus(self) -> None:
         self.query_one(Input).focus()
-
 
 
 class EditableItem(Item):
@@ -294,7 +293,7 @@ class DetailsList(ListView):
         self.post_message(self.ItemSelected(item))
 
     @on(Input.Submitted)
-    def take_back_focus(self, submitted: Input.Submitted):
+    def take_back_focus(self, _: Input.Submitted):
         """When the user presses enter in the input field, take back
         focus. It is assumed that the input value is valid."""
         self.focus()

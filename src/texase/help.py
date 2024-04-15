@@ -1,9 +1,8 @@
-from textual.containers import Container, Horizontal, Vertical
 from textual.app import ComposeResult
-from textual.widgets import Footer
-from textual.widgets import Markdown
 from textual.binding import Binding
+from textual.containers import Container, Horizontal, Vertical
 from textual.screen import ModalScreen
+from textual.widgets import Footer, Markdown
 
 HELP_MARKDOWN_TOP = """\
 # Help

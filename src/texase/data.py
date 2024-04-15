@@ -1,25 +1,25 @@
 from __future__ import annotations
 
-import os
 import operator
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, List, Tuple, Union, overload, Iterable, Dict
-from functools import wraps
 from datetime import datetime
+from functools import wraps
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Tuple, Union, overload
 
 import numpy as np
 import pandas as pd
 from ase import Atoms
 from ase.db import connect
 from ase.db.table import all_columns
-from ase.io import write, read
-from textual.widgets import ListItem, Label
+from ase.io import read, write
 from textual.cache import LRUCache
+from textual.widgets import Label, ListItem
 
-from texase.saved_columns import SavedColumns
 from texase.formatting import format_column, get_age_string, pbc_str_to_array
+from texase.saved_columns import SavedColumns
 
 ops = {
     "==": operator.eq,

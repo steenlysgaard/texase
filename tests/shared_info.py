@@ -1,13 +1,10 @@
 from contextlib import contextmanager
 
 import numpy as np
-
-from textual.coordinate import Coordinate
-
 from ase import Atoms
-
+from texase.keys import Key, KeyBox
 from texase.table import TexaseTable
-from texase.keys import KeyBox, Key
+from textual.coordinate import Coordinate
 
 user_dct = {"str_key": "hav", "float_key": 4.2, "int_key": 42}
 cell = [2, 2, 2]

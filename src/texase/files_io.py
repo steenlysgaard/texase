@@ -1,14 +1,13 @@
-from typing import Iterable
 from pathlib import Path
-from textual import on
-from textual.screen import ModalScreen
-from textual.widgets import Footer, Label, Input, Tree
-from textual.binding import Binding
-from textual.app import ComposeResult
-from textual.widgets import DirectoryTree
-from textual.containers import Container
+from typing import Iterable
 
 from ase.io.formats import ioformats
+from textual import on
+from textual.app import ComposeResult
+from textual.binding import Binding
+from textual.containers import Container
+from textual.screen import ModalScreen
+from textual.widgets import DirectoryTree, Footer, Input, Label, Tree
 
 
 def build_write_exts() -> set[str]:

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import ScrollableContainer
 from textual.suggester import Suggester
-from textual.widgets import Input, Select, Button, Static, Checkbox
 from textual.validation import Function
+from textual.widgets import Button, Checkbox, Input, Select, Static
 from textual.widgets._data_table import RowKey
-from rich.text import Text
 
-from texase.table import TexaseTable
 from texase.data import ops
+from texase.table import TexaseTable
 
 
 class FilterBox(ScrollableContainer):

@@ -3,19 +3,19 @@ from __future__ import annotations
 from typing import Any, Tuple
 
 from rich.text import Text
-from textual.screen import ModalScreen
-from textual.containers import Horizontal, Vertical, Center
-from textual.widgets import Footer, Label, Input
-from textual.binding import Binding
 from textual.app import ComposeResult
+from textual.binding import Binding
+from textual.containers import Center, Horizontal, Vertical
+from textual.screen import ModalScreen
+from textual.widgets import Footer, Input, Label
 
-from texase.validators import kvp_validators_add, kvp_validators_edit
 from texase.formatting import (
     convert_str_to_other_type,
+    convert_value_to_int_float_or_bool,
     correctly_typed_kvp,
     kvp_exception,
-    convert_value_to_int_float_or_bool,
 )
+from texase.validators import kvp_validators_add, kvp_validators_edit
 
 
 class InputScreen(ModalScreen[Any]):

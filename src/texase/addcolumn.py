@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from textual import on
 from textual.app import ComposeResult
+from textual.validation import ValidationResult, Validator
 from textual.widgets import Input, Label
-from textual.validation import Validator, ValidationResult
 
 from texase.edit import EditBox
 from texase.filter import FilterSuggester

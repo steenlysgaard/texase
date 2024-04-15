@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Union, Tuple, Set
+from typing import Iterable, List, Set, Tuple, Union
 
 from rich.text import Text
 from textual import work
 from textual.binding import Binding
 from textual.coordinate import Coordinate
 from textual.widgets import DataTable, Input, Label
-from textual.widgets._data_table import RowKey, ColumnKey
+from textual.widgets._data_table import ColumnKey, RowKey
 
-from texase.data import Data, ALL_COLUMNS
-from texase.edit import EditBox, AddBox
+from texase.data import ALL_COLUMNS, Data
+from texase.edit import AddBox, EditBox
 from texase.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
 
 UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]

@@ -1,8 +1,8 @@
-from textual.app import ComposeResult
-from textual.widgets import Input, Label
-from textual.validation import Function
 from textual import on
+from textual.app import ComposeResult
 from textual.containers import Horizontal
+from textual.validation import Function
+from textual.widgets import Input, Label
 
 from texase.validators import kvp_validators_add, kvp_validators_edit
 

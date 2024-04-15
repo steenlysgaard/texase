@@ -1,9 +1,8 @@
 from textual import on
+from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.css.query import NoMatches
-from textual.widgets import Button
-from textual.app import ComposeResult
-from textual.widgets import Label
+from textual.widgets import Button, Label
 
 
 class KeyBox(Horizontal):
