@@ -1,6 +1,6 @@
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container, Horizontal, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Footer, Markdown
 
@@ -84,13 +84,17 @@ class HelpScreen(ModalScreen):
             background: $panel;
         }
 
-        Container > Vertical > Horizontal > Markdown {
+        Container > VerticalScroll > Horizontal > Markdown {
             width: 50%;
-    }
+        }
+
+        Container > VerticalScroll > Horizontal {
+            height: auto;
+        }
 """
     def compose(self) -> ComposeResult:
         with Container(id='help-screen-container'):
-            with Vertical():
+            with VerticalScroll():
                 yield Markdown(HELP_MARKDOWN_TOP, id="help-markdown-top")
                 with Horizontal():
                     yield Markdown(HELP_MARKDOWN_LEFT, id="help-markdown-left")
