@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{include = "texase", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 ase = ">=3.19.0"
 textual = "0.52.0"
 pandas = "^2.0.3"
@@ -24,6 +24,7 @@ pytest = "^7.4.4"
 black = "^22.12.0"
 pytest-cov = "^2.12.1"
 pytest-asyncio = "^0.21.1"
+pre-commit = "^3.7.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
