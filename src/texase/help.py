@@ -1,3 +1,6 @@
+import webbrowser
+
+from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, VerticalScroll
@@ -5,9 +8,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Footer, Markdown
 
 HELP_MARKDOWN_TOP = """\
-# Help
-
-[See also (clicking links doesn't work)](https://github.com/steenlysgaard/texase)
+# [Texase](https://github.com/steenlysgaard/texase?tab=readme-ov-file#texase)
 
 ## Key bindings
 
@@ -62,13 +63,20 @@ HELP_MARKDOWN_RIGHT = """\
 
 """
 
+HELP_MARKDOWN_BOTTOM = """\
+## Links
+
+- [ASE DB](https://wiki.fysik.dtu.dk/ase/ase/db/db.html#module-ase.db)
+- [ASE units](https://wiki.fysik.dtu.dk/ase/ase/units.html#units)
+"""
 
 class HelpScreen(ModalScreen):
-    BINDINGS = [("?", "pop_screen", "Toggle this help"),
-                Binding("q", "pop_screen", "Hide help", show=False),
-                Binding("ctrl+g", "pop_screen", "Hide help", show=False),
-                ]
-    
+    BINDINGS = [
+        ("?", "pop_screen", "Toggle this help"),
+        Binding("q", "pop_screen", "Hide help", show=False),
+        Binding("ctrl+g", "pop_screen", "Hide help", show=False),
+    ]
+
     DEFAULT_CSS = """
         HelpScreen {
             align: center middle;
@@ -92,11 +100,18 @@ class HelpScreen(ModalScreen):
             height: auto;
         }
 """
+
     def compose(self) -> ComposeResult:
-        with Container(id='help-screen-container'):
+        with Container(id="help-screen-container"):
             with VerticalScroll():
                 yield Markdown(HELP_MARKDOWN_TOP, id="help-markdown-top")
                 with Horizontal():
                     yield Markdown(HELP_MARKDOWN_LEFT, id="help-markdown-left")
                     yield Markdown(HELP_MARKDOWN_RIGHT, id="help-markdown-right")
+                yield Markdown(HELP_MARKDOWN_BOTTOM, id="help-markdown-bottom")
         yield Footer()
+
+    @on(Markdown.LinkClicked)
+    def open_url(self, event: Markdown.LinkClicked) -> None:
+        webbrowser.open(event.href)
+        event.stop()
