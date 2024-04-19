@@ -28,6 +28,7 @@ def test_saved_columns(tmp_path):
     # test the __repr__ method
     assert repr(saved_columns) == "{}"
 
+
 def test_read_and_write_saved_columns(tmp_path):
     # create a temporary file for testing
     columns_file_path = tmp_path / "columns.json"
@@ -44,4 +45,3 @@ def test_read_and_write_saved_columns(tmp_path):
     saved_columns["bar"] = ["qux", "quux"]
     with columns_file_path.open("r") as f:
         assert json.load(f) == {"foo": ["bar", "baz"], "bar": ["qux", "quux"]}
-    

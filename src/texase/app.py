@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import typer
 from ase.db.core import check
@@ -412,7 +413,10 @@ class TEXASE(App):
 
     def on_input_submitted(self, submitted: Input.Submitted):
         table = self.query_one(TexaseTable)
-        if submitted.validation_result is not None and not submitted.validation_result.is_valid:
+        if (
+            submitted.validation_result is not None
+            and not submitted.validation_result.is_valid
+        ):
             return
         if submitted.control.id == "add-column-input":
             self.add_column_to_table_and_remove_from_keybox(submitted.value)
@@ -430,10 +434,12 @@ class TEXASE(App):
             if exception_from_kvp is not None:
                 self.notify_error(exception_from_kvp, "ValueError")
                 return
-            
+
             # kvp is ok, but give a warning if type changed
-            self.notify_if_kvp_type_changed(column, value, table.get_cell_at(table.cursor_coordinate))
-            
+            self.notify_if_kvp_type_changed(
+                column, value, table.get_cell_at(table.cursor_coordinate)
+            )
+
             # Update table
             table.update_cell_from_edit_box(format_value(value))
 
@@ -455,7 +461,7 @@ class TEXASE(App):
             if exception_from_kvp is not None:
                 self.notify_error(exception_from_kvp, "ValueError")
                 return
-                
+
             # Update data
             if table.marked_rows:
                 # If there are marked rows, add the key value pair to
@@ -477,15 +483,16 @@ class TEXASE(App):
             self.show_add_kvp = False
             table.focus()
 
-    def notify_if_kvp_type_changed(self, key: str, new_value: Any, old_value: Any) -> None:
+    def notify_if_kvp_type_changed(
+        self, key: str, new_value: Any, old_value: Any
+    ) -> None:
         if not isinstance(new_value, type(old_value)):
             self.notify(
                 f"The type of [bold]{key} = {new_value}[/bold] has changed from "
                 + f"[bold]{type(old_value).__name__}[/bold] to [bold]{type(new_value).__name__}[/bold].",
                 severity="warning",
             )
-        
-            
+
     # Shouldn't this be deleted??
     def is_kvp_valid(self, key, value):
         """Check that key-value-pair is valid for ase.db
@@ -573,7 +580,6 @@ typer_app = typer.Typer()
 
 @typer_app.command()
 def main(db_path: Annotated[str, typer.Argument(help="Path to the ASE database")]):
-
     app = TEXASE(path=db_path)
     app.run()
 

@@ -54,7 +54,6 @@ class ASEWriteDirectoryTree(DirectoryTree):
 
 
 class ASEReadDirectoryTree(DirectoryTree):
-
     BINDINGS = [
         Binding("left", "set_root_up", "Go up", show=False),
         Binding("right", "set_root_down", "Go down", show=False),
@@ -137,5 +136,4 @@ class FilesIOScreen(ModalScreen[Path | None]):
         self.query_one(Input).value = str_path
 
 
-class FolderLabel(Label):
-    ...
+class FolderLabel(Label): ...

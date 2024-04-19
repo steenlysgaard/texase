@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 import re
-from typing import Callable
+from typing import Any, Callable, Tuple
 
 import numpy as np
 import pandas as pd
@@ -66,18 +66,19 @@ def convert_str_to_other_type(str_value: str) -> Any:
             return np.array(string_to_list(str_value))
         return str_value
 
+
 def string_to_list(input_string):
     # Remove np.array if present
-    if 'np.array' in input_string:
-        input_string = re.search(r'\[(.*)\]', input_string).group(0)
-    
+    if "np.array" in input_string:
+        input_string = re.search(r"\[(.*)\]", input_string).group(0)
+
     # Replace spaces with commas for a proper list format if necessary
-    if ' ' in input_string and ',' not in input_string:
-        input_string = input_string.replace(' ', ', ')
-    
+    if " " in input_string and "," not in input_string:
+        input_string = input_string.replace(" ", ", ")
+
     # Convert string to list
     return ast.literal_eval(input_string)
-    
+
 
 def is_numpy_array(s):
     """Match with a regexp one of these two patterns:
@@ -110,6 +111,7 @@ def pbc_str_to_array(pbc_str: str) -> np.ndarray:
     """Convert e.g. the string TFT to [True, False, True]"""
     return np.array([c == "T" for c in pbc_str.upper()])
 
+
 def kvp_exception(key, value) -> str | None:
     """Check that key-value-pair is valid for ase.db
 
@@ -130,6 +132,7 @@ def kvp_exception(key, value) -> str | None:
         return str(e)
     return None
 
+
 def check_pbc_string_validity(string):
     # check if the string has exactly three characters
     if len(string) == 3:
@@ -146,6 +149,7 @@ def check_pbc_string_validity(string):
     else:
         # raise a ValueError with a descriptive message
         raise ValueError(f"{string} does not have exactly three characters!")
+
 
 def correctly_typed_kvp(input_str: str) -> Tuple[str, Any]:
     """Convert the input string of the form 'key=value' to the correct

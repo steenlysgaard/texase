@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any
 
-from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Center, Horizontal, Vertical

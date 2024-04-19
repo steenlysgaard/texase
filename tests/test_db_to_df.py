@@ -13,7 +13,7 @@ def test_df_creation(db_path):
         key_column = df[k]
         assert key_column.iloc[0] == v
         assert pd.isnull(key_column.iloc[1])
-        
+
     assert np.isclose(df.volume.iloc[0], np.prod(cell))
-    assert df.pbc.iloc[0] == "".join(['FT'[i] for i in pbc])
-    assert df.formula.tolist() == ['Au', 'Ag']
+    assert df.pbc.iloc[0] == "".join(["FT"[i] for i in pbc])
+    assert df.formula.tolist() == ["Au", "Ag"]

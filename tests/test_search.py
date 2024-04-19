@@ -42,7 +42,7 @@ async def loaded_app_with_big_db_no_user(loaded_app_with_big_db):
 
     yield app, pilot, table
 
-    
+
 @pytest.mark.asyncio
 async def test_search(loaded_app_with_big_db_no_user):
     app, pilot, table = loaded_app_with_big_db_no_user
@@ -133,7 +133,6 @@ async def test_regex_search_init(loaded_app_with_big_db):
     await pilot.press("ctrl+g")
     await pilot.press("ctrl+s", "[")
     await pilot.press("ctrl+g")
-
 
 
 @pytest.mark.asyncio

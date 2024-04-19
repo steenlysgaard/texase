@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 from ase.io import read, write
-from texase.app import TEXASE
 from texase.table import TexaseTable
 
 from .shared_info import (
@@ -17,7 +16,7 @@ async def test_read_traj_file(loaded_app, tmp_path):
     app, pilot = loaded_app
     # Create a trajectory file
     atoms = water_to_add()
-    fname = str(tmp_path / 'test.traj')
+    fname = str(tmp_path / "test.traj")
     write(fname, atoms)
 
     # Import the trajectory file
@@ -33,7 +32,7 @@ async def test_read_bad_file(loaded_app, tmp_path):
     original_no_rows = len(table.rows.keys())
 
     # Create a file with nothing in it
-    fname = str(tmp_path / 'test.traj')
+    fname = str(tmp_path / "test.traj")
     Path(fname).touch()
 
     # Check that no error messages are displayed
@@ -48,11 +47,11 @@ async def test_read_bad_file(loaded_app, tmp_path):
 
     assert len(table.rows.keys()) == original_no_rows
 
-        
+
 @pytest.mark.asyncio
 async def test_write_traj_file(loaded_app, tmp_path):
     _, pilot = loaded_app
-    fname = str(tmp_path / 'test.traj')
+    fname = str(tmp_path / "test.traj")
 
     # Export a trajectory file of the first row
     await pilot.press("x", "tab", "ctrl+u", *list(fname), "enter")
@@ -63,11 +62,12 @@ async def test_write_traj_file(loaded_app, tmp_path):
 
     assert atoms.get_chemical_symbols() == [test_atoms[0]]
 
+
 @pytest.mark.asyncio
 async def test_write_bad_file(loaded_app, tmp_path):
     app, pilot = loaded_app
     # Try to write a silly file
-    fname = str(tmp_path / 'foo.bar')
+    fname = str(tmp_path / "foo.bar")
 
     # Check that no error messages are displayed
     assert len(app._notifications) == 0

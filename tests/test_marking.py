@@ -1,5 +1,4 @@
 import pytest
-from texase.app import TEXASE
 from texase.table import TexaseTable
 from textual.widgets._data_table import RowKey
 
@@ -12,15 +11,15 @@ async def test_mark_row(loaded_app):
 
     # Mark the first row
     await pilot.press("space")
-    assert table.marked_rows == {RowKey('1')}
+    assert table.marked_rows == {RowKey("1")}
 
     # Mark the second row
     await pilot.press("space")
-    assert table.marked_rows == {RowKey('1'), RowKey('2')}
+    assert table.marked_rows == {RowKey("1"), RowKey("2")}
 
     # Unmark the first row
     await pilot.press("up", "space")
-    assert table.marked_rows == {RowKey('2')}
+    assert table.marked_rows == {RowKey("2")}
 
     # Unmark all rows
     await pilot.press("U")
@@ -28,7 +27,7 @@ async def test_mark_row(loaded_app):
 
     # Mark the first row
     await pilot.press("up", "space")
-    assert table.marked_rows == {RowKey('1')}
+    assert table.marked_rows == {RowKey("1")}
 
     # Unmark with u
     await pilot.press("up", "u")
@@ -37,5 +36,4 @@ async def test_mark_row(loaded_app):
     # Mark with the mouse
     response = await pilot.click(selector=TexaseTable, offset=(1, 2))
     assert response
-    assert table.marked_rows == {RowKey('2')}
-        
+    assert table.marked_rows == {RowKey("2")}

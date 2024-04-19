@@ -128,7 +128,7 @@ KeyBox {
 
 EditableItem > Label {
     background: $boost;
-    
+
 }
 
 .editable-input {
@@ -146,7 +146,7 @@ FilesIOScreen > Container {
     width: 50%;
     border: round $warning;
     height: auto;
-    
+
 }
 
 FilesIOScreen > Container > DirectoryTree {

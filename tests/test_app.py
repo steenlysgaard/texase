@@ -1,5 +1,4 @@
 import pytest
-from texase.app import TEXASE
 from texase.data import Data
 from texase.table import TexaseTable, get_column_labels
 from textual.coordinate import Coordinate
@@ -106,6 +105,7 @@ async def test_sort_column(loaded_app):
     assert app.data.sort_columns == ["id", "formula"]
     check_row_ids(table, [1, 2])
 
+
 @pytest.mark.asyncio
 async def test_sort_then_add_column(loaded_app):
     app, pilot = loaded_app
@@ -115,6 +115,7 @@ async def test_sort_then_add_column(loaded_app):
     col_idx = get_column_labels(table.columns).index("str_key")
     assert table.get_cell_at(Coordinate(1, col_idx)) == user_dct["str_key"]
     assert table.get_cell_at(Coordinate(0, col_idx)) == ""
+
 
 @pytest.mark.asyncio
 async def test_rows_to_act_on(loaded_app):
@@ -131,5 +132,3 @@ async def test_rows_to_act_on(loaded_app):
     # Two marked
     await pilot.press("space")
     assert sorted(table.ids_to_act_on()) == [1, 2]
-        
-        

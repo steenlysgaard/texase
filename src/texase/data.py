@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import operator
-import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,7 +15,6 @@ from ase.db import connect
 from ase.db.table import all_columns
 from ase.io import read, write
 from textual.cache import LRUCache
-from textual.widgets import Label, ListItem
 
 from texase.formatting import format_column, get_age_string, pbc_str_to_array
 from texase.saved_columns import SavedColumns
@@ -29,6 +27,7 @@ ops = {
     "<=": operator.le,
     ">=": operator.ge,
 }
+
 
 # If the operator is the key then convert the comparison value with
 # the function specified in the value
@@ -117,14 +116,12 @@ class Data:
     @overload
     def update_value(
         self, ids: int, column: str, value: str | float | int | None
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @overload
     def update_value(
         self, ids: Iterable[int], column: str, value: str | float | int | None
-    ) -> None:
-        ...
+    ) -> None: ...
 
     def update_value(self, ids, column, value) -> None:
         """Updates the value in the database and self.df
@@ -399,7 +396,6 @@ class Data:
             self.sort_columns.insert(0, col_name)
             self.sort_reverse = False
 
-        df = self.df
         return self.id_array_with_filter_and_sort()
 
     def id_array_with_filter_and_sort(
@@ -541,9 +537,9 @@ class Data:
 
             # Then get new information
             df, user_keys = db_to_df(db, sel=f"id={idx}")
-            self.df.loc[
-                (self.df.id == idx).to_numpy(), ALL_COLUMNS + user_keys
-            ] = df.loc[0].to_numpy()
+            self.df.loc[(self.df.id == idx).to_numpy(), ALL_COLUMNS + user_keys] = (
+                df.loc[0].to_numpy()
+            )
 
         self.clean_user_keys()
 

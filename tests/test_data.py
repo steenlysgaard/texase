@@ -117,15 +117,15 @@ def test_index_filtering(data):
 def test_df_caching(db_path):
     # Use a new Data instance so we get the correct hits, misses statistics
     data = instantiate_data(db_path)
-    
+
     sdf = data.string_df()
     sdf.equals(data.string_df())
     assert data._string_df_cache.misses == 1
     assert data._string_df_cache.hits == 1
-    
+
     data.column_for_print("id")
     assert data._string_column_cache.hits == 1
-    
+
     # What if the df is modified? Then the cache should be invalidated.
 
 
@@ -135,14 +135,19 @@ def test_change_columns_caching(db_path):
     data.chosen_columns.remove("magmom")
     assert not sdf.equals(data.string_df())
 
+
 def test_apply_filter_and_sort_on_df():
     # create a sample DataFrame
-    df = pd.DataFrame({'name': ['Alice', 'Bob', 'Charlie', 'David'], 'age': [25, 30, 35, 40]})
+    df = pd.DataFrame(
+        {"name": ["Alice", "Bob", "Charlie", "David"], "age": [25, 30, 35, 40]}
+    )
     # create a sample filter mask and sort array
     filter_mask = np.array([True, False, True, False])
     sort = np.array([2, 0, 3, 1])
     # create the expected output DataFrame
-    expected = pd.DataFrame({'name': ['Charlie', 'Alice'], 'age': [35, 25]}, index=[2, 0])
+    expected = pd.DataFrame(
+        {"name": ["Charlie", "Alice"], "age": [35, 25]}, index=[2, 0]
+    )
     # apply the function and assert the result is equal to the expected output
     result = apply_filter_and_sort_on_df(df, filter_mask, sort)
-    pd.testing.assert_frame_equal(result, expected)    
+    pd.testing.assert_frame_equal(result, expected)

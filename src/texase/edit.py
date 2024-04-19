@@ -1,7 +1,6 @@
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.validation import Function
 from textual.widgets import Input, Label
 
 from texase.validators import kvp_validators_add, kvp_validators_edit
@@ -46,6 +45,7 @@ class EditBox(Horizontal):
         else:
             self.query_one(f"#{self.label_id}").remove_class("-invalid")
 
+
 class AddBox(EditBox):
     input_widget_id = "add-input"
     label_id = "add-label"
@@ -58,4 +58,3 @@ class AddBox(EditBox):
             validate_on=["submitted"],
             validators=kvp_validators_add,
         )
-

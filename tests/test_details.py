@@ -2,12 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 from ase.db import connect
-from texase.details import DataItem, Details, EditableItem, KVPList
+from texase.details import DataItem, Details, EditableItem
 from texase.formatting import pbc_str_to_array
 from texase.table import TexaseTable, get_column_labels
 from textual.coordinate import Coordinate
 from textual.widgets import Input
-from textual.widgets._data_table import ColumnKey, RowKey
 
 from .shared_info import assert_notifications_increased_by_one, pbc, user_data
 
@@ -28,7 +27,10 @@ def get_key_index_and_item(
 
 
 def get_data_index_and_item(
-        details: Details, key: str = "pbc", id: str = "#datalist", itemtype=DataItem,
+    details: Details,
+    key: str = "pbc",
+    id: str = "#datalist",
+    itemtype=DataItem,
 ) -> tuple[int, DataItem]:
     return get_key_index_and_item(details, key, id, itemtype)
 
@@ -82,6 +84,7 @@ async def test_edit(loaded_app, db_path):
     assert app.data.df.iloc[0]["pbc"] == inv_pbc
     assert all(connect(db_path).get(1).pbc == pbc_str_to_array(inv_pbc))
 
+
 @pytest.mark.asyncio
 async def test_edit_changing_type(loaded_app, db_path):
     app, pilot = loaded_app
@@ -93,19 +96,19 @@ async def test_edit_changing_type(loaded_app, db_path):
 
     # Press down arrow to select the pbc row
     await pilot.press(*(i * ("down",)))
-    
+
     # Changing str_key value type to int should produce a notification
     with assert_notifications_increased_by_one(app):
         await pilot.press("enter", "ctrl+u", "0", "enter")
         await pilot.pause()
-    
+
     # Save the changes
     await pilot.press("ctrl+s")
 
     # Check that the value is updated in the dataframe
     assert app.data.df["str_key"].iloc[0] == 0
     assert connect(db_path).get(id=1).get("str_key") == 0
-    
+
 
 @pytest.mark.asyncio
 async def test_cancel_edit(loaded_app, db_path):
@@ -176,6 +179,7 @@ async def test_delete_kvp(app_with_cursor_on_str_key, db_path):
     with pytest.raises(AttributeError):
         connect(db_path).get(1).str_key
 
+
 @pytest.mark.asyncio
 async def test_delete_data(app_with_cursor_on_str_key, db_path):
     app, pilot = app_with_cursor_on_str_key
@@ -194,10 +198,10 @@ async def test_delete_data(app_with_cursor_on_str_key, db_path):
     # Check that the error message is displayed
     await pilot.pause()
     assert len(app._notifications) == 1
-    
+
     # Check that the value is still present
-    assert connect(db_path).get(1).data['number'] == user_data['number']
-        
+    assert connect(db_path).get(1).data["number"] == user_data["number"]
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("key, value", list(user_data.items()))

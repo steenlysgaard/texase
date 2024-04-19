@@ -1,8 +1,7 @@
 import pytest
-from texase.app import TEXASE
 
 
-@pytest.mark.filterwarnings('ignore:Not all images have the same boundary conditions!')
+@pytest.mark.filterwarnings("ignore:Not all images have the same boundary conditions!")
 @pytest.mark.asyncio
 async def test_view(loaded_app):
     app, pilot = loaded_app

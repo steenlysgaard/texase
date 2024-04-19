@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Iterable, List, Set, Tuple, Union
 
 from rich.text import Text
-from textual import work
 from textual.binding import Binding
 from textual.coordinate import Coordinate
 from textual.widgets import DataTable, Input, Label
@@ -219,7 +218,7 @@ class TexaseTable(DataTable):
         input_field.placeholder = "key = value"
 
         # Update label to show add kvp
-        label_str = f"Add/Edit key value pair:"
+        label_str = "Add/Edit key value pair:"
         addbox.query_one("#add-label", Label).renderable = label_str
 
     def update_cell_from_add_box(self, column: str, value: Text | str) -> None:
