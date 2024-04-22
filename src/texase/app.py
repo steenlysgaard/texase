@@ -4,8 +4,10 @@ import os
 from typing import Any
 
 import typer
+from ase.db import connect
 from ase.db.core import check
 from ase.gui.gui import GUI, Images
+from rich.panel import Panel
 from textual import on, work
 from textual._two_way_dict import TwoWayDict
 from textual.app import App, ComposeResult
@@ -17,6 +19,12 @@ from textual.reactive import var
 from textual.widgets import Footer, Header, Input
 from textual.widgets._data_table import ColumnKey, StringKey
 from textual.worker import Worker, WorkerState
+from typer.rich_utils import (
+    ALIGN_ERRORS_PANEL,
+    ERRORS_PANEL_TITLE,
+    STYLE_ERRORS_PANEL_BORDER,
+    _get_rich_console,
+)
 from typing_extensions import Annotated
 
 from texase.addcolumn import AddColumnBox
@@ -55,7 +63,7 @@ class TEXASE(App):
     show_edit = var(False)
     show_add_kvp = var(False)
 
-    def __init__(self, path: str = "test/test.db") -> None:
+    def __init__(self, path: str) -> None:
         self.path = path
         self.sort_columns: list[str] = ["id"]
         self.sort_reverse: bool = False
@@ -571,6 +579,14 @@ def check_pbc_string_validity(string):
         raise ValueError(f"{string} does not have exactly three characters!")
 
 
+def is_db_empty(db_path: str) -> bool:
+    """Check if the database is empty."""
+    # Quick test of a db file. If it doesn't exist, it's empty.
+    if not os.path.exists(db_path):
+        return True
+    return len(connect(db_path)) == 0
+
+
 class MiddleContainer(Container):
     pass
 
@@ -580,6 +596,16 @@ typer_app = typer.Typer()
 
 @typer_app.command()
 def main(db_path: Annotated[str, typer.Argument(help="Path to the ASE database")]):
+    if is_db_empty(db_path):
+        error = Panel(
+            f"The database [bold]{db_path}[/bold] is empty!",
+            border_style=STYLE_ERRORS_PANEL_BORDER,
+            title=ERRORS_PANEL_TITLE,
+            title_align=ALIGN_ERRORS_PANEL,
+        )
+        console = _get_rich_console(stderr=True)
+        console.print(error)
+        raise typer.Exit(code=1)
     app = TEXASE(path=db_path)
     app.run()
 

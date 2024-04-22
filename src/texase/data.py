@@ -667,7 +667,6 @@ def db_to_df(db, sel="", limit: int | None = None) -> tuple[pd.DataFrame, List[s
             cols[k].extend([pd.NaT] * (i - len(cols[k])) + [get_value(row, k)])
         i += 1
     df = pd.DataFrame(cols)
-    # df = pd.DataFrame(cols, index=cols["id"])
     df["id"] = df["id"].astype("int")
     return df, list(user_keys)
 
