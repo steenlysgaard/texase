@@ -562,6 +562,7 @@ class TEXASE(App):
 
 
 def check_pbc_string_validity(string):
+    """Check if the string is a valid pbc string. I.e. on the form TTT, TFT, FFF, etc."""
     # check if the string has exactly three characters
     if len(string) == 3:
         # convert the string to upper case
