@@ -1,11 +1,14 @@
 
 # texase
 
-Texase is a TUI[^1] for [ASE](https://wiki.fysik.dtu.dk/ase/) databases. It allows you to quickly get an overview and navigate an ASE database.
+> Texase is a TUI[^1] for [ASE](https://wiki.fysik.dtu.dk/ase/) databases. It allows you to quickly get an overview and navigate an ASE database.
 
 [^1]: Textual User Interface (Also known as a Terminal/Text User Interface)
 
-Built with [Textual](https://textual.textualize.io/)
+> Built with [Textual](https://textual.textualize.io/)
+
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
+<!-- [![][versions-image]][versions-url] -->
 
 
 ![Demo](demo.gif)
@@ -84,5 +87,3 @@ Now I can just `texase file.db` and do all the (quick) navigation I want.
 <!-- ## Badges -->
 
 <!-- Add badges from somewhere like: [shields.io](https://shields.io/) -->
-
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
