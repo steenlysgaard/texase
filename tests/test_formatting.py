@@ -1,14 +1,57 @@
 import numpy as np
+import pandas as pd
 import pytest
+from rich.text import Text
 from texase.formatting import (
     check_pbc_string_validity,
     convert_str_to_other_type,
     convert_value_to_int_float_or_bool,
     correctly_typed_kvp,
+    format_column,
+    format_value,
     is_numpy_array,
     pbc_str_to_array,
     string_to_list,
 )
+
+
+def test_format_value_string():
+    assert format_value("hello") == "hello"
+
+
+def test_format_value_float():
+    returned_text = format_value(1.23456)
+    assert str(returned_text) == "1.23"
+    assert returned_text.justify == "right"
+    assert str(format_value(0.0000123456)) == "1.23e-05"
+
+
+def test_format_value_int():
+    assert str(format_value(123)) == "123"
+
+
+def test_format_value_None():
+    assert format_value(None) == ""
+
+
+def test_format_value_on_a_column():
+    # Create a sample pandas series with different types of values
+    col = pd.Series([1, 2.34, "hello", None, 1e-2, 1e7])
+    # Apply the format_column function
+    formatted_col = format_column(col)
+    # Check the expected output
+    expected_col = pd.Series(
+        [
+            Text("1", justify="right"),
+            Text("2.34", justify="right"),
+            "hello",
+            "",
+            Text("0.01", justify="right"),
+            Text("1.00e+07", justify="right"),
+        ]
+    )
+    # Assert that the formatted column is equal to the expected column
+    assert formatted_col.equals(expected_col)
 
 
 def test_pbc_str_to_array():
