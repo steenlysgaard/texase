@@ -227,11 +227,23 @@ class Data:
     ) -> None:
         idx = self.index_from_row_id(row_id)
         if column in self.df.columns:
+            orig_dtype = self.df[column].dtype
+
             # Check if type of value is compatible with the dtype of
             # the column, if not convert the column dtype to object
             if not is_dtype_compatible_with_value(self.df[column].dtype, value):
                 self.df[column] = self.df[column].astype(object)
             self.df.loc[idx, column] = value
+
+            # A value has changed this means that the dtype of the
+            # column could be better represented by something other
+            # than object, i.e. only applicable if the original dtype
+            # was object.
+            # TODO this could be slow -> Test
+            if orig_dtype == np.dtype("object"):
+                self.df[column] = self.df[column].astype(
+                    recommend_dtype(self.df[column])
+                )
         else:
             new_col = [None] * len(self.df)
             new_col[idx] = value
@@ -593,6 +605,18 @@ class Data:
 
         with connect(self.db_path) as db:
             db.delete(row_ids)
+
+    def add_new_user_key(self, key: str, show=False) -> None:
+        """Add a new key to the user keys. This could be when a new
+        key value pair has been added.
+
+        If show is True, the new key will also be added to chosen_columns.
+
+        """
+        if key not in self.user_keys:
+            self.user_keys.append(key)
+        if show:
+            self.add_to_chosen_columns(key)
 
     def clean_user_keys(self) -> None:
         """Go through df, if a column is None in all rows,

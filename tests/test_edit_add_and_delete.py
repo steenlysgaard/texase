@@ -123,6 +123,9 @@ async def test_add_int_kvp(loaded_app, db_path):
     assert connect(db_path).get(id=1)["new_ints"] == 42
     assert table.get_cell(RowKey("1"), ColumnKey("new_ints")) == format_value(42)
 
+    assert "new_ints" in app.data.user_keys
+    assert "new_ints" in app.data.chosen_columns
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(

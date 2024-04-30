@@ -143,8 +143,7 @@ def test_df_caching(db_path):
     # What if the df is modified? Then the cache should be invalidated.
 
 
-def test_change_columns_caching(db_path):
-    data = instantiate_data(db_path)
+def test_change_columns_caching(data):
     sdf = data.string_df()
     data.chosen_columns.remove("magmom")
     assert not sdf.equals(data.string_df())
@@ -165,3 +164,16 @@ def test_apply_filter_and_sort_on_df():
     # apply the function and assert the result is equal to the expected output
     result = apply_filter_and_sort_on_df(df, filter_mask, sort)
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_updating_dtypes(data):
+    # Check the initial dtype
+    assert data.df["int_key"].dtype == pd.Int64Dtype()
+
+    # We add a float to the int column, it should be converted to object
+    data.update_value([2], "int_key", 2.3)
+    assert data.df["int_key"].dtype == np.dtype("object")
+
+    # Oops we realize that it was a mistake, we convert it back to int
+    data.update_value([2], "int_key", 2)
+    assert data.df["int_key"].dtype == pd.Int64Dtype()

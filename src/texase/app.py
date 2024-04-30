@@ -313,6 +313,8 @@ class TEXASE(App):
                 table.ids_to_act_on(), column=table.column_at_cursor(), value=None
             )
 
+        # If no other key value pairs are present in the column, delete the column
+
     # Delete rows
     @work
     async def action_delete_rows(self) -> None:
@@ -469,6 +471,9 @@ class TEXASE(App):
             if exception_from_kvp is not None:
                 self.notify_error(exception_from_kvp, "ValueError")
                 return
+
+            # Add to chosen_columns and user_keys in data
+            self.data.add_new_user_key(key, show=True)
 
             # Update data
             if table.marked_rows:

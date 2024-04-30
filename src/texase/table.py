@@ -259,7 +259,7 @@ class TexaseTable(DataTable):
         return Text.from_markup(q)
 
     def delete_selected_key_value_pairs(self) -> None:
-        """Delete key value pairs of the currently hightlighted
+        """Delete key value pairs of the currently highlighted
         column. If some rows are marked then delete the key value
         pairs of all marked rows, else delete the key value pair of
         the current row."""
