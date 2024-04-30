@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 from ase.db import connect
+from texase.formatting import format_value
 from texase.table import TexaseTable, get_column_labels
 from texase.yesno import YesNoScreen
 from textual.widgets._data_table import ColumnKey, RowKey
@@ -109,6 +110,21 @@ async def test_add_kvp(loaded_app, db_path):
 
 
 @pytest.mark.asyncio
+async def test_add_int_kvp(loaded_app, db_path):
+    app, pilot = loaded_app
+    table = app.query_one(TexaseTable)
+
+    await pilot.press("k")
+    await pilot.press(*list("new_ints=42"), "enter")
+
+    # Add the new_ints column
+    await pilot.press("+", *list("new_ints"), "enter")
+
+    assert connect(db_path).get(id=1)["new_ints"] == 42
+    assert table.get_cell(RowKey("1"), ColumnKey("new_ints")) == format_value(42)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "kvp",
     [
@@ -147,7 +163,7 @@ async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
     assert table.get_cell_at(table.cursor_coordinate) == ""
 
     # Check that the value removed in the dataframe
-    assert app.data.df["str_key"].iloc[0] is pd.NaT
+    assert pd.isna(app.data.df["str_key"].iloc[0])
 
     # And also removed in the db itself
     assert connect(db_path).get(id=1).get("str_key", None) is None
@@ -162,7 +178,7 @@ async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
     # Mark both rows and delete
     await pilot.press("space", "down", "space", "d", "y")
     for i in range(2):
-        assert app.data.df["str_key"].iloc[i] is pd.NaT
+        assert pd.isna(app.data.df["str_key"].iloc[i])
         assert table.get_cell(RowKey(str(i + 1)), ColumnKey("str_key")) == ""
         assert connect(db_path).get(id=i + 1).get("str_key", None) is None
 
@@ -175,7 +191,6 @@ async def test_edit_changing_type(app_with_cursor_on_str_key, db_path):
     # Changing str_key value type to int should produce a notification
     with assert_notifications_increased_by_one(app):
         await pilot.press("e", "ctrl+u", "0", "enter")
-        await pilot.pause()
 
     # Check that the value is updated in the dataframe
     assert app.data.df["str_key"].iloc[0] == 0

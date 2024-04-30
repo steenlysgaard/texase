@@ -5,6 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import wraps
+from itertools import combinations
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple, Union, overload
 
@@ -36,6 +37,22 @@ def nothing(x):
 
 
 ALL_COLUMNS = list(all_columns) + ["modified"]
+COLUMN_DTYPES = {
+    "id": "int",
+    "age": "float",
+    "user": pd.StringDtype(),
+    "formula": pd.StringDtype(),
+    "calculator": pd.StringDtype(),
+    "energy": "float",
+    "natoms": "int",
+    "fmax": "float",
+    "pbc": pd.StringDtype(),
+    "volume": "float",
+    "charge": "float",
+    "mass": "float",
+    "smax": "float",
+    "magmom": "float",
+}
 
 
 def get_default_columns():
@@ -208,9 +225,19 @@ class Data:
     def update_df(
         self, row_id: int, column: str, value: str | float | int | None
     ) -> None:
-        if value is None:
-            value = pd.NaT
-        self.df.loc[self.index_from_row_id(row_id), column] = value
+        idx = self.index_from_row_id(row_id)
+        if column in self.df.columns:
+            # Check if type of value is compatible with the dtype of
+            # the column, if not convert the column dtype to object
+            if not is_dtype_compatible_with_value(self.df[column].dtype, value):
+                self.df[column] = self.df[column].astype(object)
+            self.df.loc[idx, column] = value
+        else:
+            new_col = [None] * len(self.df)
+            new_col[idx] = value
+            dtype = recommend_dtype(new_col)
+            new_col = pd.Series(new_col, name=column, dtype=dtype)
+            self.df = pd.concat([self.df, new_col], axis=1)
 
     def export_rows(self, row_ids: Iterable[int], path: Path) -> None:
         with connect(self.db_path) as db:
@@ -262,7 +289,14 @@ class Data:
         """
         new_df, new_user_keys = db_to_df(connect(self.db_path), sel=sel)
         original_last_index = self.df.index[-1]
+
+        # Check that the dtypes of common columns are compatible
+        for col in set(new_user_keys) & set(self.user_keys):
+            if not is_dtypes_compatible(self.df[col].dtype, new_df[col].dtype):
+                # Not compatible, convert the column to object
+                self.df[col] = self.df[col].astype(object)
         self.df = pd.concat([self.df, new_df], ignore_index=True)
+
         new_last_index = self.df.index[-1]
         added_indices = np.arange(original_last_index + 1, new_last_index + 1)
 
@@ -533,10 +567,17 @@ class Data:
             # have to remove them from self.df before adding new
             # information, since the new information only contains the
             # user_keys that are currently present in the db
-            self.df.loc[(self.df.id == idx).to_numpy(), self.user_keys] = pd.NaT
+            self.df.loc[(self.df.id == idx).to_numpy(), self.user_keys] = None
 
             # Then get new information
             df, user_keys = db_to_df(db, sel=f"id={idx}")
+
+            # Check that the dtypes of common columns are compatible
+            for col in set(user_keys) & set(self.user_keys):
+                if not is_dtypes_compatible(self.df[col].dtype, df[col].dtype):
+                    # Not compatible, convert the column to object
+                    self.df[col] = self.df[col].astype(object)
+
             self.df.loc[(self.df.id == idx).to_numpy(), ALL_COLUMNS + user_keys] = (
                 df.loc[0].to_numpy()
             )
@@ -554,7 +595,7 @@ class Data:
             db.delete(row_ids)
 
     def clean_user_keys(self) -> None:
-        """Go through df, if a column is pd.NaT in all rows,
+        """Go through df, if a column is None in all rows,
         then remove it from user_keys and df."""
         # Cannot remove directly from df since we have some columns we
         # don't want to remove, e.g. calculator, energy, ... that
@@ -664,10 +705,16 @@ def db_to_df(db, sel="", limit: int | None = None) -> tuple[pd.DataFrame, List[s
             cols[k].append(get_value(row, k))
         user_keys |= set(row.key_value_pairs.keys())
         for k in user_keys:
-            cols[k].extend([pd.NaT] * (i - len(cols[k])) + [get_value(row, k)])
+            cols[k].extend([None] * (i - len(cols[k])) + [get_value(row, k)])
         i += 1
+    # Turn the lists into pd.Series so they will get the correct data
+    # type from the beginning. If we use astype on the individual
+    # columns we could lose information, if e.g. a column contains
+    # both integers and floats.
+    for k in cols.keys():
+        dtype = COLUMN_DTYPES.get(k, recommend_dtype(cols[k]))
+        cols[k] = pd.Series(cols[k], dtype=dtype)
     df = pd.DataFrame(cols)
-    df["id"] = df["id"].astype("int")
     return df, list(user_keys)
 
 
@@ -682,10 +729,91 @@ def get_value(row, key) -> str:
         # to save arrays in the df
         value = "".join("FT"[int(p)] for p in row.pbc)
     else:
-        value = row.get(key, pd.NaT)
+        value = row.get(key, None)
     return value
 
 
 def get_data(db_path, row_id):
     db = connect(db_path)
     return db.get(id=row_id).data
+
+
+def recommend_dtype(iterable):
+    """Recommend a dtype for a column based on the types in the iterable.
+
+    All recommended dtypes should be nullable, i.e. we can add None
+    and keep the same dtype.
+
+    This should only be used for the additional columns in
+    user_keys. Standard columns should have a fixed dtype defined in
+    COLUMN_DTYPES.
+
+    """
+
+    # Initialize variables to keep track of types
+    has_float = False
+    has_int = False
+    has_str = False
+    has_bool = False
+
+    # Inspect the types in the iterable
+    for item in iterable:
+        if isinstance(item, bool):
+            has_bool = True
+        elif isinstance(item, float):  # and not item.is_integer():
+            has_float = True
+        elif isinstance(item, int):
+            has_int = True
+        elif isinstance(item, str):
+            has_str = True
+
+    # Determine the recommended dtype
+    if has_str and not (has_int or has_float or has_bool):
+        return pd.StringDtype()  # Only strings, return StringDtype
+    elif has_bool and not (has_int or has_float or has_str):
+        return pd.BooleanDtype()  # Only booleans, return BooleanDtype
+    elif has_float and not has_int:
+        return "float"  # Only floats, return 'float'
+    elif has_float or (has_int and has_float):
+        return "object"  # Mixed integers and floats, return 'object'
+    elif has_int and not (has_str or has_bool):
+        return pd.Int64Dtype()  # Integers, return nullable integer dtype
+    else:
+        return "object"  # Fallback to 'object' for other cases
+
+
+def is_dtype_compatible_with_value(dtype, value):
+    if dtype == "object":
+        return True
+    if dtype == "float":
+        return isinstance(value, float) or pd.isna(value)
+    if dtype == pd.BooleanDtype():
+        return isinstance(value, bool) or pd.isna(value)
+    if dtype == pd.StringDtype():
+        return isinstance(value, str) or pd.isna(value)
+    if dtype == "int":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if dtype == pd.Int64Dtype():
+        return (isinstance(value, int) and not isinstance(value, bool)) or pd.isna(
+            value
+        )
+    return False
+
+
+def is_dtypes_compatible(dtype1, dtype2):
+    """Combine all possible types, return True if they are compatible,
+    i.e. no upcasting with resulting data loss will take place.
+
+    For example: int -> object is ok, but int -> float is not ok.
+    """
+    types = (dtype1, dtype2)
+    if dtype1 == dtype2:
+        return True
+    if dtype1 == "object" or dtype2 == "object":
+        return True
+    incompatible_types = ["float", pd.BooleanDtype(), pd.StringDtype(), pd.Int64Dtype()]
+    # Test all combinations of size 2 of incompatible types
+    for a, b in combinations(incompatible_types, 2):
+        if a in types and b in types:
+            return False
+    raise ValueError(f"Unknown dtype: {dtype1} or {dtype2}")

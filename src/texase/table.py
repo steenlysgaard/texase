@@ -93,7 +93,7 @@ class TexaseTable(DataTable):
 
     def add_table_rows(self, data: Data, indices: Iterable[int]) -> None:
         for row in data.df_for_print().iloc[indices].itertuples(index=False):
-            self.add_row(*row, key=str(row.id), label=UNMARKED_LABEL)
+            self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
 
     def update_table_rows(self, data: Data, indices: Iterable[int]) -> None:
         for index in indices:

@@ -100,7 +100,6 @@ async def test_edit_changing_type(loaded_app, db_path):
     # Changing str_key value type to int should produce a notification
     with assert_notifications_increased_by_one(app):
         await pilot.press("enter", "ctrl+u", "0", "enter")
-        await pilot.pause()
 
     # Save the changes
     await pilot.press("ctrl+s")
@@ -175,7 +174,7 @@ async def test_delete_kvp(app_with_cursor_on_str_key, db_path):
     column_labels = get_column_labels(table.columns)
     idx = column_labels.index("str_key")
     assert table.get_cell_at(Coordinate(table.cursor_row, idx)) == ""
-    assert app.data.df.iloc[0]["str_key"] is pd.NaT
+    assert pd.isna(app.data.df.iloc[0]["str_key"])
     with pytest.raises(AttributeError):
         connect(db_path).get(1).str_key
 

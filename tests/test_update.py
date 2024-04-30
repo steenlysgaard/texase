@@ -1,7 +1,9 @@
+import pandas as pd
 import pytest
 from ase.db import connect
+from texase.formatting import format_value
 from texase.keys import Key, KeyBox
-from texase.table import TexaseTable
+from texase.table import TexaseTable, get_column_labels
 from textual.coordinate import Coordinate
 from textual.css.query import NoMatches
 
@@ -64,6 +66,47 @@ async def test_update_of_db_update_row(app_with_cursor_on_str_key, db_path):
     assert table.get_cell_at(table.cursor_coordinate) == ns
 
     assert app.data.df["str_key"].tolist() == ["hav", ns]
+
+
+@pytest.mark.asyncio
+async def test_consistency_of_dtype(loaded_app, db_path):
+    app, pilot = loaded_app
+    table = app.query_one(TexaseTable)
+
+    # Add an editable column, i.e. a user key
+    await pilot.press("+", *list("int_key"), "enter")
+
+    column_labels = get_column_labels(table.columns)
+    idx = column_labels.index("int_key")
+    # Move to the new column
+    await pilot.press(*(idx * ("right",)))
+
+    atoms = water_to_add()
+    # Add an int key with a float value
+    atoms.info["key_value_pairs"]["int_key"] = 1.2
+
+    db = connect(db_path)
+    db.write(atoms, key_value_pairs=atoms.info["key_value_pairs"])
+
+    # Update
+    await pilot.press("g")
+
+    for df_value, expected_value in zip(
+        app.data.df["int_key"].tolist(), [42, None, 1.2]
+    ):
+        if pd.isna(df_value):
+            assert pd.isna(expected_value)
+        else:
+            assert df_value == expected_value
+
+    for expected_value in [42, None, 1.2]:
+        if expected_value is None:
+            assert table.get_cell_at(table.cursor_coordinate) == ""
+        else:
+            assert table.get_cell_at(table.cursor_coordinate) == format_value(
+                expected_value
+            )
+        await pilot.press("down")
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,14 @@
 import numpy as np
 import pandas as pd
 import pytest
-from texase.data import Data, apply_filter_and_sort_on_df, instantiate_data
+from ase.db import connect
+from texase.data import (
+    Data,
+    apply_filter_and_sort_on_df,
+    db_to_df,
+    instantiate_data,
+    recommend_dtype,
+)
 
 from .shared_info import user_dct
 
@@ -37,6 +44,59 @@ def test_sort(data):
     assert (actual == expected[::-1]).all()
 
     # How about mixed type columns?
+
+
+def test_db_to_df(db_path):
+    df, user_keys = db_to_df(connect(db_path))
+    assert isinstance(df, pd.DataFrame)
+    assert isinstance(user_keys, list)
+
+    assert set(user_keys) == set(list(user_dct))
+
+    # Check that the user keys are in the df
+    for key in user_keys:
+        assert key in df.columns
+
+    assert df["id"].equals(pd.Series([1, 2], name="id"))
+    assert df["id"].dtype == "int"
+    assert df["formula"].equals(pd.Series(["Au", "Ag"], name="formula", dtype="string"))
+    assert df["float_key"].equals(
+        pd.Series([4.2, None], name="float_key", dtype="float")
+    )
+    assert df["str_key"].equals(
+        pd.Series(["hav", None], name="str_key", dtype="string")
+    )
+    assert df["int_key"].equals(
+        pd.Series([42, None], name="int_key", dtype=pd.Int64Dtype())
+    )
+    assert df["age"].dtype == "float"
+    assert df["pbc"].equals(pd.Series(["TTF", "FFF"], name="pbc", dtype="string"))
+    assert df["calculator"].equals(
+        pd.Series([None, None], name="calculator", dtype="string")
+    )
+
+
+# Test cases are structured as: input iterable, expected result
+test_cases = [
+    ([1, 2, 3], pd.Int64Dtype()),  # Only integers
+    ([1.0, 2.0, 3.0], "float"),  # Only floats
+    (["a", "b", "c"], pd.StringDtype()),  # Only strings
+    (["a", "b", None], pd.StringDtype()),  # Strings with None
+    ([True, False, True], pd.BooleanDtype()),  # Only booleans
+    ([1, 2, None], pd.Int64Dtype()),  # Integers with None
+    ([1, 2.5, 3], "object"),  # Mixed integers and floats
+    ([1, "a", 3.5], "object"),  # Mixed types
+    ([None, None, None], "object"),  # Only None values
+    (["-2-3-34-42", None, 234], "object"),
+    ([1, True, 45], "object"),
+    ([1.0, True, 12], "object"),
+    ([True, None, False], pd.BooleanDtype()),
+]
+
+
+@pytest.mark.parametrize("iterable, expected", test_cases)
+def test_recommend_dtype(iterable, expected):
+    assert recommend_dtype(iterable) == expected
 
 
 @pytest.fixture

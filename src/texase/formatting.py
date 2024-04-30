@@ -15,26 +15,49 @@ UNMARKED_LABEL = Text("\u2219", style="grey")
 
 
 def format_value(val) -> Text | str:
-    if val is None:
+    if pd.isna(val):
         return ""
     if isinstance(val, str):
         return val
-    elif isinstance(val, float):
+    elif isinstance(val, float):  # and not val.is_integer():
         if abs(val) > 1e6 or abs(val) < 1e-3:
             format_spec = "#.3g"
         else:
             format_spec = ".2f"
         return Text("{1:{0}}".format(format_spec, val), justify="right")
-    elif isinstance(val, int):
+    # Checking for integers, see this helpful diagram:
+    # https://numpy.org/doc/stable/reference/arrays.scalars.html
+    # And this answer: https://stackoverflow.com/a/37727662
+    elif np.issubdtype(type(val), np.integer):
         return Text(str(val), justify="right")
     else:
         return str(val)
 
 
+# Mapping from data.df column dtype to the output dtype used in the
+# table. This dict is used when going from data.df to the table, so
+# the keys in the dict should be all the possible dtypes in data.df.
+series_dtype_to_output_dtype = {
+    pd.Int64Dtype(): "object",
+    pd.BooleanDtype(): pd.StringDtype(),
+    pd.StringDtype(): pd.StringDtype(),
+    np.dtype("int"): "object",
+    np.dtype("float"): "object",
+    np.dtype("object"): "object",
+    "int": "object",
+    "object": "object",
+    "float": "object",
+}
+
+
 def format_column(
     col: pd.Series, format_function: Callable = format_value
 ) -> pd.Series:
-    return col.map(format_function, na_action="ignore").fillna("")
+    return pd.Series(
+        [format_function(val) for val in col],
+        dtype=series_dtype_to_output_dtype[col.dtype],
+        name=col.name,
+    )
 
 
 def get_age_string(ctime) -> str:
