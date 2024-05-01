@@ -7,7 +7,9 @@
 
 > Built with [Textual](https://textual.textualize.io/)
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
+[![MPL License](https://img.shields.io/badge/License-MPL-green.svg)](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/texase)
+
 <!-- [![][versions-image]][versions-url] -->
 
 
