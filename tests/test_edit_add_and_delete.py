@@ -1,4 +1,3 @@
-import pandas as pd
 import pytest
 from ase.db import connect
 from texase.formatting import format_value
@@ -163,10 +162,8 @@ async def test_delete_single_kvp(app_with_cursor_on_str_key, db_path):
 
     # Press D and then y to delete
     await pilot.press("d", "y")
-    assert table.get_cell_at(table.cursor_coordinate) == ""
-
-    # Check that the value removed in the dataframe
-    assert pd.isna(app.data.df["str_key"].iloc[0])
+    assert "str_key" not in app.data.df.columns
+    assert "str_key" not in table.columns
 
     # And also removed in the db itself
     assert connect(db_path).get(id=1).get("str_key", None) is None
@@ -178,12 +175,20 @@ async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
 
     table = app.query_one(TexaseTable)
 
+    # Add a str_key to id=2
+    connect(db_path).update(id=2, str_key="foo")
+
+    # Update
+    await pilot.press("g")
+
+    assert list(app.data.df["str_key"]) == [user_dct["str_key"], "foo"]
+
     # Mark both rows and delete
     await pilot.press("space", "down", "space", "d", "y")
     for i in range(2):
-        assert pd.isna(app.data.df["str_key"].iloc[i])
-        assert table.get_cell(RowKey(str(i + 1)), ColumnKey("str_key")) == ""
         assert connect(db_path).get(id=i + 1).get("str_key", None) is None
+    assert "str_key" not in app.data.df.columns
+    assert "str_key" not in table.columns
 
 
 @pytest.mark.asyncio

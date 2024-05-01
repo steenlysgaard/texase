@@ -166,6 +166,10 @@ class Data:
         self._string_df_cache.clear()
         self._remove_edited_column_from_caches(column)
 
+    def is_column_empty(self, column: str) -> bool:
+        """Check if the column is empty"""
+        return self.df[column].isna().all()
+
     def clear_all_caches(self) -> None:
         """Clear all caches"""
         self._filter_mask_cache.clear()

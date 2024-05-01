@@ -309,11 +309,14 @@ class TEXASE(App):
             table.delete_selected_key_value_pairs()
 
             # Remove in db and df
+            column_name = table.column_at_cursor()
             self.data.update_value(
-                table.ids_to_act_on(), column=table.column_at_cursor(), value=None
+                table.ids_to_act_on(), column=column_name, value=None
             )
 
-        # If no other key value pairs are present in the column, delete the column
+        # If no other key value pairs are present in the column, delete the column from the table
+        self.data.clean_user_keys()
+        table.check_columns(self.data)
 
     # Delete rows
     @work
