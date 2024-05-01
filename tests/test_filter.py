@@ -71,8 +71,6 @@ async def test_mark_with_filter(loaded_app):
     await pilot.press("f", "o", "r", "m", "u", "right", "tab", "tab", "A", "u", "enter")
 
     assert len(table.rows.keys()) == 2
-    for r in table.marked_rows:
-        print(r.value)
     assert table.marked_rows == {RowKey("1")}
 
 
