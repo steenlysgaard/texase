@@ -89,7 +89,7 @@ class ASEReadDirectoryTree(DirectoryTree):
             self.select_node(self.root)
 
 
-class FilesIOScreen(ModalScreen[Path | None]):
+class FilesIOScreen(ModalScreen):  # no typing here to keep Python3.9 happy
     """Screen with a question that can be answered yes or no."""
 
     BINDINGS = [

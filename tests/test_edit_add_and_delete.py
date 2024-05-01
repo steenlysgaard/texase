@@ -199,7 +199,7 @@ async def test_edit_changing_type(app_with_cursor_on_str_key, db_path):
     # Changing str_key value type to int should produce a notification
     with assert_notifications_increased_by_one(app):
         await pilot.press("e", "ctrl+u", "0", "enter")
-        await pilot.pause()
+        await pilot.wait_for_scheduled_animations()
 
     # Check that the value is updated in the dataframe
     assert app.data.df["str_key"].iloc[0] == 0
