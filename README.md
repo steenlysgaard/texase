@@ -81,7 +81,7 @@ Now I can just do `texase file.db` and navigate with single key presses.
 
 ## License
 
-[MIT](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
+[MPL](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
 
 
 <!-- ## Badges -->
