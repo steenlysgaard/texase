@@ -451,7 +451,7 @@ class TEXASE(App):
 
             # kvp is ok, but give a warning if type changed
             self.notify_if_kvp_type_changed(
-                column, value, table.get_cell_at(table.cursor_coordinate)
+                column, value, self.data.df.loc[table.cursor_row, column]
             )
 
             # Update table

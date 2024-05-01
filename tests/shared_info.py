@@ -1,4 +1,3 @@
-import time
 from contextlib import contextmanager
 
 import numpy as np
@@ -53,9 +52,4 @@ def check_that_water_were_added_to_small_db(app):
 def assert_notifications_increased_by_one(app):
     notifications_t0 = len(app._notifications)
     yield
-    slept = 0.0
-    while len(app._notifications) == notifications_t0:
-        dt = 0.1
-        time.sleep(dt)
-        slept += dt
-        assert slept < 2.0, "Notifications did not increase after 2 seconds"
+    assert len(app._notifications) == notifications_t0 + 1
