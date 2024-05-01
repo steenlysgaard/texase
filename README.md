@@ -69,13 +69,13 @@ This keeps the texase with the database loaded in memory and returns to the comm
 
 ## Background
 
-I use the database in ASE a lot. The command line interface =ase db= could slow me down a bit though when I wanted to check out the results of some calculations and then view a structure or get some output in another way. I would normally go:
+I use the database in ASE a lot. The command line interface `ase db` could slow me down a bit though when I wanted to check out the results of some calculations and then view a structure or get some output in another way. I would normally go:
 - `ase db file.db`
 - `ase db -L 0 file.db`
 - `ase db -s energy file.db`
 - `ase gui file.db@id=32`
 
-Now I can just `texase file.db` and do all the (quick) navigation I want.
+Now I can just do `texase file.db` and navigate with single key presses.
 
 
 
