@@ -550,7 +550,10 @@ class Data:
                 # the indices in the df the rows to add or update.
                 # Get the df index of the rows that have been deleted in the db
                 indices_to_remove = np.nonzero(~self.df.id.isin(ids))[0]
-                self.delete_rows_from_df(indices_to_remove, update_cache=update_cache)
+                if len(indices_to_remove) > 0:
+                    self.delete_rows_from_df(
+                        indices_to_remove, update_cache=update_cache
+                    )
 
                 # Read rows from db with id larger than self.df.id[-1]
                 # and add them to self.df
@@ -570,7 +573,6 @@ class Data:
                     self.update_df_rows_from_db(
                         db, ids[indices_to_update], update_cache=update_cache
                     )
-
             return indices_to_remove, indices_to_update, indices_to_add
         else:
             return np.array([]), np.array([]), np.array([])

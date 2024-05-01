@@ -317,6 +317,7 @@ class TEXASE(App):
         # If no other key value pairs are present in the column, delete the column from the table
         self.data.clean_user_keys()
         table.check_columns(self.data)
+        await self.query_one(KeyBox).populate_keys(self.data.unused_columns())
 
     # Delete rows
     @work
