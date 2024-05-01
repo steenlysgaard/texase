@@ -51,5 +51,7 @@ def check_that_water_were_added_to_small_db(app):
 @contextmanager
 def assert_notifications_increased_by_one(app):
     notifications_t0 = len(app._notifications)
+    print(f"{notifications_t0=}")
     yield
+    print(f"{len(app._notifications)=}")
     assert len(app._notifications) == notifications_t0 + 1
