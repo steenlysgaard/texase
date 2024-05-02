@@ -22,13 +22,13 @@
 <!-- ![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here) -->
 
 
-<!-- ## Installation -->
+## Installation
 
-<!-- Install texase with pip -->
+Install texase with pip
 
-<!-- ```bash -->
-<!--   pip install texase -->
-<!-- ``` -->
+```bash
+pip install texase
+```
 
 ## Usage
 
