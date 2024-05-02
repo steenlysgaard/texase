@@ -10,6 +10,7 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/texase)
 [![MPL License](https://img.shields.io/badge/License-MPL-green.svg)](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/texase)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/steenlysgaard/texase/python-package.yml)
 
 <!-- [![][versions-image]][versions-url] -->
 
