@@ -7,7 +7,11 @@
 
 > Built with [Textual](https://textual.textualize.io/)
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
+![PyPI - Version](https://img.shields.io/pypi/v/texase)
+[![MPL License](https://img.shields.io/badge/License-MPL-green.svg)](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/texase)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/steenlysgaard/texase/python-package.yml)
+
 <!-- [![][versions-image]][versions-url] -->
 
 
@@ -18,13 +22,13 @@
 <!-- ![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here) -->
 
 
-<!-- ## Installation -->
+## Installation
 
-<!-- Install texase with pip -->
+Install texase with pip
 
-<!-- ```bash -->
-<!--   pip install texase -->
-<!-- ``` -->
+```bash
+pip install texase
+```
 
 ## Usage
 
@@ -81,7 +85,7 @@ Now I can just do `texase file.db` and navigate with single key presses.
 
 ## License
 
-[MIT](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
+[MPL](https://github.com/steenlysgaard/texase/blob/main/LICENSE)
 
 
 <!-- ## Badges -->
