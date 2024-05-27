@@ -67,15 +67,6 @@ def get_default_columns():
     return list(all_columns)
 
 
-operator_type_conversion = {
-    "<": float,
-    "<=": float,
-    "==": nothing,
-    ">=": float,
-    ">": float,
-    "!=": nothing,
-}
-
 dtype_type_conversion = {
     pd.Int64Dtype(): int,
     pd.BooleanDtype(): convert_str_to_bool,
