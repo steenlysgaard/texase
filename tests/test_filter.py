@@ -1,4 +1,6 @@
+import pandas as pd
 import pytest
+from texase.data import get_mask
 from texase.filter import Filter
 from texase.table import TexaseTable
 from textual.widgets._data_table import RowKey
@@ -102,3 +104,139 @@ async def test_add_remove_filter(loaded_app):
     assert filterbox.display
     assert len(filterbox.query("#filterkey")) == 1
     assert filterbox.query("#filterkey")[-1].has_focus
+
+
+@pytest.mark.parametrize(
+    "series, op, value, expected",
+    [
+        # Int64Dtype with None
+        (
+            pd.Series([1, None, 3], dtype=pd.Int64Dtype()),
+            "==",
+            "3",
+            pd.Series([False, False, True]),
+        ),
+        (
+            pd.Series([None, 2, None], dtype=pd.Int64Dtype()),
+            "!=",
+            "2",
+            pd.Series([True, False, True]),
+        ),
+        # BooleanDtype with None
+        (
+            pd.Series([True, None, False], dtype=pd.BooleanDtype()),
+            "==",
+            "true",
+            pd.Series([True, False, False]),
+        ),
+        (
+            pd.Series([None, False, None], dtype=pd.BooleanDtype()),
+            "!=",
+            "false",
+            pd.Series([True, False, True]),
+        ),
+        # StringDtype with None
+        (
+            pd.Series(["apple", None, "banana"], dtype=pd.StringDtype()),
+            "==",
+            "apple",
+            pd.Series([True, False, False]),
+        ),
+        (
+            pd.Series([None, "banana", None], dtype=pd.StringDtype()),
+            "!=",
+            "banana",
+            pd.Series([True, False, True]),
+        ),
+        # Standard cases
+        (
+            pd.Series([1, 2, 3], dtype=pd.Int64Dtype()),
+            "==",
+            "2",
+            pd.Series([False, True, False]),
+        ),
+        (
+            pd.Series([True, False], dtype=pd.BooleanDtype()),
+            "!=",
+            "true",
+            pd.Series([False, True]),
+        ),
+        (
+            pd.Series(["apple", "banana"], dtype=pd.StringDtype()),
+            "==",
+            "apple",
+            pd.Series([True, False]),
+        ),
+        (
+            pd.Series([1.5, 2.5], dtype="float"),
+            ">",
+            "2.0",
+            pd.Series([False, True]),
+        ),
+        (
+            pd.Series([1, 2, 3], dtype="int"),
+            "<=",
+            "2",
+            pd.Series([True, True, False]),
+        ),
+        (
+            pd.Series([None, "data", None], dtype="object"),
+            "==",
+            "data",
+            pd.Series([False, True, False]),
+        ),
+        # Integers with NA
+        (
+            pd.Series([1, None, 3], dtype=pd.Int64Dtype()),
+            ">",
+            "2",
+            pd.Series([False, False, True]),
+        ),
+        (
+            pd.Series([4, None, 2], dtype=pd.Int64Dtype()),
+            ">=",
+            "2",
+            pd.Series([True, False, True]),
+        ),
+        (
+            pd.Series([1, None, 3], dtype=pd.Int64Dtype()),
+            "<",
+            "2",
+            pd.Series([True, False, False]),
+        ),
+        (
+            pd.Series([4, None, 2], dtype=pd.Int64Dtype()),
+            "<=",
+            "3",
+            pd.Series([False, False, True]),
+        ),
+        # Floats with NA
+        (
+            pd.Series([1.5, None, 3.5], dtype="float"),
+            ">",
+            "2.5",
+            pd.Series([False, False, True]),
+        ),
+        (
+            pd.Series([4.5, None, 2.5], dtype="float"),
+            ">=",
+            "3.5",
+            pd.Series([True, False, False]),
+        ),
+        (
+            pd.Series([1.5, None, 3.5], dtype="float"),
+            "<",
+            "2.5",
+            pd.Series([True, False, False]),
+        ),
+        (
+            pd.Series([4.5, None, 2.5], dtype="float"),
+            "<=",
+            "4.5",
+            pd.Series([True, False, True]),
+        ),
+    ],
+)
+def test_get_mask(series, op, value, expected):
+    result = get_mask(series, op, value)
+    pd.testing.assert_series_equal(result, expected, check_dtype=False)

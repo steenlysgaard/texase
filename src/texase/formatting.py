@@ -75,8 +75,13 @@ def convert_value_to_int_float_or_bool(value):
         try:
             value = float(value)
         except ValueError:
-            value = {"true": True, "false": False}.get(value.lower(), value)
+            value = convert_str_to_bool(value)
         return value
+
+
+def convert_str_to_bool(str_value: str) -> bool | str:
+    """Convert string to bool if possible. Otherwise return the value as is."""
+    return {"true": True, "false": False}.get(str_value.lower(), str_value)
 
 
 def convert_str_to_other_type(str_value: str) -> Any:
