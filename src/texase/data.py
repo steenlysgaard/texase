@@ -17,7 +17,12 @@ from ase.db.table import all_columns
 from ase.io import read, write
 from textual.cache import LRUCache
 
-from texase.formatting import format_column, get_age_string, pbc_str_to_array
+from texase.formatting import (
+    convert_str_to_bool,
+    format_column,
+    get_age_string,
+    pbc_str_to_array,
+)
 from texase.saved_columns import SavedColumns
 
 ops = {
@@ -40,6 +45,7 @@ ALL_COLUMNS = list(all_columns) + ["modified"]
 COLUMN_DTYPES = {
     "id": "int",
     "age": "float",
+    "modified": "float",
     "user": pd.StringDtype(),
     "formula": pd.StringDtype(),
     "calculator": pd.StringDtype(),
@@ -61,13 +67,16 @@ def get_default_columns():
     return list(all_columns)
 
 
-operator_type_conversion = {
-    "<": float,
-    "<=": float,
-    "==": nothing,
-    ">=": float,
-    ">": float,
-    "!=": nothing,
+dtype_type_conversion = {
+    pd.Int64Dtype(): int,
+    pd.BooleanDtype(): convert_str_to_bool,
+    pd.StringDtype(): str,
+    np.dtype("int"): int,
+    np.dtype("float"): float,
+    np.dtype("object"): nothing,
+    "int": int,
+    "object": nothing,
+    "float": float,
 }
 
 
@@ -470,7 +479,7 @@ class Data:
     def _filter_mask(self, filter: tuple) -> np.ndarray:
         """Returns a boolean array of indices that pass the filter"""
         filter_key, op, filter_value = filter
-        mask = ops[op](self.df[filter_key], operator_type_conversion[op](filter_value))
+        mask = get_mask(self.df[filter_key], op, filter_value)
         return mask.to_numpy()
 
     def add_filter(self, key, operator, value) -> None:
@@ -847,3 +856,17 @@ def is_dtypes_compatible(dtype1, dtype2):
         if a in types and b in types:
             return False
     raise ValueError(f"Unknown dtype: {dtype1} or {dtype2}")
+
+
+def get_mask(series: pd.Series, op: str, value: str):
+    """Get a mask for a pd.Series based on an operation and a value.
+
+    The operator != (not equal to) is the only operator that returns
+    True if the result is NA. For example, [NA, "apple", "banana"] !=
+    "apple" returns [True, False, True]. This is because the NA value
+    is not equal to "apple".
+
+    """
+    if op == "!=":
+        return ops[op](series, dtype_type_conversion[series.dtype](value)).fillna(True)
+    return ops[op](series, dtype_type_conversion[series.dtype](value)).fillna(False)
