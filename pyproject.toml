@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "texase"
-version = "0.2.1b"
+version = "0.2.1"
 description = "Textual user interface for ASE db."
 authors = ["Steen Lysgaard <stly@dtu.dk>"]
 license = "MPL"
