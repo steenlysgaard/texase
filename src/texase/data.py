@@ -40,6 +40,7 @@ ALL_COLUMNS = list(all_columns) + ["modified"]
 COLUMN_DTYPES = {
     "id": "int",
     "age": "float",
+    "modified": "float",
     "user": pd.StringDtype(),
     "formula": pd.StringDtype(),
     "calculator": pd.StringDtype(),
