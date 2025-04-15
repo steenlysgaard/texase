@@ -541,7 +541,7 @@ class TEXASE(App):
             timeout=timeout,
         )
 
-    def action_quit(self) -> None:
+    def quit_app(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Set, Tuple, Union
+import os
+from typing import Iterable, List, Tuple, Union
 
+from ase.gui.gui import GUI, Images
 from rich.text import Text
 from textual.binding import Binding
 from textual.coordinate import Coordinate
@@ -29,7 +31,7 @@ class TexaseTable(DataTable):
         ("x", "export_rows", "Export row(s)"),
         ("i", "import_rows", "Import structure(s)"),
         ("v", "view", "View"),
-        Binding("+", "add_column", "Add column", show=False),
+        Binding("+", "add_column_to_table", "Add column", show=False),
         Binding("-", "remove_column", "Hide column", show=False),
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
@@ -38,7 +40,7 @@ class TexaseTable(DataTable):
         Binding("g", "update_view", "Update from database", show=False),
     ]
 
-    marked_rows: Set = set()
+    marked_rows: set[int] = set()
 
     def _manipulate_filters(
         self, filter_tuple: Tuple[str, str, str], add: bool = True
@@ -90,6 +92,26 @@ class TexaseTable(DataTable):
             else:
                 row_key = self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
         self.marked_rows = marked_row_keys
+
+    def action_view(self) -> None:
+        """View the currently selected images, if no images are
+        selected then view the row the cursor is on"""
+        if self.marked_rows:
+            images = [self.app.data.get_atoms(id) for id in self.get_marked_row_ids()]
+        else:
+            images = [self.app.data.get_atoms(self.row_id_at_cursor())]
+        gui = GUI(Images(images))
+        # Only run if we are not doing a pytest
+        if "PYTEST_CURRENT_TEST" not in os.environ:
+            gui.run()
+
+    def action_quit(self) -> None:
+        self.app.quit_app()
+
+    def action_add_column_to_table(self) -> None:
+        """Add a column to the table."""
+        # Show the add column box
+        self.app.action_add_column()
 
     def add_table_rows(self, data: Data, indices: Iterable[int]) -> None:
         for row in data.df_for_print().iloc[indices].itertuples(index=False):

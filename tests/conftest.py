@@ -10,7 +10,7 @@ from .shared_info import cell, pbc, test_atoms, user_data, user_dct
 
 
 # Define a fixture that returns a dictionary object
-@pytest.fixture
+@pytest.fixture(scope="function")
 def db_path(tmp_path_factory):
     fn = tmp_path_factory.mktemp("test_db") / "test.db"
     db = connect(fn)

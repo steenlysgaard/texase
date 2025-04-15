@@ -125,8 +125,9 @@ async def test_rows_to_act_on(loaded_app):
     # Nothing marked
     assert table.ids_to_act_on() == [1]
 
-    # One marked, not the row we are on
-    await pilot.press("space", "down")
+    # One marked, not the row we are on since space also moves the
+    # cursor one row down
+    await pilot.press("space")
     assert table.ids_to_act_on() == [1]
 
     # Two marked
