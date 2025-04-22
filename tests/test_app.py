@@ -100,7 +100,7 @@ async def test_sort_column(loaded_app):
 
     # Sort with the mouse by clicking the id column header
     await pilot.click(
-        selector=TexaseTable, offset=(5, 0)
+        widget=TexaseTable, offset=(5, 0)
     )  # The labels take 3 characters, id is next
     assert app.data.sort_columns == ["id", "formula"]
     check_row_ids(table, [1, 2])

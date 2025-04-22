@@ -49,7 +49,7 @@ async def test_edit(loaded_app, db_path):
     )
 
     # Change the value and accept
-    await pilot.press("backspace", "a", "b", "c", "enter")
+    await pilot.press("right", "backspace", "a", "b", "c", "enter")
     new_str = user_dct["str_key"][:-1] + "abc"
     assert table.get_cell_at(table.cursor_coordinate) == new_str
 
@@ -184,7 +184,7 @@ async def test_delete_multiple_kvps(app_with_cursor_on_str_key, db_path):
     assert list(app.data.df["str_key"]) == [user_dct["str_key"], "foo"]
 
     # Mark both rows and delete
-    await pilot.press("space", "down", "space", "d", "y")
+    await pilot.press("space", "space", "d", "y")
     for i in range(2):
         assert connect(db_path).get(id=i + 1).get("str_key", None) is None
     assert "str_key" not in app.data.df.columns
