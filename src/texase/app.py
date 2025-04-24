@@ -144,11 +144,8 @@ class TEXASE(App):
     # Import / Export
 
     @work
-    async def action_export_rows(self) -> None:
+    async def export_rows(self, ids: list[int]) -> None:
         """Export the marked rows or selected row of the table to a file"""
-        table = self.query_one(TexaseTable)
-        ids = table.ids_to_act_on()
-
         # Show the directory tree with an input box to select a file
         # name and location
         output_file = await self.push_screen_wait(FilesIOScreen(False))

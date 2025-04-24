@@ -100,6 +100,10 @@ class TexaseTable(DataTable):
     def action_import_rows(self) -> None:
         self.app.import_rows()
 
+    def action_export_rows(self) -> None:
+        ids = self.ids_to_act_on()
+        self.app.export_rows(ids)
+
     def action_view(self) -> None:
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
@@ -537,7 +541,7 @@ class TexaseTable(DataTable):
         """Return the row id at the cursor as an int."""
         return get_id_from_row(self.get_row_at(self.cursor_row))
 
-    def ids_to_act_on(self) -> List[int]:
+    def ids_to_act_on(self) -> list[int]:
         """Get the ids of the rows to act on using the same logic as
         row_keys_to_act_on."""
         return sorted(
