@@ -268,7 +268,8 @@ class TEXASE(App):
         searchbar.display = show_search_box
 
     # Filter
-    async def action_filter(self) -> None:
+    @work
+    async def show_filterbox(self) -> None:
         self.show_filter = True
         filterbox = self.query_one("#filter-box", FilterBox)
         await filterbox.focus_filterbox()

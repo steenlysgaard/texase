@@ -104,6 +104,9 @@ class TexaseTable(DataTable):
         ids = self.ids_to_act_on()
         self.app.export_rows(ids)
 
+    def action_filter(self) -> None:
+        self.app.show_filterbox()
+
     def action_view(self) -> None:
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
