@@ -6,7 +6,6 @@ from typing import Any
 import typer
 from ase.db import connect
 from ase.db.core import check
-from ase.gui.gui import GUI, Images
 from rich.panel import Panel
 from textual import work
 from textual.app import App, ComposeResult
@@ -290,19 +289,6 @@ class TEXASE(App):
         """Add a key to the KeyBox."""
         key_box = self.query_one(KeyBox)
         await key_box.add_key(key)
-
-    def action_view(self) -> None:
-        """View the currently selected images, if no images are
-        selected then view the row the cursor is on"""
-        table = self.query_one(TexaseTable)
-        if table.marked_rows:
-            images = [self.data.get_atoms(id) for id in table.get_marked_row_ids()]
-        else:
-            images = [self.data.get_atoms(table.row_id_at_cursor())]
-        self.gui = GUI(Images(images))
-        # Only run if we are not doing a pytest
-        if "PYTEST_CURRENT_TEST" not in os.environ:
-            self.gui.run()
 
     def add_column_to_table_and_remove_from_keybox(self, column: str) -> None:
         """Add a column to the table and remove it from the KeyBox."""
