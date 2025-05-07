@@ -5,25 +5,26 @@ import pytest
 @pytest.mark.asyncio
 async def test_view(loaded_app):
     app, pilot = loaded_app
+    table = app.query_one("TexaseTable")
 
     # View first row
     await pilot.press("v")
 
-    assert app.gui.window.exists
+    assert table.gui.window.exists
 
-    assert len(app.gui.images) == 1
-    assert len(app.gui.images[0]) == 1
+    assert len(table.gui.images) == 1
+    assert len(table.gui.images[0]) == 1
 
     # Close window
-    app.gui.exit()
+    table.gui.exit()
 
-    assert not app.gui.window.exists
+    assert not table.gui.window.exists
 
     # Mark both rows and then view
     await pilot.press("space", "space", "v")
 
-    assert app.gui.window.exists
+    assert table.gui.window.exists
 
-    assert len(app.gui.images) == 2
+    assert len(table.gui.images) == 2
 
-    app.gui.exit()
+    table.gui.exit()

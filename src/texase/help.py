@@ -116,3 +116,7 @@ class HelpScreen(ModalScreen):
     def open_url(self, event: Markdown.LinkClicked) -> None:
         webbrowser.open(event.href)
         event.stop()
+
+    def action_pop_screen(self) -> None:
+        """Pop the help screen off the stack."""
+        self.app.pop_screen()

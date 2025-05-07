@@ -62,7 +62,6 @@ class TEXASE(App):
         self.path = path
         self.sort_columns: list[str] = ["id"]
         self.sort_reverse: bool = False
-        self.gui: GUI | None = None
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -236,7 +235,7 @@ class TEXASE(App):
         self.query_one(TexaseTable).focus()
 
     # Help screen
-    def action_toggle_help(self) -> None:
+    def show_help(self) -> None:
         self.push_screen(HelpScreen())
 
     # Add/Delete key-value-pairs
@@ -250,7 +249,7 @@ class TEXASE(App):
         editbox.display = show_edit
 
     # Search
-    def action_search(self) -> None:
+    def show_search(self) -> None:
         # show_search_box is set to True since the search bar is able
         # to close itself after a search.
         self.show_search_box = True

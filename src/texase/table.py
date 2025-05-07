@@ -24,7 +24,7 @@ UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]
 class TexaseTable(DataTable):
     BINDINGS = [
         ("q", "quit", "Quit"),
-        ("?", "toggle_help", "Help"),
+        ("?", "show_help", "Help"),
         ("s", "sort_column", "Sort"),
         ("space", "mark_row", "Mark row"),
         Binding("enter", "toggle_details", "Show details", show=False),
@@ -45,6 +45,10 @@ class TexaseTable(DataTable):
     ]
 
     marked_rows: set[int] = set()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.gui: GUI | None = None
 
     def _manipulate_filters(
         self, filter_tuple: Tuple[str, str, str], add: bool = True
@@ -107,6 +111,9 @@ class TexaseTable(DataTable):
     def action_filter(self) -> None:
         self.app.show_filterbox()
 
+    def action_search(self) -> None:
+        self.app.show_search()
+
     def action_view(self) -> None:
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
@@ -114,13 +121,17 @@ class TexaseTable(DataTable):
             images = [self.app.data.get_atoms(id) for id in self.get_marked_row_ids()]
         else:
             images = [self.app.data.get_atoms(self.row_id_at_cursor())]
-        gui = GUI(Images(images))
+        self.gui = GUI(Images(images))
         # Only run if we are not doing a pytest
         if "PYTEST_CURRENT_TEST" not in os.environ:
-            gui.run()
+            self.gui.run()
 
     def action_quit(self) -> None:
         self.app.quit_app()
+
+    # Help screen
+    def action_show_help(self) -> None:
+        self.app.show_help()
 
     def action_add_column_to_table(self) -> None:
         """Add a column to the table."""
