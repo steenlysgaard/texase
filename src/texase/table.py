@@ -409,9 +409,9 @@ class TexaseTable(DataTable):
         # Create the question
         ids_str = ", ".join([str(id) for id in ids])
         plural = [" ", "s "][no_rows > 1]
-        q = "Do you want to delete the key value pair" + plural
-        q += f"[bold]{column_name}[/bold] in row" + plural
-        q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
+        q = f"Do you want to delete the key value pair{plural}"
+        q += f"[bold]{column_name}[/bold] in row{plural}"
+        q += f"with id{plural}" + f"[bold]{ids_str}[/bold]?"
         return Text.from_markup(q)
 
     def delete_selected_key_value_pairs(self) -> None:
@@ -457,8 +457,8 @@ class TexaseTable(DataTable):
         # Create the question
         ids_str = ", ".join([str(id) for id in ids])
         plural = [" ", "s "][no_rows > 1]
-        q = "Do you want to delete the row" + plural
-        q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
+        q = f"Do you want to delete the row{plural}"
+        q += f"with id{plural}" + f"[bold]{ids_str}[/bold]?"
         return Text.from_markup(q)
 
     def delete_selected_rows(self) -> None:
@@ -565,15 +565,15 @@ class TexaseTable(DataTable):
             ]
         )
 
-    def row_keys_to_act_on(self) -> List[RowKey]:
+    def row_keys_to_act_on(self) -> list[RowKey]:
         """Get the row keys of the rows to act on. If some rows are marked,
         then return the row keys of those rows, otherwise return a list of the RowKey of
         the row where the cursor is."""
-        if self.marked_rows:
-            rows = list(self.marked_rows)
-        else:
-            rows = [self.row_index_to_row_key(self.cursor_row)]
-        return rows
+        return (
+            list(self.marked_rows)
+            if self.marked_rows
+            else [self.row_index_to_row_key(self.cursor_row)]
+        )
 
     def row_index_to_row_key(self, row_index) -> RowKey:
         """Return the row key of the row at the given row index"""
