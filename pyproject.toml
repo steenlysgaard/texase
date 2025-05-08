@@ -48,6 +48,8 @@ build-backend = "hatchling.build"
 [tool.basedpyright]
 executionEnvironments = [ { root = "src" } ]
 reportArgumentType = false
+reportUnusedCallResult = false
+reportUnusedExpression = false
 
 [tool.uv]
 python-preference = "system"
