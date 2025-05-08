@@ -108,7 +108,7 @@ def string_to_list(input_string):
     return ast.literal_eval(input_string)
 
 
-def is_numpy_array(s):
+def is_numpy_array(s: str):
     """Match with a regexp one of these two patterns:
 
     '[1 2 3 ...]'
@@ -124,12 +124,7 @@ def is_numpy_array(s):
     numpy_string_array_pattern = r'np\.array\(\["[^"]*"(, "[^"]*")*\]\)'
 
     # Combine the patterns to match either numbers or strings but not both
-    combined_pattern = r"^({}|{}|{}|{})$".format(
-        number_array_pattern,
-        string_array_pattern,
-        numpy_number_array_pattern,
-        numpy_string_array_pattern,
-    )
+    combined_pattern = f"^({number_array_pattern}|{string_array_pattern}|{numpy_number_array_pattern}|{numpy_string_array_pattern})$"
 
     # Search for the pattern in the string
     return bool(re.match(combined_pattern, s))
