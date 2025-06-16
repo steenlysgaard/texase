@@ -1388,7 +1388,7 @@ wheels = [
 
 [[package]]
 name = "texase"
-version = "0.3.1"
+version = "0.3.2b0"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
