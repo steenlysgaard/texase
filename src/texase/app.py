@@ -6,18 +6,13 @@ from typing import Any
 import typer
 from ase.db import connect
 from ase.db.core import check
-from ase.gui.gui import GUI, Images
 from rich.panel import Panel
-from textual import on, work
-from textual._two_way_dict import TwoWayDict
+from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container
-from textual.coordinate import Coordinate
-from textual.driver import Driver
 from textual.reactive import var
 from textual.widgets import Footer, Header, Input
-from textual.widgets._data_table import ColumnKey, StringKey
 from textual.worker import Worker, WorkerState
 from typer.rich_utils import (
     ALIGN_ERRORS_PANEL,
@@ -28,7 +23,7 @@ from typer.rich_utils import (
 from typing_extensions import Annotated
 
 from texase.addcolumn import AddColumnBox
-from texase.data import ALL_COLUMNS, ASEReadError, ASEWriteError, instantiate_data
+from texase.data import ASEReadError, ASEWriteError, instantiate_data
 from texase.details import Details
 from texase.edit import AddBox, EditBox
 from texase.files_io import FilesIOScreen
@@ -43,7 +38,6 @@ from texase.help import HelpScreen
 from texase.keys import KeyBox
 from texase.search import Search
 from texase.table import TexaseTable
-from texase.yesno import YesNoScreen
 
 
 class TEXASE(App):
@@ -67,7 +61,6 @@ class TEXASE(App):
         self.path = path
         self.sort_columns: list[str] = ["id"]
         self.sort_reverse: bool = False
-        self.gui: GUI | None = None
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -149,11 +142,8 @@ class TEXASE(App):
     # Import / Export
 
     @work
-    async def action_export_rows(self) -> None:
+    async def export_rows(self, ids: list[int]) -> None:
         """Export the marked rows or selected row of the table to a file"""
-        table = self.query_one(TexaseTable)
-        ids = table.ids_to_act_on()
-
         # Show the directory tree with an input box to select a file
         # name and location
         output_file = await self.push_screen_wait(FilesIOScreen(False))
@@ -168,7 +158,7 @@ class TEXASE(App):
                 )
 
     @work
-    async def action_import_rows(self) -> None:
+    async def import_rows(self) -> None:
         """Export the marked rows or selected row of the table to a file"""
         input_file = await self.push_screen_wait(FilesIOScreen(True))
         if input_file is not None:
@@ -193,66 +183,26 @@ class TEXASE(App):
                 table.loading = False
                 table.focus()
 
-    # Sorting
-    def action_sort_column(self) -> None:
-        # Get the highlighted column
-        table = self.query_one(TexaseTable)
-        self.sort_table(table.column_at_cursor(), table)
-
     def on_data_table_header_selected(
         self, selected: TexaseTable.HeaderSelected
     ) -> None:
         table = selected.data_table
         col_name = str(selected.label)
-        self.sort_table(col_name, table)
-
-    def sort_table(self, col_name: str, table: TexaseTable) -> None:
-        # Save the row key of the current cursor position
-        row_key = table.coordinate_to_cell_key(Coordinate(table.cursor_row, 0)).row_key
-
-        # Sort the table
-        ordered_index = self.data.sort(col_name)
-
-        table._row_locations = TwoWayDict(
-            {
-                StringKey(str(key)): new_index
-                for new_index, key in enumerate(ordered_index)
-            }
-        )
-        table._update_count += 1
-        table.refresh()
-
-        # After finished sort make the cursor go to the same cell as before sorting
-        table.cursor_coordinate = Coordinate(
-            table._row_locations.get(row_key), table.cursor_column
-        )
-
-        # How sort does it:
-        # self._row_locations = TwoWayDict(
-        #     {key: new_index for new_index, (key, _) in enumerate(ordered_rows)}
-        # )
-        # self._update_count += 1
-        # self.refresh()
-        # table.sort(*self.sort_columns, reverse=self.sort_reverse)
+        table.sort_table(col_name)
 
     # Details sidebar
-    def action_toggle_details(self) -> None:
+    def toggle_show_details(self) -> bool:
         self.show_details = not self.show_details
-        table = self.query_one(TexaseTable)
-        if self.show_details:
-            # Get the highlighted row
-            row_id = table.row_id_at_cursor()
-            details = self.query_one(Details)
-            details.clear_modified_and_deleted_keys()
-            details.update_kvplist(*self.data.row_details(row_id))
-            details.update_data(self.data.row_data(row_id))
+        return self.show_details
 
-            # Set focus on the details sidebar
-            details.set_focus()
+    def make_details_ready(self, row_id: int) -> None:
+        details = self.query_one(Details)
+        details.clear_modified_and_deleted_keys()
+        details.update_kvplist(*self.data.row_details(row_id))
+        details.update_data(self.data.row_data(row_id))
 
-        else:
-            # Set focus back on the table
-            table.focus()
+        # Set focus on the details sidebar
+        details.set_focus()
 
     def save_details(
         self, key_value_pairs: dict, data: dict, deleted_keys: set
@@ -284,68 +234,21 @@ class TEXASE(App):
         self.query_one(TexaseTable).focus()
 
     # Help screen
-    def action_toggle_help(self) -> None:
+    def show_help(self) -> None:
         self.push_screen(HelpScreen())
 
     # Add/Delete key-value-pairs
-    def action_add_key_value_pair(self) -> None:
-        table = self.query_one(TexaseTable)
-        self.show_add_kvp = True
-        addbox = self.query_one("#add-kvp-box", AddBox)
-        table.update_add_box(addbox)
-        addbox.focus()
-
     def watch_show_add_kvp(self, show_add_kvp: bool) -> None:
         box = self.query_one("#add-kvp-box")
         box.display = show_add_kvp
 
-    @work
-    async def action_delete_key_value_pairs(self) -> None:
-        table = self.query_one(TexaseTable)
-        if not table.is_cell_editable(uneditable_columns=ALL_COLUMNS):
-            return
-        question = table.delete_kvp_question()
-        if await self.push_screen_wait(YesNoScreen(question)):
-            table.delete_selected_key_value_pairs()
-
-            # Remove in db and df
-            column_name = table.column_at_cursor()
-            self.data.update_value(
-                table.ids_to_act_on(), column=column_name, value=None
-            )
-
-        # If no other key value pairs are present in the column, delete the column from the table
-        self.data.clean_user_keys()
-        table.check_columns(self.data)
-        await self.query_one(KeyBox).populate_keys(self.data.unused_columns())
-
-    # Delete rows
-    @work
-    async def action_delete_rows(self) -> None:
-        """Delete the currently marked rows."""
-        table = self.query_one(TexaseTable)
-        if await self.push_screen_wait(YesNoScreen(table.delete_row_question())):
-            # Remove in db and df
-            self.data.delete_rows_from_df_and_db(table.ids_to_act_on())
-
-            # Then remove in table
-            table.delete_selected_rows()
-
     # Edit
-    def action_edit(self) -> None:
-        table = self.query_one(TexaseTable)
-        if table.is_cell_editable():
-            self.show_edit = True
-            editbox = self.query_one("#edit-box", EditBox)
-            table.update_edit_box(editbox)
-            editbox.focus()
-
     def watch_show_edit(self, show_edit: bool) -> None:
         editbox = self.query_one("#edit-box")
         editbox.display = show_edit
 
     # Search
-    def action_search(self) -> None:
+    def show_search(self) -> None:
         # show_search_box is set to True since the search bar is able
         # to close itself after a search.
         self.show_search_box = True
@@ -363,7 +266,8 @@ class TEXASE(App):
         searchbar.display = show_search_box
 
     # Filter
-    async def action_filter(self) -> None:
+    @work
+    async def show_filterbox(self) -> None:
         self.show_filter = True
         filterbox = self.query_one("#filter-box", FilterBox)
         await filterbox.focus_filterbox()
@@ -381,42 +285,10 @@ class TEXASE(App):
         addcolumnbox = self.query_one(AddColumnBox)
         addcolumnbox.display = show_box
 
-    async def action_remove_column(self) -> None:
-        """Remove the column that the cursor is on.
-
-        Also remove the column from chosen_columns."""
-
-        table = self.query_one(TexaseTable)
-        # Save the name of the column to remove
-        cursor_column_index = table.cursor_column
-        column_to_remove = str(table.ordered_columns[cursor_column_index].label)
-
-        # Add the column to the KeyBox
-        await self.query_one(KeyBox).add_key(column_to_remove)
-
-        self.remove_column_from_table(column_to_remove)
-
-    def remove_column_from_table(self, column_name: str) -> None:
-        table = self.query_one(TexaseTable)
-        # Remove the column from the table in data
-        self.data.remove_from_chosen_columns(column_name)
-
-        # col_key = table.ordered_columns[cursor_column_index].key
-        col_key = ColumnKey(column_name)
-        table.remove_column(col_key)
-
-    def action_view(self) -> None:
-        """View the currently selected images, if no images are
-        selected then view the row the cursor is on"""
-        table = self.query_one(TexaseTable)
-        if table.marked_rows:
-            images = [self.data.get_atoms(id) for id in table.get_marked_row_ids()]
-        else:
-            images = [self.data.get_atoms(table.row_id_at_cursor())]
-        self.gui = GUI(Images(images))
-        # Only run if we are not doing a pytest
-        if "PYTEST_CURRENT_TEST" not in os.environ:
-            self.gui.run()
+    async def add_key_to_keybox(self, key: str) -> None:
+        """Add a key to the KeyBox."""
+        key_box = self.query_one(KeyBox)
+        await key_box.add_key(key)
 
     def add_column_to_table_and_remove_from_keybox(self, column: str) -> None:
         """Add a column to the table and remove it from the KeyBox."""
@@ -541,33 +413,13 @@ class TEXASE(App):
             timeout=timeout,
         )
 
-    def action_quit(self) -> None:
+    def quit_app(self) -> None:
         self.data.save_chosen_columns()
         super().exit()
 
     def action_suspend_process(self) -> None:
         self.data.save_chosen_columns()
         super().action_suspend_process()
-
-    @on(Driver.SignalResume)
-    @work
-    async def action_update_view(self) -> None:
-        """Check if the db has been updated since it was last read.
-
-        If so update the table."""
-        # if not self.data.is_df_up_to_date():
-        remove_idx, update_idx, add_idx = self.data.updates_from_db()
-
-        table = self.query_one(TexaseTable)
-        table.delete_rows([table.row_index_to_row_key(idx) for idx in remove_idx])
-
-        table.add_table_rows(self.data, add_idx)
-        table.update_table_rows(self.data, update_idx)
-
-        table.check_columns(self.data)
-
-        # Update the KeyBox
-        await self.populate_key_box()
 
 
 def check_pbc_string_validity(string):

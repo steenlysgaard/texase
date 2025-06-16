@@ -55,7 +55,7 @@ async def test_edit(loaded_app, db_path):
     i, item = get_key_index_and_item(details)
 
     # Press down arrow to select the pbc row
-    await pilot.press(*(i * ("down",)))
+    await pilot.press(*((i + 1) * ("down",)))
 
     # Modify pbc
     await pilot.press("enter")
@@ -97,7 +97,7 @@ async def test_edit_changing_type(loaded_app, db_path):
     i, _ = get_key_index_and_item(details, key="str_key")
 
     # Press down arrow to select the pbc row
-    await pilot.press(*(i * ("down",)))
+    await pilot.press(*((i + 1) * ("down",)))
 
     # Changing str_key value type to int should produce a notification
     with assert_notifications_increased_by_one(app):
@@ -122,7 +122,7 @@ async def test_cancel_edit(loaded_app, db_path):
     i, _ = get_key_index_and_item(details)
 
     # Press down arrow to select the pbc row
-    await pilot.press(*(i * ("down",)), "enter")
+    await pilot.press(*((i + 1) * ("down",)), "enter")
 
     # Modify pbc
     await pilot.press("enter", *(3 * ("backspace",)))
@@ -162,7 +162,7 @@ async def test_delete_kvp(app_with_cursor_on_str_key, db_path):
     i, _ = get_key_index_and_item(details, "str_key")
 
     # Press down arrow to select the str_key row
-    await pilot.press(*(i * ("down",)))
+    await pilot.press(*((i + 1) * ("down",)))
 
     # Delete the key
     await pilot.press("ctrl+d")
@@ -191,7 +191,7 @@ async def test_delete_data(app_with_cursor_on_str_key, db_path):
     i, _ = get_data_index_and_item(details, key="number")
 
     # Press down arrow to select the str_key row
-    await pilot.press(*(i * ("down",)))
+    await pilot.press(*((i + 1) * ("down",)))
 
     # Delete the key
     await pilot.press("ctrl+d")
@@ -242,7 +242,7 @@ async def test_edit_data(loaded_app, db_path, key, value):
     i, _ = get_data_index_and_item(details, key=key)
     # Press down arrow to select correct row
     await pilot.press(
-        *(i * ("down",)), "enter", "ctrl+u", *list(str(value)), "enter", "ctrl+s"
+        *((i + 1) * ("down",)), "enter", "ctrl+u", *list(str(value)), "enter", "ctrl+s"
     )
 
     data = connect(db_path).get(1).data
@@ -267,7 +267,7 @@ async def test_edit_array_data(loaded_app, db_path, key, input, value):
     i, _ = get_data_index_and_item(details, key=key)
     # Press down arrow to select correct row
     await pilot.press(
-        *(i * ("down",)), "enter", "ctrl+u", *list(input), "enter", "ctrl+s"
+        *((i + 1) * ("down",)), "enter", "ctrl+u", *list(input), "enter", "ctrl+s"
     )
 
     data = connect(db_path).get(1).data

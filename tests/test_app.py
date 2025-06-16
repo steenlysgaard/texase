@@ -100,7 +100,7 @@ async def test_sort_column(loaded_app):
 
     # Sort with the mouse by clicking the id column header
     await pilot.click(
-        selector=TexaseTable, offset=(5, 0)
+        widget=TexaseTable, offset=(5, 0)
     )  # The labels take 3 characters, id is next
     assert app.data.sort_columns == ["id", "formula"]
     check_row_ids(table, [1, 2])
@@ -125,8 +125,9 @@ async def test_rows_to_act_on(loaded_app):
     # Nothing marked
     assert table.ids_to_act_on() == [1]
 
-    # One marked, not the row we are on
-    await pilot.press("space", "down")
+    # One marked, not the row we are on since space also moves the
+    # cursor one row down
+    await pilot.press("space")
     assert table.ids_to_act_on() == [1]
 
     # Two marked

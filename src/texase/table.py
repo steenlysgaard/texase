@@ -1,16 +1,22 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Set, Tuple, Union
+import os
+from typing import Iterable, List, Tuple, Union
 
+from ase.gui.gui import GUI, Images
 from rich.text import Text
+from textual import on, work
+from textual._two_way_dict import TwoWayDict
 from textual.binding import Binding
 from textual.coordinate import Coordinate
+from textual.driver import Driver
 from textual.widgets import DataTable, Input, Label
-from textual.widgets._data_table import ColumnKey, RowKey
+from textual.widgets._data_table import ColumnKey, RowKey, StringKey
 
 from texase.data import ALL_COLUMNS, Data
 from texase.edit import AddBox, EditBox
 from texase.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
+from texase.yesno import YesNoScreen
 
 UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]
 
@@ -18,7 +24,7 @@ UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]
 class TexaseTable(DataTable):
     BINDINGS = [
         ("q", "quit", "Quit"),
-        ("?", "toggle_help", "Help"),
+        ("?", "show_help", "Help"),
         ("s", "sort_column", "Sort"),
         ("space", "mark_row", "Mark row"),
         Binding("enter", "toggle_details", "Show details", show=False),
@@ -29,7 +35,7 @@ class TexaseTable(DataTable):
         ("x", "export_rows", "Export row(s)"),
         ("i", "import_rows", "Import structure(s)"),
         ("v", "view", "View"),
-        Binding("+", "add_column", "Add column", show=False),
+        Binding("+", "add_column_to_table", "Add column", show=False),
         Binding("-", "remove_column", "Hide column", show=False),
         Binding("u", "unmark_row", "Unmark row", show=False),
         Binding("U", "unmark_all", "Unmark all", show=False),
@@ -38,7 +44,11 @@ class TexaseTable(DataTable):
         Binding("g", "update_view", "Update from database", show=False),
     ]
 
-    marked_rows: Set = set()
+    marked_rows: set[int] = set()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.gui: GUI | None = None
 
     def _manipulate_filters(
         self, filter_tuple: Tuple[str, str, str], add: bool = True
@@ -91,6 +101,99 @@ class TexaseTable(DataTable):
                 row_key = self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
         self.marked_rows = marked_row_keys
 
+    def action_import_rows(self) -> None:
+        self.app.import_rows()
+
+    def action_export_rows(self) -> None:
+        ids = self.ids_to_act_on()
+        self.app.export_rows(ids)
+
+    def action_filter(self) -> None:
+        self.app.show_filterbox()
+
+    def action_search(self) -> None:
+        self.app.show_search()
+
+    def action_view(self) -> None:
+        """View the currently selected images, if no images are
+        selected then view the row the cursor is on"""
+        if self.marked_rows:
+            images = [self.app.data.get_atoms(id) for id in self.get_marked_row_ids()]
+        else:
+            images = [self.app.data.get_atoms(self.row_id_at_cursor())]
+        self.gui = GUI(Images(images))
+        # Only run if we are not doing a pytest
+        if "PYTEST_CURRENT_TEST" not in os.environ:
+            self.gui.run()
+
+    def action_quit(self) -> None:
+        self.app.quit_app()
+
+    # Help screen
+    def action_show_help(self) -> None:
+        self.app.show_help()
+
+    def action_add_column_to_table(self) -> None:
+        """Add a column to the table."""
+        # Show the add column box
+        self.app.action_add_column()
+
+    # Sorting
+    def action_sort_column(self) -> None:
+        # Get the highlighted column
+        self.sort_table(self.column_at_cursor())
+
+    def sort_table(self, col_name: str) -> None:
+        # Save the row key of the current cursor position
+        row_key = self.coordinate_to_cell_key(Coordinate(self.cursor_row, 0)).row_key
+
+        # Sort the table
+        ordered_index = self.app.data.sort(col_name)
+
+        self._row_locations = TwoWayDict(
+            {
+                StringKey(str(key)): new_index
+                for new_index, key in enumerate(ordered_index)
+            }
+        )
+        self._update_count += 1
+        self.refresh()
+
+        # After finished sort make the cursor go to the same cell as before sorting
+        self.cursor_coordinate = Coordinate(
+            self._row_locations.get(row_key), self.cursor_column
+        )
+
+        # How sort does it:
+        # self._row_locations = TwoWayDict(
+        #     {key: new_index for new_index, (key, _) in enumerate(ordered_rows)}
+        # )
+        # self._update_count += 1
+        # self.refresh()
+        # table.sort(*self.sort_columns, reverse=self.sort_reverse)
+
+    async def action_remove_column(self) -> None:
+        """Remove the column that the cursor is on.
+
+        Also remove the column from chosen_columns."""
+
+        # Save the name of the column to remove
+        cursor_column_index = self.cursor_column
+        column_to_remove = str(self.ordered_columns[cursor_column_index].label)
+
+        # Add the column to the KeyBox
+        await self.app.add_key_to_keybox(column_to_remove)
+
+        self.remove_column_from_table(column_to_remove)
+
+    def remove_column_from_table(self, column_name: str) -> None:
+        # Remove the column from the table in data
+        self.app.data.remove_from_chosen_columns(column_name)
+
+        # col_key = table.ordered_columns[cursor_column_index].key
+        col_key = ColumnKey(column_name)
+        self.remove_column(col_key)
+
     def add_table_rows(self, data: Data, indices: Iterable[int]) -> None:
         for row in data.df_for_print().iloc[indices].itertuples(index=False):
             self.add_row(*row, key=str(row[0]), label=UNMARKED_LABEL)
@@ -138,6 +241,59 @@ class TexaseTable(DataTable):
             values.iloc[-1],
             update_width=True,
         )
+
+    # Add/Delete key-value-pairs
+    def action_add_key_value_pair(self) -> None:
+        self.app.show_add_kvp = True
+        addbox = self.app.query_one("#add-kvp-box", AddBox)
+        self.update_add_box(addbox)
+        addbox.focus()
+
+    @work
+    async def action_delete_key_value_pairs(self) -> None:
+        if not self.is_cell_editable(uneditable_columns=ALL_COLUMNS):
+            return
+        question = self.delete_kvp_question()
+        if await self.app.push_screen_wait(YesNoScreen(question)):
+            self.delete_selected_key_value_pairs()
+
+            # Remove in db and df
+            column_name = self.column_at_cursor()
+            self.app.data.update_value(
+                self.ids_to_act_on(), column=column_name, value=None
+            )
+
+        # If no other key value pairs are present in the column, delete the column from the table
+        self.app.data.clean_user_keys()
+        self.check_columns(self.app.data)
+        await self.app.populate_key_box()
+
+    @on(Driver.SignalResume)
+    @work
+    async def action_update_view(self) -> None:
+        """Check if the db has been updated since it was last read.
+
+        If so update the table."""
+        # if not self.data.is_df_up_to_date():
+        remove_idx, update_idx, add_idx = self.app.data.updates_from_db()
+
+        self.delete_rows([self.row_index_to_row_key(idx) for idx in remove_idx])
+
+        self.add_table_rows(self.app.data, add_idx)
+        self.update_table_rows(self.app.data, update_idx)
+
+        self.check_columns(self.app.data)
+
+        # Update the KeyBox
+        await self.app.populate_key_box()
+
+    # Edit
+    def action_edit(self) -> None:
+        if self.is_cell_editable():
+            self.app.show_edit = True
+            editbox = self.app.query_one("#edit-box", EditBox)
+            self.update_edit_box(editbox)
+            editbox.focus()
 
     def is_cell_editable(
         self, uneditable_columns: List[str] = UNEDITABLE_COLUMNS
@@ -253,9 +409,9 @@ class TexaseTable(DataTable):
         # Create the question
         ids_str = ", ".join([str(id) for id in ids])
         plural = [" ", "s "][no_rows > 1]
-        q = "Do you want to delete the key value pair" + plural
-        q += f"[bold]{column_name}[/bold] in row" + plural
-        q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
+        q = f"Do you want to delete the key value pair{plural}"
+        q += f"[bold]{column_name}[/bold] in row{plural}"
+        q += f"with id{plural}" + f"[bold]{ids_str}[/bold]?"
         return Text.from_markup(q)
 
     def delete_selected_key_value_pairs(self) -> None:
@@ -271,6 +427,27 @@ class TexaseTable(DataTable):
                 row_key, self.column_index_to_column_key(self.cursor_column), ""
             )
 
+    # Details sidebar
+    def action_toggle_details(self) -> None:
+        if self.app.toggle_show_details():
+            # Get the highlighted row
+            row_id = self.row_id_at_cursor()
+            self.app.make_details_ready(row_id)
+        else:
+            # Set focus back on the table
+            self.focus()
+
+    # Delete rows
+    @work
+    async def action_delete_rows(self) -> None:
+        """Delete the currently marked rows."""
+        if await self.app.push_screen_wait(YesNoScreen(self.delete_row_question())):
+            # Remove in db and df
+            self.app.data.delete_rows_from_df_and_db(self.ids_to_act_on())
+
+            # Then remove in table
+            self.delete_selected_rows()
+
     def delete_row_question(self) -> Text:
         """Return the question to ask when deleting a key value pair."""
         # Get the ids of the marked or currently selected rows
@@ -280,8 +457,8 @@ class TexaseTable(DataTable):
         # Create the question
         ids_str = ", ".join([str(id) for id in ids])
         plural = [" ", "s "][no_rows > 1]
-        q = "Do you want to delete the row" + plural
-        q += "with id" + plural + f"[bold]{ids_str}[/bold]?"
+        q = f"Do you want to delete the row{plural}"
+        q += f"with id{plural}" + f"[bold]{ids_str}[/bold]?"
         return Text.from_markup(q)
 
     def delete_selected_rows(self) -> None:
@@ -378,7 +555,7 @@ class TexaseTable(DataTable):
         """Return the row id at the cursor as an int."""
         return get_id_from_row(self.get_row_at(self.cursor_row))
 
-    def ids_to_act_on(self) -> List[int]:
+    def ids_to_act_on(self) -> list[int]:
         """Get the ids of the rows to act on using the same logic as
         row_keys_to_act_on."""
         return sorted(
@@ -388,15 +565,15 @@ class TexaseTable(DataTable):
             ]
         )
 
-    def row_keys_to_act_on(self) -> List[RowKey]:
+    def row_keys_to_act_on(self) -> list[RowKey]:
         """Get the row keys of the rows to act on. If some rows are marked,
         then return the row keys of those rows, otherwise return a list of the RowKey of
         the row where the cursor is."""
-        if self.marked_rows:
-            rows = list(self.marked_rows)
-        else:
-            rows = [self.row_index_to_row_key(self.cursor_row)]
-        return rows
+        return (
+            list(self.marked_rows)
+            if self.marked_rows
+            else [self.row_index_to_row_key(self.cursor_row)]
+        )
 
     def row_index_to_row_key(self, row_index) -> RowKey:
         """Return the row key of the row at the given row index"""

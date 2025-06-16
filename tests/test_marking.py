@@ -34,6 +34,6 @@ async def test_mark_row(loaded_app):
     assert not table.marked_rows
 
     # Mark with the mouse
-    response = await pilot.click(selector=TexaseTable, offset=(1, 2))
+    response = await pilot.click(TexaseTable, offset=(1, 2))
     assert response
     assert table.marked_rows == {RowKey("2")}

@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    environment: publish
 
     steps:
       - name: Checkout sources
@@ -17,17 +18,19 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
-      - name: Install poetry and dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install poetry
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          # Install a specific version of uv.
+          version: "0.7.12"
+          # Enable caching
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
-      - name: Configure poetry
-        env:
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
-        run: poetry config pypi-token.pypi $pypi_token
+      - name: Build texase
+        run: uv build --no-sources
 
-      - name: Build and publish
-        run: poetry publish --build
+      - name: Publish texase
+        run: uv publish

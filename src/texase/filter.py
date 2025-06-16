@@ -59,7 +59,7 @@ class FilterBox(ScrollableContainer):
         self.query("#filterkey")[-1].focus()
         return new_filter
 
-    def action_remove_filter(self) -> None:
+    async def action_remove_filter(self) -> None:
         """Remove the currently focused filter, alternatively the last
         filter.
 
@@ -67,12 +67,12 @@ class FilterBox(ScrollableContainer):
         filters = self.query(Filter)
         for filter in filters:
             if filter.has_focus_in_any_widget():
-                filter.remove()
+                await filter.remove()
                 break
         else:
             # If no filter has focus, remove the last filter
             if len(filters) > 0:
-                filters[-1].remove()
+                await filters[-1].remove()
         self.hide_if_no_filters()
 
     def compose(self) -> ComposeResult:
@@ -83,7 +83,7 @@ class FilterBox(ScrollableContainer):
         """Called when a button is pressed."""
         if pressed.button.id == "remove-filter":
             # Remove the filter
-            pressed.button.ancestors[0].remove()
+            await pressed.button.ancestors[0].remove()
             self.hide_if_no_filters()
         elif pressed.button.id == "add-filter":
             await self.add_filter()
@@ -143,7 +143,7 @@ class Filter(Static):
         # Focus on the table
         table.focus()
 
-    def remove(self) -> None:
+    async def remove(self) -> None:
         # If this filter is applied to the data shown in the
         # table, it should be removed there as well
 
@@ -154,7 +154,7 @@ class Filter(Static):
             self.app.remove_filter_from_table((key, op, val))
         # After this the parent container takes care of removing this filter
 
-        super().remove()
+        await super().remove()
 
     def compose(self) -> ComposeResult:
         yield Button(
