@@ -37,6 +37,9 @@ jobs:
       with:
         # Install a specific version of uv.
         version: "0.7.12"
+        # Enable caching
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
 
     - name: Install the project
       run: uv sync --locked --all-extras --dev
