@@ -10,6 +10,8 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     environment: publish
+    permissions:
+      id-token: write
 
     steps:
       - name: Checkout sources
