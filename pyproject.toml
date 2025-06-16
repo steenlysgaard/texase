@@ -1,6 +1,6 @@
 [project]
 name = "texase"
-version = "0.3.0"
+version = "0.3.1"
 description = "Textual user interface for ASE db."
 authors = [{ name = "Steen Lysgaard", email = "stly@dtu.dk" }]
 # Python version less than 3.13 since pillow 10.3.0 fails on
