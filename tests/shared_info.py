@@ -50,8 +50,8 @@ def check_that_water_were_added_to_small_db(app):
 
 @contextmanager
 def assert_notifications_increased_by_one(app):
-    notifications_t0 = [n for n in app._notifications]
+    notifications_t0 = list(app._notifications)
     yield
-    current_notifications = [n for n in app._notifications]
+    current_notifications = list(app._notifications)
     assert len([n for n in current_notifications if n not in notifications_t0]) == 1
     assert next(iter(app._notifications)) in current_notifications

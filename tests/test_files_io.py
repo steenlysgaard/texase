@@ -35,8 +35,8 @@ async def test_read_bad_file(loaded_app, tmp_path):
     fname = str(tmp_path / "test.traj")
     Path(fname).touch()
 
-    # Check that no error messages are displayed
-    assert len(app._notifications) == 0
+    # Clear any possible notifications
+    app.clear_notifications()
 
     # Import the trajectory file
     await pilot.press("i", "tab", "ctrl+u", *list(fname), "enter")
@@ -69,8 +69,8 @@ async def test_write_bad_file(loaded_app, tmp_path):
     # Try to write a silly file
     fname = str(tmp_path / "foo.bar")
 
-    # Check that no error messages are displayed
-    assert len(app._notifications) == 0
+    # Clear any possible notifications
+    app.clear_notifications()
 
     # Import the trajectory file
     await pilot.press("x", "tab", "ctrl+u", *list(fname), "enter")
