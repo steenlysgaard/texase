@@ -1,13 +1,19 @@
 import json
 import os
 from pathlib import Path
+from platformdirs import user_config_dir
 
 
 class SavedColumns:
     def __init__(self):
-        self._columns_file_path = Path(
-            os.environ.get("TEXASE_COLUMNS_FILE", Path.home() / ".texase-columns.json")
-        )
+        # allow env‐override; otherwise store in user config dir
+        env_path = os.environ.get("TEXASE_COLUMNS_FILE")
+        if env_path:
+            self._columns_file_path = Path(env_path)
+        else:
+            cfg = Path(user_config_dir("texase"))
+            cfg.mkdir(parents=True, exist_ok=True)
+            self._columns_file_path = cfg / "columns.json"
         self._files_and_columns = self._read_columns_file()
 
     def _read_columns_file(self):
