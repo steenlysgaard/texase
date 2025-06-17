@@ -1,7 +1,8 @@
 import json
 import os
 from pathlib import Path
-from platformdirs import user_config_dir
+
+from platformdirs import user_cache_dir
 
 
 class SavedColumns:
@@ -11,7 +12,7 @@ class SavedColumns:
         if env_path:
             self._columns_file_path = Path(env_path)
         else:
-            cfg = Path(user_config_dir("texase"))
+            cfg = Path(user_cache_dir("texase"))
             cfg.mkdir(parents=True, exist_ok=True)
             self._columns_file_path = cfg / "columns.json"
         self._files_and_columns = self._read_columns_file()
