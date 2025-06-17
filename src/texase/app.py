@@ -57,8 +57,9 @@ class TEXASE(App):
     show_edit = var(False)
     show_add_kvp = var(False)
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, use_cache: bool = False) -> None:
         self.path = path
+        self.use_cache = use_cache
         self.sort_columns: list[str] = ["id"]
         self.sort_reverse: bool = False
         super().__init__()
@@ -120,10 +121,23 @@ class TEXASE(App):
             self.notify("Loading Done!", severity="information", timeout=1.5)
 
     def load_initial_data(self, table: TexaseTable) -> None:
-        # db data
-        data = instantiate_data(self.path, limit=100)
-        self.data = data
+        # try loading cached parquet if requested and up-to-date
+        from pathlib import Path
+        from platformdirs import user_cache_dir
+        import pandas as pd
+        from texase.data import Data, ALL_COLUMNS
 
+        cache_dir = Path(user_cache_dir("texase"))
+        cache_file = cache_dir / (Path(self.path).name + ".parquet")
+
+        if self.use_cache and cache_file.exists() and cache_file.stat().st_mtime > Path(self.path).stat().st_mtime:
+            df = pd.read_parquet(cache_file)
+            # infer any user-added keys
+            user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
+            data = Data(df=df, db_path=Path(self.path), user_keys=user_keys)
+        else:
+            data = instantiate_data(self.path, limit=100)
+        self.data = data
         table.populate_table(data)
 
     @work(thread=True)
@@ -414,12 +428,27 @@ class TEXASE(App):
         )
 
     def quit_app(self) -> None:
+        if self.use_cache:
+            self._save_parquet_cache()
         self.data.save_chosen_columns()
         super().exit()
 
     def action_suspend_process(self) -> None:
+        if self.use_cache:
+            self._save_parquet_cache()
         self.data.save_chosen_columns()
         super().action_suspend_process()
+
+    def _save_parquet_cache(self) -> None:
+        """Dump current df to a cache-dir parquet."""
+        from pathlib import Path
+        from platformdirs import user_cache_dir
+
+        cache_dir = Path(user_cache_dir("texase"))
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_dir / (Path(self.path).name + ".parquet")
+        # index=False to keep it clean
+        self.data.df.to_parquet(cache_file, index=False)
 
 
 def check_pbc_string_validity(string):
@@ -457,7 +486,10 @@ typer_app = typer.Typer()
 
 
 @typer_app.command()
-def main(db_path: Annotated[str, typer.Argument(help="Path to the ASE database")]):
+def main(
+    db_path: Annotated[str, typer.Argument(help="Path to the ASE database")],
+    use_cache: Annotated[bool, typer.Option(False, "--use-cache/--no-cache", help="Enable parquet caching")] = False,
+):
     if is_db_empty(db_path):
         error = Panel(
             f"The database [bold]{db_path}[/bold] is empty!",
@@ -468,7 +500,7 @@ def main(db_path: Annotated[str, typer.Argument(help="Path to the ASE database")
         console = _get_rich_console(stderr=True)
         console.print(error)
         raise typer.Exit(code=1)
-    app = TEXASE(path=db_path)
+    app = TEXASE(path=db_path, use_cache=use_cache)
     app.run()
 
 
