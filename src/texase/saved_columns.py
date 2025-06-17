@@ -3,17 +3,14 @@ import os
 from pathlib import Path
 
 from platformdirs import user_cache_dir
-from typing import Dict, Any, Optional
 
 
 class SavedColumns:
     _columns_file_path: Path
-    _files_and_columns: Dict[str, Any]
+    _files_and_columns: dict[str, list[str]]
 
     def __init__(self) -> None:
-        # allow env‐override; otherwise store in user config dir
-        env_path = os.environ.get("TEXASE_COLUMNS_FILE")
-        if env_path:
+        if env_path := os.environ.get("TEXASE_COLUMNS_FILE"):
             self._columns_file_path = Path(env_path)
         else:
             cfg = Path(user_cache_dir("texase"))
@@ -21,7 +18,7 @@ class SavedColumns:
             self._columns_file_path = cfg / "columns.json"
         self._files_and_columns = self._read_columns_file()
 
-    def _read_columns_file(self) -> Dict[str, Any]:
+    def _read_columns_file(self) -> dict[str, list[str]]:
         if self._columns_file_path.exists():
             with self._columns_file_path.open("r") as f:
                 return json.load(f)
@@ -31,10 +28,10 @@ class SavedColumns:
         with self._columns_file_path.open("w") as f:
             json.dump(self._files_and_columns, f, indent=4)
 
-    def __getitem__(self, key: str) -> Optional[Any]:
-        return self._files_and_columns.get(key, None)
+    def __getitem__(self, key: str) -> list[str] | None:
+        return self._files_and_columns.get(key)
 
-    def __setitem__(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: str, value: list[str]) -> None:
         self._files_and_columns[key] = value
         self._write_columns_file()
 
