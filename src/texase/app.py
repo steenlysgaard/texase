@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 
 import typer
@@ -11,7 +12,10 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container
+from textual.css.query import NoMatches
+from textual.lazy import Lazy
 from textual.reactive import var
+from textual.widget import Widget
 from textual.widgets import Footer, Header, Input
 from textual.worker import Worker, WorkerState
 from typer.rich_utils import (
@@ -20,7 +24,6 @@ from typer.rich_utils import (
     STYLE_ERRORS_PANEL_BORDER,
     _get_rich_console,
 )
-from typing_extensions import Annotated
 
 from texase.addcolumn import AddColumnBox
 from texase.data import ASEReadError, ASEWriteError, instantiate_data
@@ -58,6 +61,7 @@ class TEXASE(App):
     show_add_kvp = var(False)
 
     def __init__(self, path: str, use_cache: bool = False) -> None:
+        self.t0 = time.time()
         self.path = path
         self.use_cache = use_cache
         self.sort_columns: list[str] = ["id"]
@@ -70,18 +74,20 @@ class TEXASE(App):
         yield Footer()
         yield MiddleContainer(
             # Boxes put centered at the top, but in a higher layer, of the table
-            FilterBox(id="filter-box", classes="topbox"),
+            Lazy(FilterBox(id="filter-box", classes="topbox hidden")),
             # Boxes docked at the bottom in the same layer of the table
-            Search(
-                Input(id="search-input", placeholder="Search.."),
-                classes="bottombox",
-                id="search-box",
+            Lazy(
+                Search(
+                    Input(id="search-input", placeholder="Search.."),
+                    classes="bottombox hidden",
+                    id="search-box",
+                )
             ),
-            EditBox(id="edit-box", classes="bottombox"),
-            AddBox(id="add-kvp-box", classes="bottombox"),
-            AddColumnBox(id="add-column-box", classes="bottombox"),
+            Lazy(EditBox(id="edit-box", classes="bottombox hidden")),
+            Lazy(AddBox(id="add-kvp-box", classes="bottombox hidden")),
+            Lazy(AddColumnBox(id="add-column-box", classes="bottombox hidden")),
             # Other boxes
-            Details(id="details"),
+            Lazy(Details(id="details", classes="hidden")),
             TexaseTable(id="table"),
             KeyBox(id="key-box"),
         )
@@ -118,19 +124,28 @@ class TEXASE(App):
             # TODO: check that additional keys are added after initial load
             await self.populate_key_box()  # type: ignore
 
-            self.notify("Loading Done!", severity="information", timeout=1.5)
+            t1 = time.time()
+            self.notify(
+                f"Loading Done! {t1-self.t0}", severity="information", timeout=1.5
+            )
 
     def load_initial_data(self, table: TexaseTable) -> None:
         # try loading cached parquet if requested and up-to-date
         from pathlib import Path
-        from platformdirs import user_cache_dir
+
         import pandas as pd
-        from texase.data import Data, ALL_COLUMNS
+        from platformdirs import user_cache_dir
+
+        from texase.data import ALL_COLUMNS, Data
 
         cache_dir = Path(user_cache_dir("texase"))
         cache_file = cache_dir / (Path(self.path).name + ".parquet")
 
-        if self.use_cache and cache_file.exists() and cache_file.stat().st_mtime > Path(self.path).stat().st_mtime:
+        if (
+            self.use_cache
+            and cache_file.exists()
+            and cache_file.stat().st_mtime > Path(self.path).stat().st_mtime
+        ):
             df = pd.read_parquet(cache_file)
             # infer any user-added keys
             user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
@@ -235,8 +250,17 @@ class TEXASE(App):
 
     def watch_show_details(self, show_details: bool) -> None:
         """Called when show_details is modified."""
-        dv = self.query_one(Details)
-        dv.display = show_details
+        self.hide_or_show(Details, show_details)
+
+    def hide_or_show(self, widget_type: Widget | str, show: bool) -> None:
+        """Hide or show a widget based on the show parameter."""
+        try:
+            widget = self.query_one(widget_type)
+        except NoMatches:
+            # Widget is lazy loaded so it's probably just not available yet.
+            pass
+        else:
+            hide_or_show_widget(widget, show)
 
     def action_hide_all(self) -> None:
         self.show_details = False
@@ -253,13 +277,11 @@ class TEXASE(App):
 
     # Add/Delete key-value-pairs
     def watch_show_add_kvp(self, show_add_kvp: bool) -> None:
-        box = self.query_one("#add-kvp-box")
-        box.display = show_add_kvp
+        self.hide_or_show("#add-kvp-box", show_add_kvp)
 
     # Edit
     def watch_show_edit(self, show_edit: bool) -> None:
-        editbox = self.query_one("#edit-box")
-        editbox.display = show_edit
+        self.hide_or_show("#edit-box", show_edit)
 
     # Search
     def show_search(self) -> None:
@@ -276,8 +298,7 @@ class TEXASE(App):
         search.set_current_cursor_coordinate()
 
     def watch_show_search_box(self, show_search_box: bool) -> None:
-        searchbar = self.query_one(Search)
-        searchbar.display = show_search_box
+        self.hide_or_show(Search, show_search_box)
 
     # Filter
     @work
@@ -287,8 +308,7 @@ class TEXASE(App):
         await filterbox.focus_filterbox()
 
     def watch_show_filter(self, show_filter: bool) -> None:
-        searchbar = self.query_one("#filter-box")
-        searchbar.display = show_filter
+        self.hide_or_show("#filter-box", show_filter)
 
     # Column action
     def action_add_column(self) -> None:
@@ -296,8 +316,7 @@ class TEXASE(App):
         self.query_one("#add-column-box").focus()
 
     def watch_show_add_column_box(self, show_box: bool) -> None:
-        addcolumnbox = self.query_one(AddColumnBox)
-        addcolumnbox.display = show_box
+        self.hide_or_show(AddColumnBox, show_box)
 
     async def add_key_to_keybox(self, key: str) -> None:
         """Add a key to the KeyBox."""
@@ -442,6 +461,7 @@ class TEXASE(App):
     def _save_parquet_cache(self) -> None:
         """Dump current df to a cache-dir parquet."""
         from pathlib import Path
+
         from platformdirs import user_cache_dir
 
         cache_dir = Path(user_cache_dir("texase"))
@@ -478,6 +498,13 @@ def is_db_empty(db_path: str) -> bool:
     return len(connect(db_path)) == 0
 
 
+def hide_or_show_widget(widget: Widget, show: bool) -> None:
+    if show:
+        widget.remove_class("hidden")
+    else:
+        widget.add_class("hidden")
+
+
 class MiddleContainer(Container):
     pass
 
@@ -487,8 +514,10 @@ typer_app = typer.Typer()
 
 @typer_app.command()
 def main(
-    db_path: Annotated[str, typer.Argument(help="Path to the ASE database")],
-    use_cache: Annotated[bool, typer.Option(False, "--use-cache/--no-cache", help="Enable parquet caching")] = False,
+    db_path: str = typer.Argument(..., help="Path to the ASE database"),
+    use_cache: bool = typer.Option(
+        False, "--use-cache/--no-cache", help="Enable parquet caching"
+    ),
 ):
     if is_db_empty(db_path):
         error = Panel(
