@@ -1483,7 +1483,7 @@ requires-dist = [
     { name = "platformdirs", specifier = ">=2.5.0" },
     { name = "pyarrow", specifier = ">=20.0.0" },
     { name = "pytest-xvfb", specifier = ">=3.0.0,<4" },
-    { name = "textual", specifier = ">=0.87.0" },
+    { name = "textual", specifier = ">=3.7.0" },
     { name = "typer", specifier = ">=0.9.0,<0.10" },
     { name = "typing-extensions", marker = "python_full_version >= '3.13'", specifier = ">=4.12.2" },
 ]
@@ -1501,7 +1501,7 @@ dev = [
 
 [[package]]
 name = "textual"
-version = "3.1.0"
+version = "3.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py", extra = ["linkify", "plugins"] },
@@ -1510,9 +1510,9 @@ dependencies = [
     { name = "typing-extensions", version = "4.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10' and python_full_version < '3.13'" },
     { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10' or python_full_version >= '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dc/1f/df371f1455524a3d0079871e49e3850c82767904e9f4e2bdea6d30a866a7/textual-3.1.0.tar.gz", hash = "sha256:6bcab6581e9753d2a2043caf49f43c5818feb35f8049ed185bd38982bfb310ca", size = 1591879, upload-time = "2025-04-12T08:00:38.082Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/83/c99c252c3fad2f7010ceb476a31af042eec71da441ffeef75bb590bc2e9e/textual-3.7.1.tar.gz", hash = "sha256:a76ba0c8a6c194ef24fd5c3681ebfddca55e7127c064a014128c84fbd7f5d271", size = 1604038, upload-time = "2025-07-09T09:04:45.477Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/32/6b/d6d37a5fd93c344a27c53cdc4910d8d52cedd3ae63eae3d645fb108bd591/textual-3.1.0-py3-none-any.whl", hash = "sha256:940a765b6fcd562cd88603780343dc98a4e66c1d8d42f09b6a16a474a89aca0c", size = 683799, upload-time = "2025-04-12T08:00:36.27Z" },
+    { url = "https://files.pythonhosted.org/packages/15/f1/8929fcce6dc983f7a260d0f3ddd2a69b74ba17383dbe57a7e0a9e085e8be/textual-3.7.1-py3-none-any.whl", hash = "sha256:ab5d153f4f65e77017977fa150d0376409e0acf5f1d2e25e2e4ab9de6c0d61ff", size = 691472, upload-time = "2025-07-09T09:04:43.626Z" },
 ]
 
 [[package]]
