@@ -18,6 +18,7 @@ dependencies = [
     "platformdirs>=2.5.0",
     "pytest-xvfb>=3.0.0,<4",
     "typing-extensions>=4.12.2 ; python_full_version >= '3.13'",
+    "pyarrow>=20.0.0",
 ]
 
 [project.scripts]
