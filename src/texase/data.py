@@ -17,6 +17,7 @@ from ase.db.table import all_columns
 from ase.io import read, write
 from textual.cache import LRUCache
 
+from texase.cache_files import parquet_cache_file, save_parquet_cache
 from texase.formatting import (
     convert_str_to_bool,
     format_column,
@@ -681,6 +682,10 @@ class Data:
                     indices
                 )
 
+    def _save_parquet_cache(self) -> None:
+        """Dump current df to a cache-dir parquet."""
+        save_parquet_cache(self.df, self.db_path.name)
+
 
 def ids_and_mtimes(db) -> tuple[np.ndarray, np.ndarray]:
     ids, mtimes = zip(
@@ -722,9 +727,27 @@ def apply_filter_and_sort_on_df(
 
 
 def is_cache_valid(db_path: str | Path, cache_file: Path) -> bool:
-    """Return True if cache_file exists and is newer than the ASE DB at db_path."""
     db_path = Path(db_path)
-    return cache_file.exists() and cache_file.stat().st_mtime > db_path.stat().st_mtime
+    try:
+        last_mod = db_last_modified(db_path).timestamp()
+    except NotImplementedError:
+        return False
+    return cache_file.exists() and cache_file.stat().st_mtime > last_mod
+
+
+def db_last_modified(db_path: str | Path) -> datetime:
+    """Return the last modification time of the database.
+
+    - For filesystem-based DBs, returns file mtime.
+    - For other backends (e.g. PostgreSQL), raise NotImplementedError until supported.
+    """
+    if db_path.exists():
+        return datetime.fromtimestamp(db_path.stat().st_mtime)
+    else:
+        # future: connect and query remote DB for its last‐modified
+        raise NotImplementedError(
+            "db_last_modified() not yet implemented for non-file databases"
+        )
 
 
 def instantiate_data(
@@ -734,17 +757,9 @@ def instantiate_data(
     use_cache: bool = False,
 ) -> Data:
     # Try reading from parquet cache if requested
-    from pathlib import Path
-    import pandas as pd
-    from platformdirs import user_cache_dir
 
-    cache_dir = Path(user_cache_dir("texase"))
-    cache_file = cache_dir / (Path(db_path).name + ".parquet")
-    if (
-        use_cache
-        and cache_file.exists()
-        and cache_file.stat().st_mtime > Path(db_path).stat().st_mtime
-    ):
+    cache_file = parquet_cache_file(Path(db_path).name)
+    if use_cache and is_cache_valid(db_path, cache_file):
         df = pd.read_parquet(cache_file)
         user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
         return Data(df=df, db_path=Path(db_path), user_keys=user_keys)

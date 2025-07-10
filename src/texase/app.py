@@ -130,9 +130,6 @@ class TEXASE(App):
             )
 
     def load_initial_data(self, table: TexaseTable) -> None:
-        # load Data (including parquet‐cache if use_cache=True)
-        from texase.data import instantiate_data
-
         self.data = instantiate_data(
             db_path=self.path,
             sel="",
@@ -433,28 +430,17 @@ class TEXASE(App):
         )
 
     def quit_app(self) -> None:
-        if self.use_cache:
-            self._save_parquet_cache()
-        self.data.save_chosen_columns()
+        self.save_to_cache()
         super().exit()
 
     def action_suspend_process(self) -> None:
-        if self.use_cache:
-            self._save_parquet_cache()
-        self.data.save_chosen_columns()
+        self.save_to_cache()
         super().action_suspend_process()
 
-    def _save_parquet_cache(self) -> None:
-        """Dump current df to a cache-dir parquet."""
-        from pathlib import Path
-
-        from platformdirs import user_cache_dir
-
-        cache_dir = Path(user_cache_dir("texase"))
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        cache_file = cache_dir / (Path(self.path).name + ".parquet")
-        # index=False to keep it clean
-        self.data.df.to_parquet(cache_file, index=False)
+    def save_to_cache(self) -> None:
+        if self.use_cache:
+            self.data._save_parquet_cache()
+            self.data.save_chosen_columns()
 
 
 def check_pbc_string_validity(string):
