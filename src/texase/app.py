@@ -130,30 +130,16 @@ class TEXASE(App):
             )
 
     def load_initial_data(self, table: TexaseTable) -> None:
-        # try loading cached parquet if requested and up-to-date
-        from pathlib import Path
+        # load Data (including parquet‐cache if use_cache=True)
+        from texase.data import instantiate_data
 
-        import pandas as pd
-        from platformdirs import user_cache_dir
-
-        from texase.data import ALL_COLUMNS, Data
-
-        cache_dir = Path(user_cache_dir("texase"))
-        cache_file = cache_dir / (Path(self.path).name + ".parquet")
-
-        if (
-            self.use_cache
-            and cache_file.exists()
-            and cache_file.stat().st_mtime > Path(self.path).stat().st_mtime
-        ):
-            df = pd.read_parquet(cache_file)
-            # infer any user-added keys
-            user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
-            data = Data(df=df, db_path=Path(self.path), user_keys=user_keys)
-        else:
-            data = instantiate_data(self.path, limit=100)
-        self.data = data
-        table.populate_table(data)
+        self.data = instantiate_data(
+            db_path=self.path,
+            sel="",
+            limit=100,
+            use_cache=self.use_cache,
+        )
+        table.populate_table(self.data)
 
     @work(thread=True)
     def load_remaining_data(self, table: TexaseTable) -> None:

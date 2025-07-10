@@ -721,7 +721,29 @@ def apply_filter_and_sort_on_df(
     return df.iloc[sort].iloc[filter_mask[sort]]
 
 
-def instantiate_data(db_path: str, sel: str = "", limit: int | None = None) -> Data:
+def instantiate_data(
+    db_path: str,
+    sel: str = "",
+    limit: int | None = None,
+    use_cache: bool = False,
+) -> Data:
+    # Try reading from parquet cache if requested
+    from pathlib import Path
+    import pandas as pd
+    from platformdirs import user_cache_dir
+
+    cache_dir = Path(user_cache_dir("texase"))
+    cache_file = cache_dir / (Path(db_path).name + ".parquet")
+    if (
+        use_cache
+        and cache_file.exists()
+        and cache_file.stat().st_mtime > Path(db_path).stat().st_mtime
+    ):
+        df = pd.read_parquet(cache_file)
+        user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
+        return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
+
+    # Fallback to reading directly from the ASE DB
     db = connect(db_path)
     df, user_keys = db_to_df(db, sel, limit)
     return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
