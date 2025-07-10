@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from texase.cache_files import cache_dir
+from texase.cache_files import columns_file
 
 
 class SavedColumns:
@@ -9,7 +9,7 @@ class SavedColumns:
     _files_and_columns: dict[str, list[str]]
 
     def __init__(self) -> None:
-        self._columns_file_path = cache_dir() / "columns.json"
+        self._columns_file_path = columns_file()
         self._files_and_columns = self._read_columns_file()
 
     def _read_columns_file(self) -> dict[str, list[str]]:

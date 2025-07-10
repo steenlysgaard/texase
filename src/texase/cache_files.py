@@ -19,6 +19,10 @@ def cache_dir() -> Path:
     return cd
 
 
+def parquet_cache_file(name: str) -> Path:
+    return cache_dir() / f"{name}.parquet"
+
+
 def save_parquet_cache(df: pd.DataFrame, name: str) -> None:
     """
     Saves a DataFrame to a Parquet file in the Texase cache directory.
@@ -27,5 +31,8 @@ def save_parquet_cache(df: pd.DataFrame, name: str) -> None:
         df (pd.DataFrame): The DataFrame to save.
         name (str): The name of the Parquet file (without extension).
     """
-    cache_path = cache_dir() / f"{name}.parquet"
-    df.to_parquet(cache_path, index=False)
+    df.to_parquet(parquet_cache_file(), index=False)
+
+
+def columns_file() -> Path:
+    return cache_dir() / "columns.json"
