@@ -721,6 +721,12 @@ def apply_filter_and_sort_on_df(
     return df.iloc[sort].iloc[filter_mask[sort]]
 
 
+def is_cache_valid(db_path: str | Path, cache_file: Path) -> bool:
+    """Return True if cache_file exists and is newer than the ASE DB at db_path."""
+    db_path = Path(db_path)
+    return cache_file.exists() and cache_file.stat().st_mtime > db_path.stat().st_mtime
+
+
 def instantiate_data(
     db_path: str,
     sel: str = "",
