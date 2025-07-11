@@ -23,15 +23,48 @@ def parquet_cache_file(name: str) -> Path:
     return cache_dir() / f"{name}.parquet"
 
 
-def save_parquet_cache(df: pd.DataFrame, name: str) -> None:
-    """
-    Saves a DataFrame to a Parquet file in the Texase cache directory.
+def object_columns_cache_file(name: str) -> Path:
+    return cache_dir() / f"{name}_object_columns.pkl"
 
-    Args:
-        df (pd.DataFrame): The DataFrame to save.
-        name (str): The name of the Parquet file (without extension).
+
+def save_df_cache_file(df: pd.DataFrame, name: str) -> None:
     """
-    df.to_parquet(parquet_cache_file(), index=False)
+    Saves a DataFrame to one or two files in the Texase cache directory:
+      - <name>.parquet              : all non-object columns, as Parquet
+      - <name>_object_columns.pkl   : all object-dtype columns, pickled
+
+    On load, these will be recombined with identical dtypes.
+    """
+    # 1) isolate object columns
+    obj_cols = df.select_dtypes(include=["object"]).columns.tolist()
+
+    # 2) pickle them (if any)
+    if obj_cols:
+        df[obj_cols].to_pickle(object_columns_cache_file(name))
+
+    # 3) drop them and parquet the rest
+    df.drop(columns=obj_cols).to_parquet(parquet_cache_file(name), index=False)
+
+
+def load_df_cache_file(name: str) -> pd.DataFrame:
+    """
+    Reads back the two cache files and recombines them:
+      - <name>.parquet            → non-object columns
+      - <name>_object_columns.pkl → object-dtype columns (if it exists)
+    Returns a single DataFrame with original dtypes restored.
+    """
+    # load the non-object columns
+    df = pd.read_parquet(parquet_cache_file(name))
+
+    # if there was a pickle of object columns, load and concat
+    obj_path = object_columns_cache_file(name)
+    if obj_path.exists():
+        obj_df = pd.read_pickle(obj_path)
+
+        # re-attach object columns (index-aligned)
+        df = pd.concat([df, obj_df], axis=1)
+
+    return df
 
 
 def columns_file() -> Path:

@@ -17,7 +17,11 @@ from ase.db.table import all_columns
 from ase.io import read, write
 from textual.cache import LRUCache
 
-from texase.cache_files import parquet_cache_file, save_parquet_cache
+from texase.cache_files import (
+    load_df_cache_file,
+    parquet_cache_file,
+    save_df_cache_file,
+)
 from texase.formatting import (
     convert_str_to_bool,
     format_column,
@@ -682,9 +686,9 @@ class Data:
                     indices
                 )
 
-    def _save_parquet_cache(self) -> None:
+    def _save_df_cache_file(self) -> None:
         """Dump current df to a cache-dir parquet."""
-        save_parquet_cache(self.df, self.db_path.name)
+        save_df_cache_file(self.df, self.db_path.name)
 
 
 def ids_and_mtimes(db) -> tuple[np.ndarray, np.ndarray]:
@@ -760,7 +764,7 @@ def instantiate_data(
 
     cache_file = parquet_cache_file(Path(db_path).name)
     if use_cache and is_cache_valid(db_path, cache_file):
-        df = pd.read_parquet(cache_file)
+        df = load_df_cache_file(Path(db_path).name)
         user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
         return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 
@@ -854,10 +858,11 @@ def recommend_dtype(iterable):
         return pd.StringDtype()  # Only strings, return StringDtype
     elif has_bool and not (has_int or has_float or has_str):
         return pd.BooleanDtype()  # Only booleans, return BooleanDtype
-    elif has_float and not has_int:
-        return "float"  # Only floats, return 'float'
-    elif has_float or (has_int and has_float):
-        return "object"  # Mixed integers and floats, return 'object'
+    elif has_float:
+        if not any((has_bool, has_int, has_str)):
+            return "float"  # Only floats, return 'float'
+        else:
+            return "object"  # Floats mixed with anything, return 'object'
     elif has_int and not (has_str or has_bool):
         return pd.Int64Dtype()  # Integers, return nullable integer dtype
     else:

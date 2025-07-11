@@ -439,7 +439,7 @@ class TEXASE(App):
 
     def save_to_cache(self) -> None:
         if self.use_cache:
-            self.data._save_parquet_cache()
+            self.data._save_df_cache_file()
             self.data.save_chosen_columns()
 
 
