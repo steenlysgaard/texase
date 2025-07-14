@@ -688,7 +688,7 @@ class Data:
 
     def _save_df_cache_file(self) -> None:
         """Dump current df to a cache-dir parquet."""
-        save_df_cache_file(self.df, self.db_path.name)
+        save_df_cache_file(self.df, self.db_path)
 
 
 def ids_and_mtimes(db) -> tuple[np.ndarray, np.ndarray]:
@@ -762,9 +762,9 @@ def instantiate_data(
 ) -> Data:
     # Try reading from parquet cache if requested
 
-    cache_file = parquet_cache_file(Path(db_path).name)
+    cache_file = parquet_cache_file(Path(db_path))
     if use_cache and is_cache_valid(db_path, cache_file):
-        df = load_df_cache_file(Path(db_path).name)
+        df = load_df_cache_file(Path(db_path))
         user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
         return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 

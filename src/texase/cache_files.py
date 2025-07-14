@@ -1,3 +1,4 @@
+import hashlib
 import os
 from pathlib import Path
 
@@ -19,15 +20,28 @@ def cache_dir() -> Path:
     return cd
 
 
-def parquet_cache_file(name: str) -> Path:
-    return cache_dir() / f"{name}.parquet"
+def hash_path(path: str, length: int = 8) -> str:
+    """
+    Turn any file path into a short hex string.
+    By default we use the first `length` chars of a SHA-256 digest.
+    """
+    h = hashlib.sha256(path.encode("utf-8")).hexdigest()
+    return h[:length]
 
 
-def object_columns_cache_file(name: str) -> Path:
-    return cache_dir() / f"{name}_object_columns.pkl"
+def parquet_cache_file(path: str | Path) -> Path:
+    name = path.name
+    # TODO: what if path is a str?
+    return cache_dir() / f"{hash_path(str(path))}-{name}.parquet"
 
 
-def save_df_cache_file(df: pd.DataFrame, name: str) -> None:
+def object_columns_cache_file(path: str | Path) -> Path:
+    name = path.name
+    # TODO: what if path is a str?
+    return cache_dir() / f"{hash_path(str(path))}-{name}_object_columns.pkl"
+
+
+def save_df_cache_file(df: pd.DataFrame, path: str | Path) -> None:
     """
     Saves a DataFrame to one or two files in the Texase cache directory:
       - <name>.parquet              : all non-object columns, as Parquet
@@ -40,13 +54,13 @@ def save_df_cache_file(df: pd.DataFrame, name: str) -> None:
 
     # 2) pickle them (if any)
     if obj_cols:
-        df[obj_cols].to_pickle(object_columns_cache_file(name))
+        df[obj_cols].to_pickle(object_columns_cache_file(path))
 
     # 3) drop them and parquet the rest
-    df.drop(columns=obj_cols).to_parquet(parquet_cache_file(name), index=False)
+    df.drop(columns=obj_cols).to_parquet(parquet_cache_file(path), index=False)
 
 
-def load_df_cache_file(name: str) -> pd.DataFrame:
+def load_df_cache_file(path: str) -> pd.DataFrame:
     """
     Reads back the two cache files and recombines them:
       - <name>.parquet            → non-object columns
@@ -54,10 +68,10 @@ def load_df_cache_file(name: str) -> pd.DataFrame:
     Returns a single DataFrame with original dtypes restored.
     """
     # load the non-object columns
-    df = pd.read_parquet(parquet_cache_file(name))
+    df = pd.read_parquet(parquet_cache_file(path))
 
     # if there was a pickle of object columns, load and concat
-    obj_path = object_columns_cache_file(name)
+    obj_path = object_columns_cache_file(path)
     if obj_path.exists():
         obj_df = pd.read_pickle(obj_path)
 

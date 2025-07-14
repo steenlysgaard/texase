@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+from pathlib import Path
 from typing import Any
 
 import typer
@@ -62,7 +63,8 @@ class TEXASE(App):
 
     def __init__(self, path: str, use_cache: bool = False) -> None:
         self.t0 = time.time()
-        self.path = path
+        # We set this to Path, because we only support sqlite dbs for now.
+        self.path: Path = Path(path).resolve()
         self.use_cache = use_cache
         self.sort_columns: list[str] = ["id"]
         self.sort_reverse: bool = False
