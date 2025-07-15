@@ -489,9 +489,7 @@ typer_app = typer.Typer()
 @typer_app.command()
 def main(
     db_path: str = typer.Argument(..., help="Path to the ASE database"),
-    use_cache: bool = typer.Option(
-        False, "--use-cache/--no-cache", help="Enable parquet caching"
-    ),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Disable all caching"),
 ):
     if is_db_empty(db_path):
         error = Panel(
@@ -503,7 +501,7 @@ def main(
         console = _get_rich_console(stderr=True)
         console.print(error)
         raise typer.Exit(code=1)
-    app = TEXASE(path=db_path, use_cache=use_cache)
+    app = TEXASE(path=db_path, use_cache=not no_cache)
     app.run()
 
 
