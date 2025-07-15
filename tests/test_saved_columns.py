@@ -1,13 +1,14 @@
 import json
 import os
+from pathlib import Path
 
+from texase.cache_files import columns_file
 from texase.saved_columns import SavedColumns
 
 
-def test_saved_columns(tmp_path):
-    # create a temporary file for testing
-    columns_file_path = tmp_path / "columns.json"
-    os.environ["TEXASE_COLUMNS_FILE"] = str(columns_file_path)
+def test_saved_columns(tmp_path: Path):
+    os.environ["TEXASE_CACHE_DIR"] = str(tmp_path)
+    columns_file_path = columns_file()
     # create an instance of SavedColumns
     saved_columns = SavedColumns()
     # test the __init__ method
@@ -29,10 +30,9 @@ def test_saved_columns(tmp_path):
     assert repr(saved_columns) == "{}"
 
 
-def test_read_and_write_saved_columns(tmp_path):
-    # create a temporary file for testing
-    columns_file_path = tmp_path / "columns.json"
-    os.environ["TEXASE_COLUMNS_FILE"] = str(columns_file_path)
+def test_read_and_write_saved_columns(tmp_path: Path):
+    os.environ["TEXASE_CACHE_DIR"] = str(tmp_path)
+    columns_file_path = columns_file()
     # create an instance of SavedColumns
     saved_columns = SavedColumns()
     # test the _read_columns_file method

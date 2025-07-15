@@ -1,8 +1,7 @@
 import json
-import os
 from pathlib import Path
 
-from platformdirs import user_cache_dir
+from texase.cache_files import columns_file
 
 
 class SavedColumns:
@@ -10,12 +9,7 @@ class SavedColumns:
     _files_and_columns: dict[str, list[str]]
 
     def __init__(self) -> None:
-        if env_path := os.environ.get("TEXASE_COLUMNS_FILE"):
-            self._columns_file_path = Path(env_path)
-        else:
-            cfg = Path(user_cache_dir("texase"))
-            cfg.mkdir(parents=True, exist_ok=True)
-            self._columns_file_path = cfg / "columns.json"
+        self._columns_file_path = columns_file()
         self._files_and_columns = self._read_columns_file()
 
     def _read_columns_file(self) -> dict[str, list[str]]:

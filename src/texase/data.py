@@ -17,6 +17,11 @@ from ase.db.table import all_columns
 from ase.io import read, write
 from textual.cache import LRUCache
 
+from texase.cache_files import (
+    load_df_cache_file,
+    parquet_cache_file,
+    save_df_cache_file,
+)
 from texase.formatting import (
     convert_str_to_bool,
     format_column,
@@ -681,6 +686,10 @@ class Data:
                     indices
                 )
 
+    def _save_df_cache_file(self) -> None:
+        """Dump current df to a cache-dir parquet."""
+        save_df_cache_file(self.df, self.db_path)
+
 
 def ids_and_mtimes(db) -> tuple[np.ndarray, np.ndarray]:
     ids, mtimes = zip(
@@ -721,7 +730,45 @@ def apply_filter_and_sort_on_df(
     return df.iloc[sort].iloc[filter_mask[sort]]
 
 
-def instantiate_data(db_path: str, sel: str = "", limit: int | None = None) -> Data:
+def is_cache_valid(db_path: str | Path, cache_file: Path) -> bool:
+    db_path = Path(db_path)
+    try:
+        last_mod = db_last_modified(db_path).timestamp()
+    except NotImplementedError:
+        return False
+    return cache_file.exists() and cache_file.stat().st_mtime > last_mod
+
+
+def db_last_modified(db_path: str | Path) -> datetime:
+    """Return the last modification time of the database.
+
+    - For filesystem-based DBs, returns file mtime.
+    - For other backends (e.g. PostgreSQL), raise NotImplementedError until supported.
+    """
+    if db_path.exists():
+        return datetime.fromtimestamp(db_path.stat().st_mtime)
+    else:
+        # future: connect and query remote DB for its last‐modified
+        raise NotImplementedError(
+            "db_last_modified() not yet implemented for non-file databases"
+        )
+
+
+def instantiate_data(
+    db_path: str,
+    sel: str = "",
+    limit: int | None = None,
+    use_cache: bool = False,
+) -> Data:
+    # Try reading from parquet cache if requested
+
+    cache_file = parquet_cache_file(Path(db_path))
+    if use_cache and is_cache_valid(db_path, cache_file):
+        df = load_df_cache_file(Path(db_path))
+        user_keys = [c for c in df.columns if c not in ALL_COLUMNS]
+        return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
+
+    # Fallback to reading directly from the ASE DB
     db = connect(db_path)
     df, user_keys = db_to_df(db, sel, limit)
     return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
@@ -811,10 +858,11 @@ def recommend_dtype(iterable):
         return pd.StringDtype()  # Only strings, return StringDtype
     elif has_bool and not (has_int or has_float or has_str):
         return pd.BooleanDtype()  # Only booleans, return BooleanDtype
-    elif has_float and not has_int:
-        return "float"  # Only floats, return 'float'
-    elif has_float or (has_int and has_float):
-        return "object"  # Mixed integers and floats, return 'object'
+    elif has_float:
+        if not any((has_bool, has_int, has_str)):
+            return "float"  # Only floats, return 'float'
+        else:
+            return "object"  # Floats mixed with anything, return 'object'
     elif has_int and not (has_str or has_bool):
         return pd.Int64Dtype()  # Integers, return nullable integer dtype
     else:

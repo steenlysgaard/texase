@@ -40,6 +40,8 @@ async def loaded_app(db_path):
     app = TEXASE(path=db_path)
     async with app.run_test(size=(200, 50)) as pilot:
         await app.workers.wait_for_complete()
+        # Lazy loading of widgets requires us to pause the pilot until all messages are processed
+        await pilot.pause()
 
         yield app, pilot
 
