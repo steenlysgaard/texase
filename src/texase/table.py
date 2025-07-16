@@ -405,7 +405,7 @@ class TexaseTable(DataTable):
         column_name = self.column_at_cursor()
 
         # Create the question
-        ids_str = ", ".join([str(id) for id in ids])
+        ids_str = re_range(ids)
         plural = [" ", "s "][no_rows > 1]
         q = f"Do you want to delete the key value pair{plural}"
         q += f"[bold]{column_name}[/bold] in row{plural}"
