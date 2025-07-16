@@ -322,8 +322,6 @@ class TexaseTable(DataTable):
 
         Parameters
         ----------
-        row_id : int
-            The row id of the row to update.
         key_value_pairs : dict
             A dictionary of key-value pairs to update.
 
