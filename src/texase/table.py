@@ -322,8 +322,6 @@ class TexaseTable(DataTable):
 
         Parameters
         ----------
-        row_id : int
-            The row id of the row to update.
         key_value_pairs : dict
             A dictionary of key-value pairs to update.
 
@@ -407,7 +405,7 @@ class TexaseTable(DataTable):
         column_name = self.column_at_cursor()
 
         # Create the question
-        ids_str = ", ".join([str(id) for id in ids])
+        ids_str = re_range(ids)
         plural = [" ", "s "][no_rows > 1]
         q = f"Do you want to delete the key value pair{plural}"
         q += f"[bold]{column_name}[/bold] in row{plural}"
@@ -455,7 +453,7 @@ class TexaseTable(DataTable):
         no_rows = len(ids)
 
         # Create the question
-        ids_str = ", ".join([str(id) for id in ids])
+        ids_str = re_range(ids)
         plural = [" ", "s "][no_rows > 1]
         q = f"Do you want to delete the row{plural}"
         q += f"with id{plural}" + f"[bold]{ids_str}[/bold]?"
@@ -591,3 +589,42 @@ def get_id_from_row(row) -> int:
 
 def get_column_labels(columns) -> list:
     return [str(c.label) for c in columns.values()]
+
+
+def list_formatter(start: int, end: int, step: int) -> str:
+    return f"{start}-{end}" if step == 1 else f"{start}-{end}:{step}"
+
+
+def re_range(lst: list[int]) -> str:
+    """Return a string representation of a list of integers.
+
+    The integers are grouped into ranges if they are consecutive. The
+    exact implementation is lifted from here:
+    https://stackoverflow.com/questions/9847601/convert-list-of-numbers-to-string-ranges
+
+    """
+    n = len(lst)
+    result = []
+    scan = 0
+    while n - scan > 2:
+        step = lst[scan + 1] - lst[scan]
+        if lst[scan + 2] - lst[scan + 1] != step:
+            result.append(str(lst[scan]))
+            scan += 1
+            continue
+
+        for j in range(scan + 2, n - 1):
+            if lst[j + 1] - lst[j] != step:
+                result.append(list_formatter(lst[scan], lst[j], step))
+                scan = j + 1
+                break
+        else:
+            result.append(list_formatter(lst[scan], lst[-1], step))
+            return ",".join(result)
+
+    if n - scan == 1:
+        result.append(str(lst[scan]))
+    elif n - scan == 2:
+        result.append(",".join(map(str, lst[scan:])))
+
+    return ",".join(result)
