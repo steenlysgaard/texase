@@ -1,5 +1,11 @@
 import pytest
-from texase.table import TexaseTable, get_column_labels, list_formatter, re_range
+from texase.table import (
+    TexaseTable,
+    get_column_labels,
+    list_formatter,
+    re_range,
+    sort_list_by_table_order,
+)
 from textual.coordinate import Coordinate
 
 
@@ -85,3 +91,13 @@ def test_re_range(input_list: list, expected: str):
     # Ensure original order doesn't matter
     output = re_range(input_list)
     assert output == expected
+
+
+def test_list_by_table_order():
+    # Example lists
+    # A is the list to sort by, B is the list to be sorted
+    # We want to sort B based on the order of elements in A
+    A = [2, 5, 3, 7, 9, 1, 6, 4, 8]
+    B = [1, 2, 3]
+
+    assert sort_list_by_table_order(B, A) == [2, 3, 1]

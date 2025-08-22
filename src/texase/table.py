@@ -118,7 +118,10 @@ class TexaseTable(DataTable):
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
         if self.marked_rows:
-            images = [self.app.data.get_atoms(id) for id in self.get_marked_row_ids()]
+            images = [
+                self.app.data.get_atoms(id)
+                for id in self.get_marked_row_ids_sorted_by_table_order()
+            ]
         else:
             images = [self.app.data.get_atoms(self.row_id_at_cursor())]
         self.gui = GUI(Images(images))
@@ -545,9 +548,15 @@ class TexaseTable(DataTable):
         elif row_key is not None:
             self.refresh_row(self.get_row_index(row_key))
 
-    def get_marked_row_ids(self) -> List[int]:
+    def get_marked_row_ids(self) -> list[int]:
         """Return the ids of the rows that are currently marked"""
         return [get_id_from_row(self.get_row(row_key)) for row_key in self.marked_rows]
+
+    def get_marked_row_ids_sorted_by_table_order(self) -> list[int]:
+        """Return the ids of the rows that are currently marked, sorted by the order of the table."""
+        return sort_list_by_table_order(
+            self.get_marked_row_ids(), self.app.data.id_array_with_filter_and_sort()
+        )
 
     def row_id_at_cursor(self) -> int:
         """Return the row id at the cursor as an int."""
@@ -628,3 +637,15 @@ def re_range(lst: list[int]) -> str:
         result.append(",".join(map(str, lst[scan:])))
 
     return ",".join(result)
+
+
+def sort_list_by_table_order(
+    lst: list[int], table_ordered_list: list[int]
+) -> list[int]:
+    """Sort lst, which comes from a set so it's not sorted, by the
+    order of table_ordered_list."""
+    # Precompute positions of elements in table_ordered_list
+    pos = {val: i for i, val in enumerate(table_ordered_list)}
+
+    # Sort lst by those positions
+    return sorted(lst, key=lambda x: pos[x])
