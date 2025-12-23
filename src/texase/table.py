@@ -15,7 +15,7 @@ from textual.widgets._data_table import ColumnKey, RowKey, StringKey
 
 from texase.data import ALL_COLUMNS, Data
 from texase.edit import AddBox, EditBox
-from texase.formatting import MARKED_LABEL, UNMARKED_LABEL, format_value
+from texase.formatting import MARKED_LABEL, UNMARKED_LABEL
 from texase.yesno import YesNoScreen
 
 UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]
@@ -26,6 +26,8 @@ class TexaseTable(DataTable):
         ("q", "quit", "Quit"),
         ("?", "show_help", "Help"),
         ("s", "sort_column", "Sort"),
+        (">", "increase_precision", "More decimals"),
+        ("<", "decrease_precision", "Fewer decimals"),
         ("space", "mark_row", "Mark row"),
         Binding("enter", "toggle_details", "Show details", show=False),
         ("e", "edit", "Edit"),
@@ -145,6 +147,51 @@ class TexaseTable(DataTable):
     def action_sort_column(self) -> None:
         # Get the highlighted column
         self.sort_table(self.column_at_cursor())
+
+    def action_increase_precision(self) -> None:
+        self.adjust_float_precision(1)
+
+    def action_decrease_precision(self) -> None:
+        self.adjust_float_precision(-1)
+
+    def adjust_float_precision(self, delta: int) -> None:
+        column = self.column_at_cursor()
+        current_precision = self.app.data.get_float_precision(column)
+        new_precision = self.app.data.adjust_float_precision(column, delta)
+        if new_precision is None:
+            self.notify(
+                f"Column {column} is not a float column.",
+                severity="warning",
+                title="Warning",
+            )
+            return
+        if new_precision == current_precision:
+            self.notify(
+                f"Column {column} precision is already {new_precision}.",
+                severity="information",
+                title="Info",
+                timeout=1.5,
+            )
+            return
+        self.update_column_values(column)
+
+    def update_column_values(self, column_name: str) -> None:
+        if column_name not in self.columns:
+            return
+        col_key = ColumnKey(column_name)
+        col_index = self.get_column_index(col_key)
+        values = self.app.data.column_for_print(column_name)
+        if len(values) == 0:
+            return
+        for i, val in enumerate(values[:-1]):
+            self.update_cell_at(Coordinate(i, col_index), val)
+
+        self._updated_cells.clear()
+        self.update_cell_at(
+            Coordinate(len(values) - 1, col_index),
+            values.iloc[-1],
+            update_width=True,
+        )
 
     def sort_table(self, col_name: str) -> None:
         # Save the row key of the current cursor position
@@ -340,7 +387,7 @@ class TexaseTable(DataTable):
             # Update the cell
             self.update_cell_at(
                 Coordinate(self.cursor_row, col_index),
-                format_value(value),
+                self.app.data.format_value_for_column(key, value),
                 update_width=True,
             )
 

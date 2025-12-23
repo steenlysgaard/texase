@@ -83,3 +83,7 @@ def load_df_cache_file(path: str) -> pd.DataFrame:
 
 def columns_file() -> Path:
     return cache_dir() / "columns.json"
+
+
+def float_precision_file() -> Path:
+    return cache_dir() / "float_precision.json"

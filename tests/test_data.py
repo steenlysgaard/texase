@@ -149,6 +149,21 @@ def test_change_columns_caching(data):
     assert not sdf.equals(data.string_df())
 
 
+def test_float_precision_formatting(data):
+    col = data.column_for_print("float_key")
+    assert str(col.iloc[0]) == "4.20"
+
+    new_precision = data.set_float_precision("float_key", 4)
+    assert new_precision == 4
+    col = data.column_for_print("float_key")
+    assert str(col.iloc[0]) == "4.2000"
+
+    new_precision = data.set_float_precision("float_key", 2)
+    assert new_precision == 2
+    col = data.column_for_print("float_key")
+    assert str(col.iloc[0]) == "4.20"
+
+
 def test_apply_filter_and_sort_on_df():
     # create a sample DataFrame
     df = pd.DataFrame(
