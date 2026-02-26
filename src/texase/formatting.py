@@ -21,7 +21,7 @@ def format_value(val, decimals: int = 2) -> Text | str:
         return val
     elif isinstance(val, float):  # and not val.is_integer():
         if abs(val) > 1e6 or abs(val) < 1e-3:
-            format_spec = "#.3g"
+            format_spec = f".{decimals}e"
         else:
             format_spec = f".{decimals}f"
         return Text("{1:{0}}".format(format_spec, val), justify="right")
