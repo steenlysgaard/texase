@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 import os
-from typing import Iterable, List, Tuple, Union
+from typing import Iterable
 
 from ase.gui.gui import GUI, Images
 from rich.text import Text
@@ -51,7 +49,7 @@ class TexaseTable(DataTable):
         self.gui: GUI | None = None
 
     def _manipulate_filters(
-        self, filter_tuple: Tuple[str, str, str], add: bool = True
+        self, filter_tuple: tuple[str, str, str], add: bool = True
     ) -> None:
         # Clear the table, but not the columns
         self.clear()
@@ -80,7 +78,7 @@ class TexaseTable(DataTable):
     def populate_table(
         self,
         data: Data,
-        marked_rows: Union[List[int], None] = None,
+        marked_rows: list[int] | None = None,
         *,
         columns_cleared: bool = True,
     ) -> None:
@@ -299,7 +297,7 @@ class TexaseTable(DataTable):
             editbox.focus()
 
     def is_cell_editable(
-        self, uneditable_columns: List[str] = UNEDITABLE_COLUMNS
+        self, uneditable_columns: list[str] = UNEDITABLE_COLUMNS
     ) -> bool:
         # Check if current cell is editable
         coordinate = self.cursor_coordinate
@@ -539,7 +537,7 @@ class TexaseTable(DataTable):
         self.update_row_after_mark_operation(row_key=row_key)
 
     def update_row_after_mark_operation(
-        self, /, row_key: Union[RowKey, None] = None, row_index: Union[int, None] = None
+        self, /, row_key: RowKey | None = None, row_index: int | None = None
     ) -> None:
         """Tell the table that something has changed so it will refresh properly"""
         self._update_count += 1

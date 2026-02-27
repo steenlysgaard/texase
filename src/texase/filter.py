@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import ScrollableContainer
@@ -10,88 +8,6 @@ from textual.widgets._data_table import RowKey
 
 from texase.data import ops
 from texase.table import TexaseTable
-
-
-class FilterBox(ScrollableContainer):
-    BINDINGS = [
-        # Hiding boxes shortcut is already defined in app, just
-        # redefining the binding here to make it show in the filter
-        # box
-        ("ctrl+g", "hide_filter", "Hide filter(s)"),
-        ("ctrl+t", "toggle_only_marked", "Toggle only marked"),
-        ("ctrl+n", "add_filter", "New filter"),
-        ("ctrl+r", "remove_filter", "Remove filter"),
-    ]
-
-    async def focus_filterbox(self) -> None:
-        """Handle putting focus on the filterbox.
-
-        If there are no filters, add a filter and put focus on the filterkey of that filter.
-        If there are filters, go to the last filter then
-            if the filter is disabled put focus on the + button
-            else put focus on the filterkey.
-        """
-
-        filters = self.query("#filterkey")
-        if len(filters) == 0:
-            await self.add_filter()
-            return
-
-        # There could be more filters, so we focus on the last one
-        if filters[-1].disabled:
-            # The filter is disabled we focus on the + button instead
-            self.query("#add-filter")[-1].focus()
-        else:
-            filters[-1].focus()
-
-    def action_toggle_only_marked(self) -> None:
-        """Toggle the only marked checkbox."""
-        checkbox = self.query_one("#only-marked-checkbox")
-        checkbox.value = not checkbox.value
-
-    async def action_add_filter(self) -> None:
-        await self.add_filter()
-
-    async def add_filter(self) -> Filter:
-        new_filter = Filter()
-        await self.mount(new_filter)
-        new_filter.scroll_visible()
-        self.query("#filterkey")[-1].focus()
-        return new_filter
-
-    async def action_remove_filter(self) -> None:
-        """Remove the currently focused filter, alternatively the last
-        filter.
-
-        """
-        filters = self.query(Filter)
-        for filter in filters:
-            if filter.has_focus_in_any_widget():
-                await filter.remove()
-                break
-        else:
-            # If no filter has focus, remove the last filter
-            if len(filters) > 0:
-                await filters[-1].remove()
-        self.hide_if_no_filters()
-
-    def compose(self) -> ComposeResult:
-        yield Filter()
-        yield Checkbox("Only mark filtered", id="only-marked-checkbox")
-
-    async def on_button_pressed(self, pressed: Button.Pressed) -> None:
-        """Called when a button is pressed."""
-        if pressed.button.id == "remove-filter":
-            # Remove the filter
-            await pressed.button.ancestors[0].remove()
-            self.hide_if_no_filters()
-        elif pressed.button.id == "add-filter":
-            await self.add_filter()
-
-    def hide_if_no_filters(self) -> None:
-        """If there are no more filters hide the filter box."""
-        if len(self.query(Filter)) == 0:
-            self.app.show_filter = False
 
 
 class Filter(Static):
@@ -200,6 +116,88 @@ class Filter(Static):
             if self.query_one(selector).has_focus:
                 return True
         return False
+
+
+class FilterBox(ScrollableContainer):
+    BINDINGS = [
+        # Hiding boxes shortcut is already defined in app, just
+        # redefining the binding here to make it show in the filter
+        # box
+        ("ctrl+g", "hide_filter", "Hide filter(s)"),
+        ("ctrl+t", "toggle_only_marked", "Toggle only marked"),
+        ("ctrl+n", "add_filter", "New filter"),
+        ("ctrl+r", "remove_filter", "Remove filter"),
+    ]
+
+    async def focus_filterbox(self) -> None:
+        """Handle putting focus on the filterbox.
+
+        If there are no filters, add a filter and put focus on the filterkey of that filter.
+        If there are filters, go to the last filter then
+            if the filter is disabled put focus on the + button
+            else put focus on the filterkey.
+        """
+
+        filters = self.query("#filterkey")
+        if len(filters) == 0:
+            await self.add_filter()
+            return
+
+        # There could be more filters, so we focus on the last one
+        if filters[-1].disabled:
+            # The filter is disabled we focus on the + button instead
+            self.query("#add-filter")[-1].focus()
+        else:
+            filters[-1].focus()
+
+    def action_toggle_only_marked(self) -> None:
+        """Toggle the only marked checkbox."""
+        checkbox = self.query_one("#only-marked-checkbox")
+        checkbox.value = not checkbox.value
+
+    async def action_add_filter(self) -> None:
+        await self.add_filter()
+
+    async def add_filter(self) -> Filter:
+        new_filter = Filter()
+        await self.mount(new_filter)
+        new_filter.scroll_visible()
+        self.query("#filterkey")[-1].focus()
+        return new_filter
+
+    async def action_remove_filter(self) -> None:
+        """Remove the currently focused filter, alternatively the last
+        filter.
+
+        """
+        filters = self.query(Filter)
+        for filter in filters:
+            if filter.has_focus_in_any_widget():
+                await filter.remove()
+                break
+        else:
+            # If no filter has focus, remove the last filter
+            if len(filters) > 0:
+                await filters[-1].remove()
+        self.hide_if_no_filters()
+
+    def compose(self) -> ComposeResult:
+        yield Filter()
+        yield Checkbox("Only mark filtered", id="only-marked-checkbox")
+
+    async def on_button_pressed(self, pressed: Button.Pressed) -> None:
+        """Called when a button is pressed."""
+        if pressed.button.id == "remove-filter":
+            # Remove the filter
+            await pressed.button.ancestors[0].remove()
+            self.hide_if_no_filters()
+        elif pressed.button.id == "add-filter":
+            await self.add_filter()
+
+    def hide_if_no_filters(self) -> None:
+        """If there are no more filters hide the filter box."""
+        if len(self.query(Filter)) == 0:
+            self.app.show_filter = False
 
 
 class FilterSuggester(Suggester):

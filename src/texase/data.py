@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -7,7 +5,7 @@ from datetime import datetime
 from functools import wraps
 from itertools import combinations
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple, Union, overload
+from typing import Any, Iterable, overload
 
 import numpy as np
 import pandas as pd
@@ -112,10 +110,10 @@ class ASEWriteError(Exception):
 class Data:
     df: pd.DataFrame
     db_path: Path
-    user_keys: List[str]
+    user_keys: list[str]
     chosen_columns: list = field(default_factory=get_default_columns)
-    saved_columns: Union[SavedColumns, None] = None
-    data_filter: Union[List[Tuple[str, str, str]], None] = None
+    saved_columns: SavedColumns | None = None
+    data_filter: list[tuple[str, str, str]] | None = None
     sort_reverse: bool = False
 
     def __post_init__(self):
@@ -125,13 +123,13 @@ class Data:
         self.db_path = Path(self.db_path).resolve()
         self.saved_columns = SavedColumns()
         self.update_chosen_columns()
-        self.sort_columns: List[str] = ["id"]
+        self.sort_columns: list[str] = ["id"]
         self._filter_mask_cache: LRUCache[tuple, np.ndarray] = LRUCache(maxsize=128)
         self._string_df_cache: LRUCache[tuple, pd.DataFrame] = LRUCache(maxsize=128)
         self._string_column_cache: LRUCache[tuple, pd.Series] = LRUCache(maxsize=128)
         self.last_update_time = datetime.now()
 
-    def unused_columns(self) -> List[str]:
+    def unused_columns(self) -> list[str]:
         """Returns a list of columns that are not used in the table.
 
         Go through all columns + self.user_keys and check if they are
@@ -193,7 +191,7 @@ class Data:
     def update_in_db(
         self,
         row_ids: int | Iterable[int],
-        key_value_pairs: Dict[str, Any] = {},
+        key_value_pairs: dict[str, Any] = {},
         data: dict | None = None,
         delete_keys: list = [],
     ) -> None:
@@ -373,7 +371,7 @@ class Data:
         col = self._string_column(column)
         return col.iloc[self._sort].iloc[self.filter_mask[self._sort]]
 
-    def row_details(self, row_id: int) -> Tuple[dict, dict]:
+    def row_details(self, row_id: int) -> tuple[dict, dict]:
         """Returns key value pairs from the row in two dictionaries:
 
         Static and editable key value pairs.
@@ -494,7 +492,7 @@ class Data:
 
         self._filters += ((key, operator, value),)
 
-    def remove_filter(self, filter_tuple: Tuple[str, str, str]) -> None:
+    def remove_filter(self, filter_tuple: tuple[str, str, str]) -> None:
         self._filters = tuple(
             filter for filter in self._filters if filter != filter_tuple
         )
@@ -518,7 +516,7 @@ class Data:
         return pd.concat(df_list, axis=1).fillna("", axis=1)
 
     def get_mask_of_df_with_filter(
-        self, filter_tuple: Tuple[str, str, str]
+        self, filter_tuple: tuple[str, str, str]
     ) -> np.ndarray:
         return self._filter_mask(filter_tuple)
 
@@ -774,7 +772,7 @@ def instantiate_data(
     return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 
 
-def db_to_df(db, sel="", limit: int | None = None) -> tuple[pd.DataFrame, List[str]]:
+def db_to_df(db, sel="", limit: int | None = None) -> tuple[pd.DataFrame, list[str]]:
     """Convert a db into a pandas.DataFrame.
 
     The columns are built using defaultdicts, and put into a
