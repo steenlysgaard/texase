@@ -6,7 +6,7 @@ authors = [{ name = "Steen Lysgaard", email = "stly@dtu.dk" }]
 # Python version less than 3.13 since pillow 10.3.0 fails on
 # 3.13. Pillow is a dependency of matplotlib which is a dependency of
 # ASE
-requires-python = ">=3.9, <4"
+requires-python = ">=3.10, <4"
 readme = "README.md"
 license = "MPL-2.0"
 dependencies = [
@@ -14,11 +14,11 @@ dependencies = [
     "pillow>=11",
     "textual>=3.7.0",
     "pandas>=2.2.3,<3",
-    "typer>=0.9.0,<0.10",
+    "typer>=0.24.0",
     "platformdirs>=2.5.0",
     "pytest-xvfb>=3.0.0,<4",
     "typing-extensions>=4.12.2 ; python_full_version >= '3.13'",
-    "pyarrow>=20.0.0",
+    "pyarrow>=22.0.0",
 ]
 
 [project.scripts]
@@ -26,7 +26,7 @@ texase = "texase.app:typer_app"
 
 [dependency-groups]
 dev = [
-    "textual-dev==1.4.0",
+    "textual-dev>=1.8.0",
     "pytest>=8.2.0",
     "black>=22.12.0,<23",
     "pytest-cov>=2.12.1,<3",
