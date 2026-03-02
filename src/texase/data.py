@@ -120,6 +120,7 @@ class Data:
     user_keys: list[str]
     chosen_columns: list = field(default_factory=get_default_columns)
     saved_columns: SavedColumns | None = None
+    float_precision: dict[str, int] = field(default_factory=dict)
     data_filter: list[tuple[str, str, str]] | None = None
     sort_reverse: bool = False
 
@@ -131,6 +132,7 @@ class Data:
         self.saved_columns = SavedColumns()
         self.saved_float_precision = SavedFloatPrecision()
         self.update_chosen_columns()
+        self.update_float_precision()
         self.sort_columns: list[str] = ["id"]
         self._filter_mask_cache: LRUCache[tuple, np.ndarray] = LRUCache(maxsize=128)
         self._string_df_cache: LRUCache[tuple, pd.DataFrame] = LRUCache(maxsize=128)
