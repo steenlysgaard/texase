@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Iterable
 
@@ -89,7 +87,7 @@ class ASEReadDirectoryTree(DirectoryTree):
             self.select_node(self.root)
 
 
-class FilesIOScreen(ModalScreen):  # no typing here to keep Python3.9 happy
+class FilesIOScreen(ModalScreen[bool]):
     """Screen with a question that can be answered yes or no."""
 
     BINDINGS = [

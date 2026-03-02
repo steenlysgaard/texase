@@ -1,5 +1,4 @@
 import re
-from typing import Tuple
 
 from textual.binding import Binding
 from textual.containers import Container
@@ -63,7 +62,7 @@ class Search(Container):
             if len(self._coordinates) > 0:
                 self.move_cursor(self._coordinates[0])
 
-    def move_cursor(self, coordinate: Tuple[int, int]) -> None:
+    def move_cursor(self, coordinate: tuple[int, int]) -> None:
         self._table.move_cursor(row=coordinate[0], column=coordinate[1])
 
     def on_input_submitted(self, input) -> None:

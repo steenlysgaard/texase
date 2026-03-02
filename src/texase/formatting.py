@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import ast
 import re
-from typing import Any, Callable, Tuple
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -174,7 +172,7 @@ def check_pbc_string_validity(string):
         raise ValueError(f"{string} does not have exactly three characters!")
 
 
-def correctly_typed_kvp(input_str: str) -> Tuple[str, Any]:
+def correctly_typed_kvp(input_str: str) -> tuple[str, Any]:
     """Convert the input string of the form 'key=value' to the correct
     type if possible. At this point the input should be validated,
     i.e. the value contains a = and the key/column is editable

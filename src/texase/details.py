@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any
 
 from rich.text import Text
@@ -17,6 +15,106 @@ from texase.formatting import (
 )
 from texase.input_screens import DataEditScreen, DataScreen, KVPEditScreen, KVPScreen
 from texase.validators import kvp_validators_edit
+
+
+class Item(Horizontal):
+    validators = []
+
+    _value: Any = None
+
+    def __init__(self, key, value):
+        super().__init__()
+        self.key = key
+        self.value = value
+
+    @property
+    def value(self: Any) -> None:
+        return self._value
+
+    @value.setter
+    def value(self, value: Any) -> None:
+        # After changing from None only set the value
+        if self._value is not None:
+            self.app.notify_if_kvp_type_changed(self.key, value, self._value)
+            self.query_one(Input).value = str(value)
+        self._value = value
+
+    def compose(self) -> ComposeResult:
+        yield Label(f"[bold]{self.key} = [/bold]")
+        yield Input(
+            value=f"{self.value}",
+            classes="editable-input",
+            validators=self.validators,
+            validate_on=["submitted"],
+        )
+
+    def focus(self) -> None:
+        self.query_one(Input).focus()
+
+
+class DetailsList(ListView):
+    class ItemSelected(Message):
+        """Message that this item was selected."""
+
+        def __init__(self, item: Item) -> None:
+            self.item = item
+            super().__init__()
+
+    class OpenInputScreenWithItem(Message):
+        """An input screen should be opened with this item as prefilled input."""
+
+        def __init__(self, item: Item) -> None:
+            self.item = item
+            super().__init__()
+
+    def on_list_view_selected(self, sender):
+        """When a row is selected in the KVPList, focus on the input
+        field and remember that this key value pair was potentially
+        modifed. If the width of the details list is less than the
+        width of the kvp, so it can't show fully, use an InputScreen
+        instead
+
+        """
+        item = sender.item.children[0]
+        if sender.item.container_size.width < len(item.key) + len(str(item.value)) + 3:
+            self.post_message(self.OpenInputScreenWithItem(item))
+            return
+        item.focus()
+
+        self.post_message(self.ItemSelected(item))
+
+    @on(Input.Submitted)
+    def take_back_focus(self, _: Input.Submitted):
+        """When the user presses enter in the input field, take back
+        focus. It is assumed that the input value is valid."""
+        self.focus()
+
+    def delete_selected(self) -> None:
+        """Delete the current key value pair."""
+        current_index = self.index
+        if self.highlighted_child is not None:
+            self.highlighted_child.remove()
+        self.index = current_index
+
+    def selected_key(self) -> str | None:
+        raise NotImplementedError("selected_key must be implemented in subclass.")
+
+
+class KVPList(DetailsList):
+    def selected_key(self) -> str | None:
+        """Return the key of the currently selected key value pair."""
+        if self.highlighted_child is not None:
+            return self.highlighted_child.get_child_by_type(EditableItem).key
+
+
+class DataList(DetailsList):
+    def selected_key(self) -> str | None:
+        """Return the key of the currently selected key value pair."""
+        if self.highlighted_child is not None:
+            return self.highlighted_child.get_child_by_type(DataItem).key
+
+    def delete_selected(self) -> None:
+        raise NotImplementedError("ASE can't delete data items in a row.")
 
 
 class Details(Container):
@@ -163,41 +261,6 @@ class Details(Container):
             self.add_key_to_modified(item.key)
 
 
-class Item(Horizontal):
-    validators = []
-
-    _value: Any = None
-
-    def __init__(self, key, value):
-        super().__init__()
-        self.key = key
-        self.value = value
-
-    @property
-    def value(self: Any) -> None:
-        return self._value
-
-    @value.setter
-    def value(self, value: Any) -> None:
-        # After changing from None only set the value
-        if self._value is not None:
-            self.app.notify_if_kvp_type_changed(self.key, value, self._value)
-            self.query_one(Input).value = str(value)
-        self._value = value
-
-    def compose(self) -> ComposeResult:
-        yield Label(f"[bold]{self.key} = [/bold]")
-        yield Input(
-            value=f"{self.value}",
-            classes="editable-input",
-            validators=self.validators,
-            validate_on=["submitted"],
-        )
-
-    def focus(self) -> None:
-        self.query_one(Input).focus()
-
-
 class EditableItem(Item):
     validators = kvp_validators_edit
 
@@ -259,68 +322,3 @@ class Title(Label):
 
 class KVPStatic(Label):
     pass
-
-
-class DetailsList(ListView):
-    class ItemSelected(Message):
-        """Message that this item was selected."""
-
-        def __init__(self, item: Item) -> None:
-            self.item = item
-            super().__init__()
-
-    class OpenInputScreenWithItem(Message):
-        """An input screen should be opened with this item as prefilled input."""
-
-        def __init__(self, item: Item) -> None:
-            self.item = item
-            super().__init__()
-
-    def on_list_view_selected(self, sender):
-        """When a row is selected in the KVPList, focus on the input
-        field and remember that this key value pair was potentially
-        modifed. If the width of the details list is less than the
-        width of the kvp, so it can't show fully, use an InputScreen
-        instead
-
-        """
-        item = sender.item.children[0]
-        if sender.item.container_size.width < len(item.key) + len(str(item.value)) + 3:
-            self.post_message(self.OpenInputScreenWithItem(item))
-            return
-        item.focus()
-
-        self.post_message(self.ItemSelected(item))
-
-    @on(Input.Submitted)
-    def take_back_focus(self, _: Input.Submitted):
-        """When the user presses enter in the input field, take back
-        focus. It is assumed that the input value is valid."""
-        self.focus()
-
-    def delete_selected(self) -> None:
-        """Delete the current key value pair."""
-        current_index = self.index
-        if self.highlighted_child is not None:
-            self.highlighted_child.remove()
-        self.index = current_index
-
-    def selected_key(self) -> str | None:
-        raise NotImplementedError("selected_key must be implemented in subclass.")
-
-
-class KVPList(DetailsList):
-    def selected_key(self) -> str | None:
-        """Return the key of the currently selected key value pair."""
-        if self.highlighted_child is not None:
-            return self.highlighted_child.get_child_by_type(EditableItem).key
-
-
-class DataList(DetailsList):
-    def selected_key(self) -> str | None:
-        """Return the key of the currently selected key value pair."""
-        if self.highlighted_child is not None:
-            return self.highlighted_child.get_child_by_type(DataItem).key
-
-    def delete_selected(self) -> None:
-        raise NotImplementedError("ASE can't delete data items in a row.")
