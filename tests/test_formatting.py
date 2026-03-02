@@ -23,6 +23,8 @@ def test_format_value_float():
     returned_text = format_value(1.23456)
     assert str(returned_text) == "1.23"
     assert returned_text.justify == "right"
+    assert str(format_value(1.23456, decimals=4)) == "1.2346"
+    assert str(format_value(0.0)) == "0.00"
     assert str(format_value(0.0000123456)) == "1.23e-05"
     assert str(format_value(1e8)) == "1.00e+08"
     assert str(format_value(543244862185)) == "543244862185"

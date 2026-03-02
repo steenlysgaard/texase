@@ -12,16 +12,16 @@ MARKED_LABEL = Text("\u25cf", style="bright_yellow")
 UNMARKED_LABEL = Text("\u2219", style="grey")
 
 
-def format_value(val) -> Text | str:
+def format_value(val, decimals: int = 2) -> Text | str:
     if pd.isna(val):
         return ""
     if isinstance(val, str):
         return val
     elif isinstance(val, float):  # and not val.is_integer():
-        if abs(val) > 1e6 or abs(val) < 1e-3:
-            format_spec = "#.3g"
+        if abs(val) > 1e6 or (val != 0 and abs(val) < 1e-3):
+            format_spec = f".{decimals}e"
         else:
-            format_spec = ".2f"
+            format_spec = f".{decimals}f"
         return Text("{1:{0}}".format(format_spec, val), justify="right")
     # Checking for integers, see this helpful diagram:
     # https://numpy.org/doc/stable/reference/arrays.scalars.html

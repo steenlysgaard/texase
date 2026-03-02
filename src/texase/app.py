@@ -33,7 +33,6 @@ from texase.filter import FilterBox
 from texase.formatting import (
     convert_value_to_int_float_or_bool,
     correctly_typed_kvp,
-    format_value,
     kvp_exception,
 )
 from texase.help import HelpScreen
@@ -343,7 +342,9 @@ class TEXASE(App):
             )
 
             # Update table
-            table.update_cell_from_edit_box(format_value(value))
+            table.update_cell_from_edit_box(
+                self.data.format_value_for_column(column, value)
+            )
 
             # Update data
             self.data.update_value(
@@ -382,7 +383,9 @@ class TEXASE(App):
                 )
 
             # Update table
-            table.update_cell_from_add_box(key, format_value(value))
+            table.update_cell_from_add_box(
+                key, self.data.format_value_for_column(key, value)
+            )
 
             # Go back to original view
             self.show_add_kvp = False
@@ -441,6 +444,7 @@ class TEXASE(App):
         if self.use_cache:
             self.data._save_df_cache_file()
             self.data.save_chosen_columns()
+            self.data.save_float_precision()
 
 
 def check_pbc_string_validity(string):

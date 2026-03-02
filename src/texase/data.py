@@ -13,6 +13,7 @@ from ase import Atoms
 from ase.db import connect
 from ase.db.table import all_columns
 from ase.io import read, write
+from rich.text import Text
 from textual.cache import LRUCache
 
 from texase.cache_files import (
@@ -23,10 +24,12 @@ from texase.cache_files import (
 from texase.formatting import (
     convert_str_to_bool,
     format_column,
+    format_value,
     get_age_string,
     pbc_str_to_array,
 )
 from texase.saved_columns import SavedColumns
+from texase.saved_float_precision import SavedFloatPrecision
 
 ops = {
     "==": operator.eq,
@@ -62,6 +65,10 @@ COLUMN_DTYPES = {
     "smax": "float",
     "magmom": "float",
 }
+
+DEFAULT_FLOAT_PRECISION = 2
+MIN_FLOAT_PRECISION = 0
+MAX_FLOAT_PRECISION = 10
 
 
 def get_default_columns():
@@ -122,6 +129,7 @@ class Data:
             self.add_filter(*self.data_filter)
         self.db_path = Path(self.db_path).resolve()
         self.saved_columns = SavedColumns()
+        self.saved_float_precision = SavedFloatPrecision()
         self.update_chosen_columns()
         self.sort_columns: list[str] = ["id"]
         self._filter_mask_cache: LRUCache[tuple, np.ndarray] = LRUCache(maxsize=128)
@@ -425,6 +433,49 @@ class Data:
     def save_chosen_columns(self) -> None:
         self.saved_columns[str(self.db_path)] = self.chosen_columns
 
+    def update_float_precision(self) -> None:
+        saved_precision = self.saved_float_precision[str(self.db_path)]
+        if saved_precision is None:
+            self.float_precision = {}
+        else:
+            self.float_precision = {
+                key: int(value) for key, value in saved_precision.items()
+            }
+
+    def save_float_precision(self) -> None:
+        self.saved_float_precision[str(self.db_path)] = self.float_precision
+
+    def get_float_precision(self, column: str) -> int:
+        return self.float_precision.get(column, DEFAULT_FLOAT_PRECISION)
+
+    def set_float_precision(self, column: str, precision: int) -> int | None:
+        if not self.is_float_column(column):
+            return None
+        precision = max(MIN_FLOAT_PRECISION, min(MAX_FLOAT_PRECISION, precision))
+        if precision == DEFAULT_FLOAT_PRECISION:
+            self.float_precision.pop(column, None)
+        else:
+            self.float_precision[column] = precision
+        self._string_column_cache.discard((column,))
+        self._string_df_cache.clear()
+        return precision
+
+    def adjust_float_precision(self, column: str, delta: int) -> int | None:
+        current = self.get_float_precision(column)
+        return self.set_float_precision(column, current + delta)
+
+    def is_float_column(self, column: str) -> bool:
+        if column in ["age", "modified"]:
+            return False
+        if column not in self.df.columns:
+            return False
+        return pd.api.types.is_float_dtype(self.df[column].dtype)
+
+    def format_value_for_column(self, column: str, value: Any) -> Text | str:
+        if column in ["age", "modified"]:
+            return get_age_string(value)
+        return format_value(value, decimals=self.get_float_precision(column))
+
     def search_for_string(self, search_string: str, regex: bool = True):
         # Use the string representation of the dataframe, i.e. what is
         # currently visible
@@ -528,7 +579,12 @@ class Data:
         column_data = df[column]
         if column in ["age", "modified"]:
             column_data = format_column(column_data, format_function=get_age_string)
-        return format_column(column_data)
+            return format_column(column_data)
+
+        def format_func(val):
+            return format_value(val, decimals=self.get_float_precision(column))
+
+        return format_column(column_data, format_function=format_func)
 
     def db_last_modified(self) -> datetime:
         file_stat = self.db_path.stat()
