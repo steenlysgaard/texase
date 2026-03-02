@@ -18,15 +18,6 @@ wheels = [
 ]
 
 [[package]]
-name = "aiohappyeyeballs"
-version = "2.6.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/26/30/f84a107a9c4331c14b2b586036f40965c128aa4fee4dda5d3d51cb14ad54/aiohappyeyeballs-2.6.1.tar.gz", hash = "sha256:c3f9d0113123803ccadfdf3f0faa505bc78e6a72d1cc4806cbd719826e943558", size = 22760, upload-time = "2025-03-12T01:42:48.764Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/15/5bf3b99495fb160b63f95972b81750f18f7f4e02ad051373b669d17d44f2/aiohappyeyeballs-2.6.1-py3-none-any.whl", hash = "sha256:f349ba8f4b75cb25c99c5c2d84e997e485204d2902a9597802b0371f09331fb8", size = 15265, upload-time = "2025-03-12T01:42:47.083Z" },
-]
-
-[[package]]
 name = "aiohttp"
 version = "3.13.3"
 source = { registry = "https://pypi.org/simple" }
@@ -229,12 +220,10 @@ name = "black"
 version = "22.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "click", version = "8.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "click" },
     { name = "mypy-extensions" },
     { name = "pathspec" },
-    { name = "platformdirs", version = "4.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "platformdirs", version = "4.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "platformdirs" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a6/59/e873cc6807fb62c11131e5258ca15577a3b7452abad08dc49286cf8245e8/black-22.12.0.tar.gz", hash = "sha256:229351e5a18ca30f447bf724d007f890f97e13af070bb6ad4c0a441cd7596a2f", size = 553112, upload-time = "2022-12-09T15:57:04.428Z" }
@@ -256,29 +245,11 @@ wheels = [
 ]
 
 [[package]]
-name = "cfgv"
-version = "3.5.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13'",
-    "python_full_version == '3.12.*'",
-    "python_full_version == '3.11.*'",
-    "python_full_version == '3.10.*'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/b5/721b8799b04bf9afe054a3899c6cf4e880fcf8563cc71c15610242490a0c/cfgv-3.5.0.tar.gz", hash = "sha256:d5b1034354820651caa73ede66a6294d6e95c1b00acc5e9b098e917404669132", size = 7334, upload-time = "2025-11-19T20:55:51.612Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl", hash = "sha256:a8dc6b26ad22ff227d2634a65cb388215ce6cc96bbcc5cfde7641ae87e8dacc0", size = 7445, upload-time = "2025-11-19T20:55:50.744Z" },
-]
-
-[[package]]
 name = "click"
 version = "8.3.1"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.10'",
-]
 dependencies = [
-    { name = "colorama", marker = "python_full_version < '3.10' and sys_platform == 'win32'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3d/fa/656b739db8587d7b5dfa22e22ed02566950fbfbcdc20311993483657a5c0/click-8.3.1.tar.gz", hash = "sha256:12ff4785d337a1bb490bb7e9c2b1ee5da3112e94a8622f26a6c77f5d2fc6842a", size = 295065, upload-time = "2025-11-15T20:45:42.706Z" }
 wheels = [
@@ -953,11 +924,8 @@ wheels = [
 name = "markdown-it-py"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.10'",
-]
 dependencies = [
-    { name = "mdurl", marker = "python_full_version < '3.10'" },
+    { name = "mdurl" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5b/f5/4ec618ed16cc4f8fb3b701563655a69816155e79e24a17b651541804721d/markdown_it_py-4.0.0.tar.gz", hash = "sha256:cb0a2b4aa34f932c007117b194e945bd74e0ec24133ceb5bac59009cda1cb9f3", size = 73070, upload-time = "2025-08-11T12:57:52.854Z" }
 wheels = [
@@ -966,21 +934,7 @@ wheels = [
 
 [package.optional-dependencies]
 linkify = [
-    { name = "linkify-it-py", marker = "python_full_version < '3.10'" },
-]
-
-[[package]]
-name = "markdown-it-py"
-version = "4.0.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13'",
-    "python_full_version == '3.12.*'",
-    "python_full_version == '3.11.*'",
-    "python_full_version == '3.10.*'",
-]
-dependencies = [
-    { name = "mdurl", marker = "python_full_version >= '3.10'" },
+    { name = "linkify-it-py" },
 ]
 
 [[package]]
@@ -1147,29 +1101,8 @@ wheels = [
 name = "mdit-py-plugins"
 version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.10'",
-]
 dependencies = [
-    { name = "markdown-it-py", version = "3.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/19/03/a2ecab526543b152300717cf232bb4bb8605b6edb946c845016fa9c9c9fd/mdit_py_plugins-0.4.2.tar.gz", hash = "sha256:5f2cd1fdb606ddf152d37ec30e46101a60512bc0e5fa1a7002c36647b09e26b5", size = 43542, upload-time = "2024-09-09T20:27:49.564Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/f7/7782a043553ee469c1ff49cfa1cdace2d6bf99a1f333cf38676b3ddf30da/mdit_py_plugins-0.4.2-py3-none-any.whl", hash = "sha256:0c673c3f889399a33b95e88d2f0d111b4447bdfea7f237dab2d488f459835636", size = 55316, upload-time = "2024-09-09T20:27:48.397Z" },
-]
-
-[[package]]
-name = "mdit-py-plugins"
-version = "0.5.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13'",
-    "python_full_version == '3.12.*'",
-    "python_full_version == '3.11.*'",
-    "python_full_version == '3.10.*'",
-]
-dependencies = [
-    { name = "markdown-it-py", version = "4.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "markdown-it-py" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b2/fd/a756d36c0bfba5f6e39a1cdbdbfdd448dc02692467d83816dff4592a1ebc/mdit_py_plugins-0.5.0.tar.gz", hash = "sha256:f4918cb50119f50446560513a8e311d574ff6aaed72606ddae6d35716fe809c6", size = 44655, upload-time = "2025-08-11T07:25:49.083Z" }
 wheels = [
@@ -1752,8 +1685,7 @@ name = "pre-commit"
 version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cfgv", version = "3.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "cfgv", version = "3.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "cfgv" },
     { name = "identify" },
     { name = "nodeenv" },
     { name = "pyyaml" },
@@ -1957,9 +1889,6 @@ wheels = [
 name = "pytest"
 version = "9.0.2"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.10'",
-]
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
@@ -1978,12 +1907,6 @@ wheels = [
 name = "pytest-asyncio"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.13'",
-    "python_full_version == '3.12.*'",
-    "python_full_version == '3.11.*'",
-    "python_full_version == '3.10.*'",
-]
 dependencies = [
     { name = "backports-asyncio-runner", marker = "python_full_version < '3.11'" },
     { name = "pytest" },
@@ -1999,10 +1922,8 @@ name = "pytest-cov"
 version = "2.12.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "coverage", version = "7.10.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "coverage", version = "7.13.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "pytest", version = "9.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "coverage" },
+    { name = "pytest" },
     { name = "toml" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/63/3a/747e953051fd6eb5fb297907a825aad43d94c556d3b9938fc21f3172879f/pytest-cov-2.12.1.tar.gz", hash = "sha256:261ceeb8c227b726249b376b8526b600f38667ee314f910353fa318caa01f4d7", size = 60395, upload-time = "2021-06-01T17:24:44.006Z" }
@@ -2016,8 +1937,7 @@ version = "3.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "execnet" },
-    { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "pytest", version = "9.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pytest" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/78/b4/439b179d1ff526791eb921115fca8e44e596a13efeda518b9d845a619450/pytest_xdist-3.8.0.tar.gz", hash = "sha256:7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1", size = 88069, upload-time = "2025-07-01T13:30:59.346Z" }
 wheels = [
@@ -2029,8 +1949,7 @@ name = "pytest-xvfb"
 version = "3.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "pytest", version = "9.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pytest" },
     { name = "pyvirtualdisplay" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b6/ce/b3444c98eab123b7348d55d4705c2f1095a6bdf8dae85bc6a34ab5222845/pytest_xvfb-3.1.1.tar.gz", hash = "sha256:90593634427d974b272e845793e4533f5b827c9d84c051879013624504175e44", size = 9022, upload-time = "2025-03-12T12:35:07.533Z" }
@@ -2150,8 +2069,7 @@ name = "rich"
 version = "14.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "markdown-it-py", version = "3.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "markdown-it-py", version = "4.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "markdown-it-py" },
     { name = "pygments" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b3/c6/f3b320c27991c46f43ee9d856302c70dc2d0fb2dba4842ff739d5f46b393/rich-14.3.3.tar.gz", hash = "sha256:b8daa0b9e4eef54dd8cf7c86c03713f53241884e814f4e2f5fb342fe520f639b", size = 230582, upload-time = "2026-02-19T17:23:12.474Z" }
@@ -2319,12 +2237,9 @@ source = { editable = "." }
 dependencies = [
     { name = "ase" },
     { name = "pandas" },
-    { name = "pillow", version = "11.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "pillow", version = "12.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "platformdirs", version = "4.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "platformdirs", version = "4.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "pyarrow", version = "21.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "pyarrow", version = "22.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pillow" },
+    { name = "platformdirs" },
+    { name = "pyarrow" },
     { name = "pytest-xvfb" },
     { name = "textual" },
     { name = "typer" },
@@ -2335,10 +2250,8 @@ dependencies = [
 dev = [
     { name = "black" },
     { name = "pre-commit" },
-    { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "pytest", version = "9.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "pytest-asyncio", version = "1.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "pytest-asyncio", version = "1.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "textual-dev" },
@@ -2391,8 +2304,7 @@ version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
-    { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "click", version = "8.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "click" },
     { name = "msgpack" },
     { name = "textual" },
     { name = "textual-serve" },
