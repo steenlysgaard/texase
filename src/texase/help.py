@@ -51,6 +51,8 @@ HELP_MARKDOWN_RIGHT = """\
 ### Table appearance
 
 - `s`: Sort by current column
+- `>`: Increase float decimals in current column
+- `<`: Decrease float decimals in current column
 - `+`: Add column
 - `-`: Remove current selected column
 
