@@ -1,0 +1,52 @@
+* Versioning
+- Follow a semantic versioning approach based on https://softwareengineering.stackexchange.com/questions/255190/how-does-semantic-versioning-apply-to-programs-without-api
+- MAJOR.MINOR.PATCH
+  - Increment the patch number when you ship a bug fix, e.g.: “fixed bug where application always crashes at 00:00 PM on Tuesdays”.
+  - Increment the minor version number when adding a new feature, e.g.: “added support for underlined text”.
+  - Increment the major version when you significantly overhaul the user interface, or rewrite all internals. E.g.: “Toolbars use too much screen estate. The UI is now provided through touch gestures only” – such a change would break existing workflows.
+
+
+* Release
+When ready for a release:
+1. Decide on a version, follow [[Versioning]] above
+2. Put the version in pyproject.toml, update uv.lock (by running =uv lock=), and add that as a final commit of that release
+3. Go to GitHub and create a new release, give it the same tag as the version
+4. A github action takes care of publishing to PyPI
+5. Bump the version (add one to the PATCH number) and add a b in the end, signifying beta. Update uv.lock.
+6. Commit this to main.
+7. Update version on Niflheim by updating the version number in the eb file and injecting new checksums, install the new version and delete the previous.
+
+* Testing
+
+* Project management
+Currently handled by uv
+** uv
+This has been fixed: Fails to run tkinter in any of the python standalone builds, i.e. if any other Python version than the system version is used then there is an issue with anything using tkinter, here viewing structures using ASE GUI, both in app and in tests.
+
+* Git
+** pre-commit hooks
+- When using this with magit we experience this error: https://www.reddit.com/r/emacs/comments/uo923k/trouble_with_magit_and_git_precommit_hooks/
+- The error: If you commit a chunk of a file, pre-commit doesn't take this into account and tests the full file
+
+* Ideas
+
+** Save a helper parquet file with the table when quitting
+- When the parquet file is present and newer than the db. Just read that in.
+- Time it with different sized files.
+
+** Increase/decrease number of decimals for floats
+- Started with codex cli
+- Resume by pasting a quick context snippet:
+  Project: /home/stly/software/texase
+Goal: add per-column float precision adjustment (>/< bindings), persisted to cache.
+Status: implemented changes in formatting/data/table/app/help + tests. See files:
+src/texase/formatting.py
+src/texase/data.py
+src/texase/table.py
+src/texase/app.py
+src/texase/help.py
+src/texase/cache_files.py
+src/texase/saved_float_precision.py
+tests/test_formatting.py
+tests/test_data.py
+Next: run tests, verify behavior, consider scientific notation rules later.
