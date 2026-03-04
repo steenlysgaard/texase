@@ -80,6 +80,7 @@ Now I can just do `texase file.db` and navigate with single key presses.
 ## Benchmarks (experimental)
 
 Benchmarks are opt-in and live in `tests/benchmarks/`.
+They include both data-layer benchmarks and a Textual pilot-based TUI startup/table-build benchmark.
 
 Recommended workflow:
 
