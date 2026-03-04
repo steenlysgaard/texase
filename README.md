@@ -77,6 +77,27 @@ I use the database in ASE a lot. The command line interface `ase db` could slow 
 
 Now I can just do `texase file.db` and navigate with single key presses.
 
+## Benchmarks (experimental)
+
+Benchmarks are opt-in and live in `tests/benchmarks/`.
+
+Run with medium-sized generated data:
+
+```bash
+TEXASE_RUN_BENCHMARKS=1 uv run pytest tests/benchmarks --benchmark-only
+```
+
+Select data size (`small`, `medium`, `large`):
+
+```bash
+TEXASE_RUN_BENCHMARKS=1 TEXASE_BENCHMARK_SIZE=large uv run pytest tests/benchmarks --benchmark-only
+```
+
+Save results for later comparison:
+
+```bash
+TEXASE_RUN_BENCHMARKS=1 uv run pytest tests/benchmarks --benchmark-only --benchmark-json .bench/results.json
+```
 
 
 ## License
