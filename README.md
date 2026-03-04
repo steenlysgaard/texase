@@ -81,24 +81,31 @@ Now I can just do `texase file.db` and navigate with single key presses.
 
 Benchmarks are opt-in and live in `tests/benchmarks/`.
 
-Run with medium-sized generated data:
+Recommended workflow:
+
+1. Create a baseline:
 
 ```bash
-TEXASE_RUN_BENCHMARKS=1 uv run pytest tests/benchmarks --benchmark-only
+scripts/bench.sh baseline
 ```
 
-Select data size (`small`, `medium`, `large`):
+2. After code changes, run benchmarks:
 
 ```bash
-TEXASE_RUN_BENCHMARKS=1 TEXASE_BENCHMARK_SIZE=large uv run pytest tests/benchmarks --benchmark-only
+scripts/bench.sh run
 ```
 
-Save results for later comparison:
+3. Compare current run against the baseline:
 
 ```bash
-TEXASE_RUN_BENCHMARKS=1 uv run pytest tests/benchmarks --benchmark-only --benchmark-json .bench/results.json
+scripts/bench.sh compare
 ```
 
+Select data size (`small`, `medium`, `large`) with `TEXASE_BENCHMARK_SIZE`, e.g.:
+
+```bash
+TEXASE_BENCHMARK_SIZE=large scripts/bench.sh run
+```
 
 ## License
 
