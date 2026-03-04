@@ -10,13 +10,13 @@
 - Run the app locally (after install): `uv run texase example.db` or `texase example.db`.
 - Test suite: `uv run pytest` or `python -m pytest`. Run tests in parallel with `pytest -n auto`.
 - Coverage pass: `uv run pytest --cov=texase --cov-report=term-missing`.
-- Format before sending changes: `uv run black src tests`.
+- Format before sending changes: `uv format`.
 
 ## Coding Style & Naming Conventions
 - Python 3.9+ with src layout; use 4-space indents and type hints where practical.
 - Keep functions/methods in `snake_case`, classes in `PascalCase`, and module-level constants in `UPPER_SNAKE_CASE`.
 - Follow Textual patterns already in the codebase (widgets in `table.py`, dialogs in `input_screens.py`, styles in `texase.tcss`). Prefer pure functions for data transforms in `data.py` and `cache_files.py`.
-- Run Black with default settings; avoid manual tweaks that fight the formatter.
+- Run `uv format` before submitting changes; avoid manual tweaks that fight the formatter.
 
 ## Testing Guidelines
 - Add or update tests under `tests/` using `pytest`; name files `test_*.py` and functions `test_*`.
