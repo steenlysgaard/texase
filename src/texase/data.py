@@ -403,8 +403,8 @@ class Data:
         return get_data(self.db_path, row_id)
 
     def get_atoms(self, row) -> Atoms:
-        db = connect(self.db_path)
-        return db.get_atoms(id=row)
+        with connect(self.db_path) as db:
+            return db.get_atoms(id=row)
 
     def can_column_be_added(self, column) -> bool:
         """Check if a column can be added to the table, i.e. is it
@@ -825,8 +825,8 @@ def instantiate_data(
         return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 
     # Fallback to reading directly from the ASE DB
-    db = connect(db_path)
-    df, user_keys = db_to_df(db, sel, limit)
+    with connect(db_path) as db:
+        df, user_keys = db_to_df(db, sel, limit)
     return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 
 
@@ -876,8 +876,8 @@ def get_value(row, key) -> str:
 
 
 def get_data(db_path, row_id):
-    db = connect(db_path)
-    return db.get(id=row_id).data
+    with connect(db_path) as db:
+        return db.get(id=row_id).data
 
 
 def recommend_dtype(iterable):
