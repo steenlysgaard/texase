@@ -58,6 +58,8 @@ Manipulate the key value pairs as much as you like. Mind that some key value pai
 
 - Adding/removing columns (__`+`__/__`-`__)
 
+- Add/remove decimals for floats in the current column (__`>`__/__`<`__)
+
 Remove the column of the current cursor with `-` and add columns not shown with `+`. Columns can also be added by clicking the corresponding key at the bottom of the screen. Chosen columns are saved between invocations of the same database.
 
 - Deleting rows (__`#`__)
