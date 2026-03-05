@@ -102,6 +102,14 @@ scripts/bench.sh run
 scripts/bench.sh compare
 ```
 
+Choose benchmark group with `-g` (`all` default):
+
+```bash
+scripts/bench.sh -g data run
+scripts/bench.sh -g tui run
+scripts/bench.sh -g all run
+```
+
 Select data size (`small`, `medium`, `large`) with `TEXASE_BENCHMARK_SIZE`, e.g.:
 
 ```bash

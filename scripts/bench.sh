@@ -6,13 +6,14 @@ BENCH_DIR="${ROOT_DIR}/.benchmarks"
 BASELINE_JSON="${BENCH_DIR}/baseline.json"
 LATEST_JSON="${BENCH_DIR}/latest.json"
 SIZE="${TEXASE_BENCHMARK_SIZE:-medium}"
+GROUP="all"
 
 usage() {
     cat <<'EOF'
 Usage:
-  scripts/bench.sh baseline
-  scripts/bench.sh run
-  scripts/bench.sh compare
+  scripts/bench.sh [-g all|data|tui] baseline
+  scripts/bench.sh [-g all|data|tui] run
+  scripts/bench.sh [-g all|data|tui] compare
   scripts/bench.sh help
 
 Commands:
@@ -22,6 +23,9 @@ Commands:
 
 Environment:
   TEXASE_BENCHMARK_SIZE   Dataset size: small|medium|large (default: medium)
+
+Options:
+  -g <group>              Benchmark group: all|data|tui (default: all)
 EOF
 }
 
@@ -36,11 +40,30 @@ check_size() {
     esac
 }
 
+check_group() {
+    case "${GROUP}" in
+    all | data | tui) ;;
+    *)
+        echo "Invalid benchmark group: ${GROUP}" >&2
+        echo "Choose one of: all, data, tui" >&2
+        exit 2
+        ;;
+    esac
+}
+
+benchmark_target() {
+    case "${GROUP}" in
+    all) echo "tests/benchmarks" ;;
+    data) echo "tests/benchmarks/test_data_benchmarks.py" ;;
+    tui) echo "tests/benchmarks/test_tui_benchmarks.py" ;;
+    esac
+}
+
 pytest_bench() {
     local json_path="$1"
     mkdir -p "${BENCH_DIR}"
     TEXASE_RUN_BENCHMARKS=1 TEXASE_BENCHMARK_SIZE="${SIZE}" \
-        uv run --group dev pytest tests/benchmarks --benchmark-only \
+        uv run --group dev pytest "$(benchmark_target)" --benchmark-only \
         --benchmark-json "${json_path}"
 }
 
@@ -63,15 +86,37 @@ run_compare() {
 
     mkdir -p "${BENCH_DIR}"
     TEXASE_RUN_BENCHMARKS=1 TEXASE_BENCHMARK_SIZE="${SIZE}" \
-        uv run --group dev pytest tests/benchmarks --benchmark-only \
+        uv run --group dev pytest "$(benchmark_target)" --benchmark-only \
         --benchmark-compare="${BASELINE_JSON}" \
         --benchmark-json "${LATEST_JSON}"
     echo "Wrote comparison run to ${LATEST_JSON}"
 }
 
 main() {
+    while getopts ":g:h" opt; do
+        case "${opt}" in
+        g) GROUP="${OPTARG}" ;;
+        h)
+            usage
+            exit 0
+            ;;
+        :)
+            echo "Option -${OPTARG} requires an argument." >&2
+            usage >&2
+            exit 2
+            ;;
+        \?)
+            echo "Invalid option: -${OPTARG}" >&2
+            usage >&2
+            exit 2
+            ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
     local command="${1:-help}"
     check_size
+    check_group
 
     case "${command}" in
     run) run_latest ;;
