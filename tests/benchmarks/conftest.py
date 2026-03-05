@@ -12,6 +12,7 @@ BENCHMARK_SIZES = {
     "medium": 10_000,
     "large": 100_000,
 }
+BENCH_DB_DIR = Path(__file__).resolve().parents[2] / ".benchmarks" / "db"
 
 
 def _create_benchmark_db(path: Path, rows: int, seed: int = 7) -> None:
@@ -55,9 +56,10 @@ def benchmark_rows(benchmark_size: str) -> int:
 
 @pytest.fixture(scope="session")
 def benchmark_db_path(
-    tmp_path_factory, benchmark_rows: int, benchmark_size: str
+    benchmark_rows: int, benchmark_size: str
 ) -> Path:
-    db_dir = tmp_path_factory.mktemp("bench_db")
-    db_path = db_dir / f"benchmark_{benchmark_size}.db"
-    _create_benchmark_db(db_path, rows=benchmark_rows)
+    BENCH_DB_DIR.mkdir(parents=True, exist_ok=True)
+    db_path = BENCH_DB_DIR / f"benchmark_{benchmark_size}.db"
+    if not db_path.exists():
+        _create_benchmark_db(db_path, rows=benchmark_rows)
     return db_path
