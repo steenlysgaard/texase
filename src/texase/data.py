@@ -325,7 +325,8 @@ class Data:
 
         Returns the indices of the added rows in the df.
         """
-        new_df, new_user_keys = db_to_df(connect(self.db_path), sel=sel)
+        with connect(self.db_path) as db:
+            new_df, new_user_keys = db_to_df(db, sel=sel)
         original_last_index = self.df.index[-1]
 
         # Check that the dtypes of common columns are compatible
