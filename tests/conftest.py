@@ -35,6 +35,19 @@ def big_db_path(tmp_path_factory):
     return fn
 
 
+@pytest.fixture
+def over_100_db_path(tmp_path_factory):
+    fn = tmp_path_factory.mktemp("test_db") / "over_100.db"
+    with connect(fn) as db:
+        for i in range(1, 151):
+            symbol = chemical_symbols[((i - 1) % 118) + 1]
+            db.write(
+                Atoms(symbol, cell=cell, pbc=pbc),
+                key_value_pairs=user_dct,
+            )
+    return fn
+
+
 @pytest_asyncio.fixture
 async def loaded_app(db_path):
     app = TEXASE(path=db_path)
