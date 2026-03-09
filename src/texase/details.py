@@ -10,10 +10,13 @@ from textual.widgets import Input, Label, ListItem, ListView
 
 from texase.formatting import (
     convert_str_to_other_type,
-    convert_value_to_int_float_or_bool,
     get_age_string,
 )
 from texase.input_screens import DataEditScreen, DataScreen, KVPEditScreen, KVPScreen
+from texase.submitted_input import (
+    coerce_kvp_value,
+    stop_and_notify_if_invalid_submission,
+)
 from texase.validators import kvp_validators_edit
 
 
@@ -269,23 +272,10 @@ class EditableItem(Item):
 
         Then the KVPList takes back focus.
         """
-        # TODO: Exactly the same code as in app.py. Refactor?
-        if (
-            submitted.validation_result is not None
-            and not submitted.validation_result.is_valid
-        ):
-            self.app.notify_error(
-                "\n".join(submitted.validation_result.failure_descriptions),
-                error_title="Invalid input",
-            )
-            # If not valid input stop bubbling further
-            submitted.stop()
+        if stop_and_notify_if_invalid_submission(submitted, self.app.notify_error):
             return
 
-        if self.key == "pbc":
-            value = submitted.value.upper()
-        else:
-            value = convert_value_to_int_float_or_bool(submitted.value)
+        value = coerce_kvp_value(self.key, submitted.value)
 
         if not self.app.is_kvp_valid(self.key, value):
             submitted.stop()  # stop bubbling further
@@ -300,16 +290,7 @@ class DataItem(Item):
 
         Then the DataList takes back focus.
         """
-        if (
-            submitted.validation_result is not None
-            and not submitted.validation_result.is_valid
-        ):
-            self.app.notify_error(
-                "\n".join(submitted.validation_result.failure_descriptions),
-                error_title="Invalid input",
-            )
-            # If not valid input stop bubbling further
-            submitted.stop()
+        if stop_and_notify_if_invalid_submission(submitted, self.app.notify_error):
             return
 
         value = convert_str_to_other_type(submitted.value)

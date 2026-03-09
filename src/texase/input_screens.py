@@ -12,6 +12,7 @@ from texase.formatting import (
     correctly_typed_kvp,
     kvp_exception,
 )
+from texase.submitted_input import stop_and_notify_if_invalid_submission
 from texase.validators import kvp_validators_add, kvp_validators_edit
 
 
@@ -91,16 +92,7 @@ class InputScreen(ModalScreen[Any]):
         self.dismiss(None)
 
     def on_input_submitted(self, submitted: Input.Submitted) -> None:
-        if (
-            submitted.validation_result is not None
-            and not submitted.validation_result.is_valid
-        ):
-            self.app.notify_error(
-                "\n".join(submitted.validation_result.failure_descriptions),
-                error_title="Invalid input",
-            )
-            # If not valid input stop bubbling further
-            submitted.stop()
+        if stop_and_notify_if_invalid_submission(submitted, self.app.notify_error):
             return
 
         self.further_process_submitted(submitted)
