@@ -1,7 +1,6 @@
 import os
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
-from ase.gui.gui import GUI, Images
 from rich.text import Text
 from textual import on, work
 from textual._two_way_dict import TwoWayDict
@@ -15,6 +14,9 @@ from texase.data import ALL_COLUMNS, Data
 from texase.edit import AddBox, EditBox
 from texase.formatting import MARKED_LABEL, UNMARKED_LABEL
 from texase.yesno import YesNoScreen
+
+if TYPE_CHECKING:
+    from ase.gui.gui import GUI
 
 UNEDITABLE_COLUMNS = [c for c in ALL_COLUMNS if c not in ["pbc"]]
 
@@ -48,7 +50,7 @@ class TexaseTable(DataTable):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.gui: GUI | None = None
+        self.gui: "GUI | None" = None
 
     def _manipulate_filters(
         self, filter_tuple: tuple[str, str, str], add: bool = True
@@ -117,6 +119,8 @@ class TexaseTable(DataTable):
     def action_view(self) -> None:
         """View the currently selected images, if no images are
         selected then view the row the cursor is on"""
+        from ase.gui.gui import GUI, Images
+
         if self.marked_rows:
             images = [
                 self.app.data.get_atoms(id)
