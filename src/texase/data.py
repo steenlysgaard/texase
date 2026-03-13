@@ -12,7 +12,6 @@ import pandas as pd
 from ase import Atoms
 from ase.db import connect
 from ase.db.table import all_columns
-from ase.io import read, write
 from rich.text import Text
 from textual.cache import LRUCache
 
@@ -278,6 +277,7 @@ class Data:
             self.df = pd.concat([self.df, new_col], axis=1)
 
     def export_rows(self, row_ids: Iterable[int], path: Path) -> None:
+        from ase.io import write
         with connect(self.db_path) as db:
             append = False
             if path.is_file():
@@ -299,6 +299,7 @@ class Data:
         """Import atoms from a file and add them to the database and the df.
 
         Default is to only take the last frame in the file. Change this with the index argument."""
+        from ase.io import read
         try:
             atoms_list = read(path, index=index)
         except Exception as e:
