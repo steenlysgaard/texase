@@ -2,7 +2,6 @@ from pathlib import Path
 from functools import lru_cache
 from typing import Iterable
 
-from ase.io.formats import ioformats
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -12,6 +11,7 @@ from textual.widgets import DirectoryTree, Footer, Input, Label, Tree
 
 
 def build_write_exts() -> set[str]:
+    from ase.io.formats import ioformats
     ext_list = []
     for format in ioformats.values():
         # We are only interested in seeing files that we can append to
@@ -30,6 +30,7 @@ def get_write_exts() -> set[str]:
 
 
 def build_read_extensions_and_globs() -> tuple[set[str], set[str]]:
+    from ase.io.formats import ioformats
     ext_list = []
     glob_list = []
     for format in ioformats.values():
