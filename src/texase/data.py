@@ -12,7 +12,6 @@ import pandas as pd
 from ase import Atoms
 from ase.db import connect
 from ase.db.table import all_columns
-from ase.io import read, write
 from rich.text import Text
 from textual.cache import LRUCache
 
@@ -278,6 +277,7 @@ class Data:
             self.df = pd.concat([self.df, new_col], axis=1)
 
     def export_rows(self, row_ids: Iterable[int], path: Path) -> None:
+        from ase.io import write
         with connect(self.db_path) as db:
             append = False
             if path.is_file():
@@ -299,6 +299,7 @@ class Data:
         """Import atoms from a file and add them to the database and the df.
 
         Default is to only take the last frame in the file. Change this with the index argument."""
+        from ase.io import read
         try:
             atoms_list = read(path, index=index)
         except Exception as e:
@@ -325,7 +326,8 @@ class Data:
 
         Returns the indices of the added rows in the df.
         """
-        new_df, new_user_keys = db_to_df(connect(self.db_path), sel=sel)
+        with connect(self.db_path) as db:
+            new_df, new_user_keys = db_to_df(db, sel=sel)
         original_last_index = self.df.index[-1]
 
         # Check that the dtypes of common columns are compatible
@@ -403,8 +405,8 @@ class Data:
         return get_data(self.db_path, row_id)
 
     def get_atoms(self, row) -> Atoms:
-        db = connect(self.db_path)
-        return db.get_atoms(id=row)
+        with connect(self.db_path) as db:
+            return db.get_atoms(id=row)
 
     def can_column_be_added(self, column) -> bool:
         """Check if a column can be added to the table, i.e. is it
@@ -825,8 +827,8 @@ def instantiate_data(
         return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 
     # Fallback to reading directly from the ASE DB
-    db = connect(db_path)
-    df, user_keys = db_to_df(db, sel, limit)
+    with connect(db_path) as db:
+        df, user_keys = db_to_df(db, sel, limit)
     return Data(df=df, db_path=Path(db_path), user_keys=user_keys)
 
 
@@ -876,8 +878,8 @@ def get_value(row, key) -> str:
 
 
 def get_data(db_path, row_id):
-    db = connect(db_path)
-    return db.get(id=row_id).data
+    with connect(db_path) as db:
+        return db.get(id=row_id).data
 
 
 def recommend_dtype(iterable):

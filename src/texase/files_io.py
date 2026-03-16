@@ -1,7 +1,7 @@
 from pathlib import Path
+from functools import lru_cache
 from typing import Iterable
 
-from ase.io.formats import ioformats
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -11,6 +11,7 @@ from textual.widgets import DirectoryTree, Footer, Input, Label, Tree
 
 
 def build_write_exts() -> set[str]:
+    from ase.io.formats import ioformats
     ext_list = []
     for format in ioformats.values():
         # We are only interested in seeing files that we can append to
@@ -23,10 +24,13 @@ def build_write_exts() -> set[str]:
     return set([f".{ext}" for ext in ext_list])
 
 
-ASE_IO_WRITE_EXTS = build_write_exts()
+@lru_cache(maxsize=1)
+def get_write_exts() -> set[str]:
+    return build_write_exts()
 
 
 def build_read_extensions_and_globs() -> tuple[set[str], set[str]]:
+    from ase.io.formats import ioformats
     ext_list = []
     glob_list = []
     for format in ioformats.values():
@@ -41,16 +45,33 @@ def build_read_extensions_and_globs() -> tuple[set[str], set[str]]:
     return set([f".{ext}" for ext in ext_list]), set(glob_list)
 
 
-ASE_IO_READ_EXTS, ASE_IO_READ_GLOBS = build_read_extensions_and_globs()
+@lru_cache(maxsize=1)
+def get_read_extensions_and_globs() -> tuple[set[str], set[str]]:
+    return build_read_extensions_and_globs()
+
+
+def filter_write_paths(paths: Iterable[Path]) -> list[Path]:
+    write_exts = get_write_exts()
+    return [path for path in paths if (path.suffix in write_exts or path.is_dir())]
+
+
+def filter_read_paths(paths: Iterable[Path]) -> list[Path]:
+    read_exts, read_globs = get_read_extensions_and_globs()
+    allowed_paths = []
+    for path in paths:
+        if path.name.startswith("."):
+            # Don't allow hidden files (on Unix defined as starting with a .)
+            continue
+        elif path.suffix in read_exts or path.is_dir():
+            allowed_paths.append(path)
+    for glob in read_globs:
+        allowed_paths.extend(path.parent.glob(glob))
+    return allowed_paths
 
 
 class ASEWriteDirectoryTree(DirectoryTree):
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
-        return [
-            path
-            for path in paths
-            if (path.suffix in ASE_IO_WRITE_EXTS or path.is_dir())
-        ]
+        return filter_write_paths(paths)
 
 
 class ASEReadDirectoryTree(DirectoryTree):
@@ -60,16 +81,7 @@ class ASEReadDirectoryTree(DirectoryTree):
     ]
 
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
-        allowed_paths = []
-        for path in paths:
-            if path.name.startswith("."):
-                # Don't allow hidden files (on Unix defined as starting with a .)
-                continue
-            elif path.suffix in ASE_IO_READ_EXTS or path.is_dir():
-                allowed_paths.append(path)
-        for glob in ASE_IO_READ_GLOBS:
-            allowed_paths.extend(path.parent.glob(glob))
-        return allowed_paths
+        return filter_read_paths(paths)
 
     def action_set_root_up(self) -> None:
         """If the root node is selected, set a new root node as the

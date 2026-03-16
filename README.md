@@ -77,7 +77,44 @@ I use the database in ASE a lot. The command line interface `ase db` could slow 
 
 Now I can just do `texase file.db` and navigate with single key presses.
 
+## Benchmarks (experimental)
 
+Benchmarks are opt-in and live in `tests/benchmarks/`.
+They include both data-layer benchmarks and a Textual pilot-based TUI startup/table-build benchmark.
+
+Recommended workflow:
+
+1. Create a baseline:
+
+```bash
+scripts/bench.sh baseline
+```
+
+2. After code changes, run benchmarks:
+
+```bash
+scripts/bench.sh run
+```
+
+3. Compare current run against the baseline:
+
+```bash
+scripts/bench.sh compare
+```
+
+Choose benchmark group with `-g` (`all` default):
+
+```bash
+scripts/bench.sh -g data run
+scripts/bench.sh -g tui run
+scripts/bench.sh -g all run
+```
+
+Select data size (`small`, `medium`, `large`) with `TEXASE_BENCHMARK_SIZE`, e.g.:
+
+```bash
+TEXASE_BENCHMARK_SIZE=large scripts/bench.sh run
+```
 
 ## License
 

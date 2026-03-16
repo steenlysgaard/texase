@@ -5,7 +5,7 @@ from typing import Any
 
 import typer
 from ase.db import connect
-from rich.panel import Panel
+from ase.db.core import check
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -16,12 +16,6 @@ from textual.reactive import var
 from textual.widget import Widget
 from textual.widgets import Footer, Header, Input
 from textual.worker import Worker, WorkerState
-from typer.rich_utils import (
-    ALIGN_ERRORS_PANEL,
-    ERRORS_PANEL_TITLE,
-    STYLE_ERRORS_PANEL_BORDER,
-    _get_rich_console,
-)
 
 from texase.addcolumn import AddColumnBox
 from texase.data import ASEReadError, ASEWriteError, instantiate_data
@@ -458,6 +452,13 @@ def main(
     db_path: str = typer.Argument(..., help="Path to the ASE database"),
     no_cache: bool = typer.Option(False, "--no-cache", help="Disable all caching"),
 ):
+    from rich.panel import Panel
+    from typer.rich_utils import (
+        ALIGN_ERRORS_PANEL,
+        ERRORS_PANEL_TITLE,
+        STYLE_ERRORS_PANEL_BORDER,
+        _get_rich_console,
+    )
     if is_db_empty(db_path):
         error = Panel(
             f"The database [bold]{db_path}[/bold] is empty!",

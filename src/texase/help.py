@@ -1,5 +1,3 @@
-import webbrowser
-
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -116,6 +114,7 @@ class HelpScreen(ModalScreen):
 
     @on(Markdown.LinkClicked)
     def open_url(self, event: Markdown.LinkClicked) -> None:
+        import webbrowser
         webbrowser.open(event.href)
         event.stop()
 
