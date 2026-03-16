@@ -100,7 +100,9 @@ def sort_timings(timings: list[ImportTiming], sort_key: str | None) -> list[Impo
 
 def main() -> int:
     args = parse_args()
-    command = [sys.executable, "-X", "importtime", "-c", f"import {args.module}"]
+    command = [sys.executable, "-X", "importtime", "-c",
+               "import importlib, sys; importlib.import_module(sys.argv[1])",
+               args.module]
     completed = subprocess.run(command, capture_output=True, text=True)
 
     if completed.stdout:
