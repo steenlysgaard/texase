@@ -24,13 +24,16 @@ from texase.edit import AddBox, EditBox
 from texase.files_io import FilesIOScreen
 from texase.filter import FilterBox
 from texase.formatting import (
-    convert_value_to_int_float_or_bool,
     correctly_typed_kvp,
     kvp_exception,
 )
 from texase.help import HelpScreen
 from texase.keys import KeyBox
 from texase.search import Search
+from texase.submitted_input import (
+    coerce_kvp_value,
+    stop_and_notify_if_invalid_submission,
+)
 from texase.table import TexaseTable
 
 
@@ -307,10 +310,7 @@ class TEXASE(App):
 
     def on_input_submitted(self, submitted: Input.Submitted):
         table = self.query_one(TexaseTable)
-        if (
-            submitted.validation_result is not None
-            and not submitted.validation_result.is_valid
-        ):
+        if stop_and_notify_if_invalid_submission(submitted, self.notify_error):
             return
         if submitted.control.id == "add-column-input":
             self.add_column_to_table_and_remove_from_keybox(submitted.value)
@@ -319,10 +319,7 @@ class TEXASE(App):
             table.focus()
         elif submitted.control.id == "edit-input":
             column = table.column_at_cursor()
-            if column == "pbc":
-                value = submitted.value.upper()
-            else:
-                value = convert_value_to_int_float_or_bool(submitted.value)
+            value = coerce_kvp_value(column, submitted.value)
 
             exception_from_kvp = kvp_exception(column, value)
             if exception_from_kvp is not None:
@@ -399,21 +396,9 @@ class TEXASE(App):
         """Check that key-value-pair is valid for ase.db
 
         It is ok to edit pbc, we make this check first."""
-
-        if key == "pbc":
-            try:
-                check_pbc_string_validity(value)
-            except ValueError as e:
-                self.notify_error(str(e), "ValueError")
-                return False
-            return True
-
-        try:
-            check({key: value})
-        except ValueError as e:
-            # Notify that the key-value-pair is not valid with the
-            # raised ValueError and then return
-            self.notify_error(str(e), "ValueError")
+        error = kvp_exception(key, value)
+        if error is not None:
+            self.notify_error(error, "ValueError")
             return False
         return True
 
@@ -438,25 +423,6 @@ class TEXASE(App):
             self.data._save_df_cache_file()
             self.data.save_chosen_columns()
             self.data.save_float_precision()
-
-
-def check_pbc_string_validity(string):
-    """Check if the string is a valid pbc string. I.e. on the form TTT, TFT, FFF, etc."""
-    # check if the string has exactly three characters
-    if len(string) == 3:
-        # convert the string to upper case
-        string = string.upper()
-        # loop through each character in the string
-        for char in string:
-            # check if the character is either t or f
-            if char not in ["T", "F"]:
-                # raise a ValueError with a descriptive message
-                raise ValueError(f"{string} contains characters that are not T or F!")
-        # return True if all characters are t or f
-        return True
-    else:
-        # raise a ValueError with a descriptive message
-        raise ValueError(f"{string} does not have exactly three characters!")
 
 
 def is_db_empty(db_path: str) -> bool:

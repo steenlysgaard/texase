@@ -3,10 +3,11 @@
 ## Project Structure & Module Organization
 - Core TUI code lives in `src/texase/`; `app.py` exposes the Typer entrypoint, `table.py` handles grid rendering, and `cache_files.py`/`data.py` manage ASE database access and caching. Styling is in `texase.tcss`.
 - Tests sit in `tests/` and mirror the module layout (e.g., `tests/test_table.py` for `table.py`). Shared fixtures are in `tests/shared_info.py` and `tests/conftest.py`.
-- Demo assets and sample databases (`demo.gif`, `example.db`, `big_test.db`, etc.) live at the repo root and can be used for local runs. Packaging metadata is managed via `pyproject.toml` and the `uv.lock` lockfile.
+- Demo assets like `demo.gif` live at the repo root. Use `scripts/create_db_for_gif.py` to generate a sample `example.db` for local runs. Packaging metadata is managed via `pyproject.toml` and the `uv.lock` lockfile.
 
 ## Build, Test, and Development Commands
 - Install with dev tools: `uv sync --group dev` (uses `uv.lock`). If `uv` is unavailable, `pip install -e .` plus manual installs of dev deps from `pyproject.toml` works.
+- Create an example database for local runs: `uv run python scripts/create_db_for_gif.py` (writes `example.db` in the current directory).
 - Run the app locally (after install): `uv run texase example.db` or `texase example.db`.
 - Test suite: `uv run pytest` or `python -m pytest`. Run tests in parallel with `pytest -n auto`.
 - Coverage pass: `uv run pytest --cov=texase --cov-report=term-missing`.
