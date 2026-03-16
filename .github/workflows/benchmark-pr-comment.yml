@@ -1,0 +1,223 @@
+name: Benchmark PR Comment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: ["main"]
+    paths:
+      - ".github/workflows/benchmark-pr-comment.yml"
+      - ".github/workflows/benchmark-main-baseline.yml"
+      - "scripts/bench.sh"
+      - "tests/benchmarks/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  benchmark-comment:
+    runs-on: ubuntu-latest
+    env:
+      TEXASE_BENCHMARK_SIZE: medium
+      BENCH_GROUP: tui
+      BASELINE_ARTIFACT_NAME: benchmark-baseline-tui-medium
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          path: head
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.7.12"
+          enable-cache: true
+          cache-dependency-glob: "head/uv.lock"
+
+      - name: Install head dependencies
+        working-directory: head
+        run: uv sync --locked --group dev
+
+      - name: Download main baseline artifact
+        id: download-baseline
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: benchmark-main-baseline.yml
+          branch: main
+          workflow_conclusion: success
+          name: ${{ env.BASELINE_ARTIFACT_NAME }}
+          path: downloaded-baseline
+          if_no_artifact_found: warn
+
+      - name: Prepare baseline
+        id: prepare-baseline
+        shell: bash
+        run: |
+          mkdir -p head/.benchmarks
+          if [[ -f downloaded-baseline/baseline.json ]]; then
+            cp downloaded-baseline/baseline.json head/.benchmarks/baseline.json
+            echo "source=downloaded main artifact" >> "${GITHUB_OUTPUT}"
+            echo "used_downloaded=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "source=local fallback baseline" >> "${GITHUB_OUTPUT}"
+            echo "used_downloaded=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Checkout PR base for fallback baseline
+        if: steps.prepare-baseline.outputs.used_downloaded != 'true'
+        uses: actions/checkout@v4
+        with:
+          path: base
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Install base dependencies for fallback baseline
+        if: steps.prepare-baseline.outputs.used_downloaded != 'true'
+        working-directory: base
+        run: uv sync --locked --group dev
+
+      - name: Run benchmark comparison
+        id: benchmark
+        shell: bash
+        run: |
+          set +e
+          cd "${GITHUB_WORKSPACE}"
+          OUTPUT_FILE="${GITHUB_WORKSPACE}/benchmark_output.txt"
+          baseline_source="${{ steps.prepare-baseline.outputs.source }}"
+          compare_status=1
+
+          echo "Baseline source: ${baseline_source}" > "${OUTPUT_FILE}"
+          echo >> "${OUTPUT_FILE}"
+
+          if [[ "${{ steps.prepare-baseline.outputs.used_downloaded }}" != "true" ]]; then
+            echo '$ (base) scripts/bench.sh -g '"${BENCH_GROUP}"' baseline' >> "${OUTPUT_FILE}"
+            (
+              cd base
+              scripts/bench.sh -g "${BENCH_GROUP}" baseline
+            ) >> "${OUTPUT_FILE}" 2>&1
+            baseline_status=$?
+
+            if [[ ${baseline_status} -eq 0 && -f "${GITHUB_WORKSPACE}/base/.benchmarks/baseline.json" ]]; then
+              cp "${GITHUB_WORKSPACE}/base/.benchmarks/baseline.json" "${GITHUB_WORKSPACE}/head/.benchmarks/baseline.json"
+            fi
+
+            echo >> "${OUTPUT_FILE}"
+          else
+            baseline_status=0
+          fi
+
+          if [[ ${baseline_status} -eq 0 && -f "${GITHUB_WORKSPACE}/head/.benchmarks/baseline.json" ]]; then
+            echo '$ (head) scripts/bench.sh -g '"${BENCH_GROUP}"' compare' >> "${OUTPUT_FILE}"
+            (
+              cd head
+              scripts/bench.sh -g "${BENCH_GROUP}" compare
+            ) >> "${OUTPUT_FILE}" 2>&1
+            compare_status=$?
+          else
+            echo "Baseline unavailable; compare skipped." >> "${OUTPUT_FILE}"
+          fi
+
+          {
+            echo
+            echo "baseline_source=${baseline_source}"
+            echo "baseline_exit_code=${baseline_status}"
+            echo "compare_exit_code=${compare_status}"
+          } >> "${OUTPUT_FILE}"
+
+          echo "baseline_source=${baseline_source}" >> "${GITHUB_OUTPUT}"
+          echo "baseline_exit_code=${baseline_status}" >> "${GITHUB_OUTPUT}"
+          echo "compare_exit_code=${compare_status}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-pr-comment
+          path: |
+            benchmark_output.txt
+            base/.benchmarks/baseline.json
+            head/.benchmarks/baseline.json
+            head/.benchmarks/latest.json
+          if-no-files-found: ignore
+
+      - name: Create or update PR comment
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          OUTPUT_PATH: ${{ github.workspace }}/benchmark_output.txt
+          BENCH_GROUP: ${{ env.BENCH_GROUP }}
+          BENCH_SIZE: ${{ env.TEXASE_BENCHMARK_SIZE }}
+          BASELINE_SOURCE: ${{ steps.benchmark.outputs.baseline_source }}
+          BASELINE_EXIT: ${{ steps.benchmark.outputs.baseline_exit_code }}
+          COMPARE_EXIT: ${{ steps.benchmark.outputs.compare_exit_code }}
+        with:
+          script: |
+            const fs = require("fs");
+
+            const marker = "<!-- texase-benchmark-comment -->";
+            const outputPath = process.env.OUTPUT_PATH;
+            let output = "No benchmark output captured.";
+
+            if (fs.existsSync(outputPath)) {
+              output = fs.readFileSync(outputPath, "utf8").trim();
+            }
+
+            const maxLength = 60000;
+            if (output.length > maxLength) {
+              output = output.slice(0, maxLength) + "\n... [truncated]";
+            }
+
+            const body = [
+              marker,
+              "## Benchmark comparison",
+              "",
+              `Command: \`scripts/bench.sh -g ${process.env.BENCH_GROUP} compare\``,
+              `Benchmark size: \`${process.env.BENCH_SIZE}\``,
+              `Baseline source: \`${process.env.BASELINE_SOURCE || "n/a"}\``,
+              `Base commit: \`${context.payload.pull_request.base.sha.slice(0, 7)}\``,
+              `Head commit: \`${context.payload.pull_request.head.sha.slice(0, 7)}\``,
+              `Baseline exit code: \`${process.env.BASELINE_EXIT || "n/a"}\``,
+              `Compare exit code: \`${process.env.COMPARE_EXIT || "n/a"}\``,
+              "",
+              "```text",
+              output,
+              "```",
+            ].join("\n");
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user.type === "Bot" && comment.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

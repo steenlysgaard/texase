@@ -1,0 +1,52 @@
+name: Benchmark Main Baseline
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/benchmark-main-baseline.yml"
+      - "scripts/bench.sh"
+      - "tests/benchmarks/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    env:
+      TEXASE_BENCHMARK_SIZE: medium
+      BENCH_GROUP: tui
+      BASELINE_ARTIFACT_NAME: benchmark-baseline-tui-medium
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.7.12"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --locked --group dev
+
+      - name: Run baseline benchmark
+        run: scripts/bench.sh -g "${BENCH_GROUP}" baseline
+
+      - name: Upload baseline artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BASELINE_ARTIFACT_NAME }}
+          path: .benchmarks/baseline.json
+          if-no-files-found: error
